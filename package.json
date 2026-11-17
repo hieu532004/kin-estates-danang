@@ -1,0 +1,21 @@
+{
+  "name": "kin-estates-danang",
+  "version": "2.0.0",
+  "description": "KIN Estates — Da Nang Private Residences & Long-Term Apartment Rental Platform",
+  "main": "server.js",
+  "scripts": {
+    "build": "esbuild src/client/index.tsx --bundle --minify --outfile=public/js/bundle.js --loader:.tsx=tsx --loader:.ts=ts",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.24.0",
+    "express": "^4.21.1",
+    "mongoose": "^8.8.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

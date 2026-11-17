@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="kinBgGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#111419"/>
+      <stop offset="55%" stop-color="#1C2029"/>
+      <stop offset="100%" stop-color="#292118"/>
+    </linearGradient>
+    <linearGradient id="kinGoldGrad" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F9E7CF"/>
+      <stop offset="48%" stop-color="#D5B07C"/>
+      <stop offset="100%" stop-color="#9E7B4F"/>
+    </linearGradient>
+    <linearGradient id="kinGoldSoft" x1="16" y1="14" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F9E7CF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#9E7B4F" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Architectural Squircle Base -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#kinBgGrad)" stroke="url(#kinGoldSoft)" stroke-width="1.5"/>
+  
+  <!-- Subtle Inner Frame -->
+  <rect x="6.5" y="6.5" width="51" height="51" rx="12" stroke="#D5B07C" stroke-opacity="0.18" stroke-width="0.9"/>
+
+  <!-- Background Architectural Arch Portal -->
+  <path d="M17 48V27C17 18.7157 23.7157 12 32 12C40.2843 12 47 18.7157 47 27V48" stroke="url(#kinGoldSoft)" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- Left High-Rise Monolith Pillar (The Vertical Spine of 'K') -->
+  <path d="M21 48V18.5L26.5 15V48H21Z" fill="url(#kinGoldGrad)"/>
+
+  <!-- Upper Architectural Cantilever Wing of 'K' / Penthouse Roofline -->
+  <path d="M26.5 31.5L41.5 16.5L45 20L31.8 33.2L26.5 31.5Z" fill="url(#kinGoldGrad)"/>
+
+  <!-- Lower Architectural Diagonal Strut of 'K' + Right Residence Tower -->
+  <path d="M30.2 29.8L45 48H38.2L26.5 33.5L30.2 29.8Z" fill="url(#kinGoldGrad)"/>
+  <path d="M41.5 26.5L45 24V42.5L41.5 38.2V26.5Z" fill="url(#kinGoldGrad)" fill-opacity="0.72"/>
+
+  <!-- Horizon Baseline & Da Nang Coastal Reflection Line -->
+  <line x1="14" y1="48.5" x2="50" y2="48.5" stroke="url(#kinGoldGrad)" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M20 52.5C24 51.2 28 53.8 32 52.5C36 51.2 40 53.8 44 52.5" stroke="url(#kinGoldGrad)" stroke-width="1.3" stroke-linecap="round" stroke-opacity="0.8"/>
+
+  <!-- Zenith North-Star Diamond Accent -->
+  <path d="M32 7.5L33.6 9.8L32 12.1L30.4 9.8L32 7.5Z" fill="#F9E7CF"/>
+</svg>
