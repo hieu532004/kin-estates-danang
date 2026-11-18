@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CustomSelect, SelectOption } from "./components/CustomSelect";
+import { AdminHub } from "./components/AdminHub";
 import {
   IconMap,
   IconSearch,
@@ -16,6 +17,7 @@ export interface Apartment {
   code: string;
   title: Record<string, string> | string;
   building: string;
+  address?: string;
   areaName: string;
   district?: string;
   priceUsd: number;
@@ -32,6 +34,8 @@ export interface Apartment {
   remoteWorkSetup?: string;
   petPolicy?: string;
   status?: string;
+  isVisible?: boolean;
+  currentTenant?: any;
   featured?: boolean;
   coordinates?: { lat: number; lng: number };
   architecturalNotes?: Record<string, string> | string;
@@ -1480,11 +1484,34 @@ export const App: React.FC = () => {
     }
   };
 
+  const trackDirectContact = (messenger: string, apt?: Apartment | null) => {
+    fetch("/api/inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "direct_contact",
+        clientName: `Khách bấm nút ${messenger} trên Web`,
+        messenger,
+        contactHandle: `Bấm liên hệ qua ${messenger}`,
+        apartmentCode: apt ? apt.code : "TRANG-CHU",
+        apartmentTitle: apt ? getLocalized(apt.title) : "Liên hệ trực tiếp KIN Estates",
+        budgetUsd: apt ? `$${apt.priceUsd}/tháng` : "Tư vấn trực tiếp",
+        bedrooms: apt ? `${apt.bedrooms} PN` : "Tùy chọn",
+        viewingTime: "Vừa bấm liên hệ trên Website",
+        notes: apt
+          ? `Khách hàng đang xem căn hộ [${apt.code}] (${apt.building}) và bấm nút nhắn tin qua ${messenger}.`
+          : `Khách hàng bấm nút liên hệ ${messenger} trên Website.`
+      })
+    }).catch(() => {});
+  };
+
   const renderApartmentCard = (apt: Apartment) => {
     const title = getLocalized(apt.title);
     const notes = getLocalized(apt.architecturalNotes);
     const cover = (apt.images && apt.images[0]) || "";
     const isSaved = savedCodes.includes(apt.code);
+    const isRented = apt.status === "Rented";
+    const isReserved = apt.status === "Reserved";
 
     return (
       <article key={apt.code} className="apt-modern-card">
@@ -1493,7 +1520,20 @@ export const App: React.FC = () => {
             <img src={cover} alt={title} loading="lazy" />
             <div className="apt-modern-card__top-badges">
               <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                {(apt.tags || []).slice(0, 2).map((t) => (
+                {isRented ? (
+                  <span className="pill-badge-dark" style={{ background: "rgba(180, 35, 35, 0.92)", color: "#FFF" }}>
+                    {tx("🔴 Đã thuê", "🔴 Rented", "🔴 已租", "🔴 Сдано", "🔴 임대완료", "🔴 成約済")}
+                  </span>
+                ) : isReserved ? (
+                  <span className="pill-badge-dark" style={{ background: "rgba(180, 115, 20, 0.92)", color: "#FFF" }}>
+                    {tx("🟡 Đã cọc", "🟡 Reserved", "🟡 已预订", "🟡 Бронь", "🟡 예약중", "🟡 予約中")}
+                  </span>
+                ) : (
+                  <span className="pill-badge-dark" style={{ background: "rgba(20, 99, 70, 0.9)", color: "#FFF" }}>
+                    {tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
+                  </span>
+                )}
+                {(apt.tags || []).slice(0, 1).map((t) => (
                   <span key={t} className="pill-badge-dark">
                     {trTag(t)}
                   </span>
@@ -1517,6 +1557,12 @@ export const App: React.FC = () => {
               {trArea(apt.areaName)} · {apt.building}
             </div>
             <h3 className="apt-modern-card__title">{title}</h3>
+            {apt.address && (
+              <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "4px" }}>
+                <span>📍</span>
+                <span>{apt.address}</span>
+              </div>
+            )}
             <p className="apt-modern-card__desc">{notes}</p>
 
             <div className="apt-modern-card__specs">
@@ -1703,6 +1749,21 @@ export const App: React.FC = () => {
               <span>{currency === "USD" ? "$ USD" : "₫ VND"}</span>
             </button>
 
+            {/* Quick Access to Telegram Bot + Excel + CRM Management Hub */}
+            <button
+              type="button"
+              className="header-pill-trigger"
+              onClick={() => navigate("/admin")}
+              title="Trung tâm quản lý Bot Telegram, Excel & Căn hộ"
+              style={
+                route === "/admin"
+                  ? { background: "#14171E", color: "#F5D9B8", borderColor: "#9E7B4F" }
+                  : undefined
+              }
+            >
+              <span>🤖 {tx("Quản lý", "Admin", "管理", "Админ", "관리", "管理")}</span>
+            </button>
+
             <button
               type="button"
               className="btn-luxe btn-luxe--navy"
@@ -1762,6 +1823,14 @@ export const App: React.FC = () => {
                 <span>→</span>
               </button>
             ))}
+            <button
+              type="button"
+              className={`mobile-drawer-link ${route === "/admin" ? "active" : ""}`}
+              onClick={() => navigate("/admin")}
+            >
+              <span>🤖 {tx("Trung tâm Quản lý & Bot Telegram", "Admin & Telegram Bot Hub", "管理中心与电报机器人", "Панель управления и Бот", "관리 센터 & 텔레그램 봇", "管理センター＆Telegramボット")}</span>
+              <span>→</span>
+            </button>
           </div>
           <button
             type="button"
@@ -2956,6 +3025,7 @@ export const App: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="apt-messenger-pill"
+                    onClick={() => trackDirectContact("Zalo", currentDetailApt)}
                   >
                     <span className="apt-messenger-icon zalo">Zalo</span>
                     <span>Zalo</span>
@@ -2966,6 +3036,7 @@ export const App: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="apt-messenger-pill"
+                    onClick={() => trackDirectContact("WhatsApp", currentDetailApt)}
                   >
                     <span className="apt-messenger-icon whatsapp">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -2980,6 +3051,7 @@ export const App: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="apt-messenger-pill"
+                    onClick={() => trackDirectContact("Telegram", currentDetailApt)}
                   >
                     <span className="apt-messenger-icon telegram">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -3031,9 +3103,23 @@ export const App: React.FC = () => {
               </div>
 
               <div>
-                <h1 className="section-heading-serif" style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.15rem)", marginBottom: "0.6rem" }}>
+                <h1 className="section-heading-serif" style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.15rem)", marginBottom: "0.45rem" }}>
                   {getLocalized(currentDetailApt.title)}
                 </h1>
+
+                {currentDetailApt.address && (
+                  <div style={{ fontSize: "0.88rem", color: "var(--accent-bronze-dark)", fontWeight: 700, marginBottom: "0.65rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>📍 {currentDetailApt.address}</span>
+                    <span>·</span>
+                    <span>
+                      {currentDetailApt.status === "Rented"
+                        ? tx("🔴 Đã thuê", "🔴 Rented", "🔴 已租", "🔴 Сдано", "🔴 임대완료", "🔴 成約済")
+                        : currentDetailApt.status === "Reserved"
+                        ? tx("🟡 Đã cọc", "🟡 Reserved", "🟡 已预订", "🟡 Бронь", "🟡 예약중", "🟡 予約中")
+                        : tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
+                    </span>
+                  </div>
+                )}
 
                 <p style={{ fontSize: "0.98rem", color: "var(--text-secondary)", lineHeight: 1.72, marginBottom: "1rem" }}>
                   {getLocalized(currentDetailApt.architecturalNotes)}
@@ -3859,8 +3945,161 @@ export const App: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            {/* Landlord / Owner Property Submission Card (Notifies Admin Telegram Bot & Can Be Approved in 1 Click) */}
+            <div style={{ background: "#FFFFFF", padding: "2rem", borderRadius: "22px", border: "1px solid rgba(168,124,81,0.28)", boxShadow: "var(--shadow-soft)", marginBottom: "2rem" }}>
+              <span className="eyebrow-badge">
+                {tx("DÀNH CHO CHỦ NHÀ & ĐỐI TÁC ĐÀ NẴNG", "FOR DA NANG PROPERTY OWNERS", "面向岘港房东与合作伙伴", "ДЛЯ СОБСТВЕННИКОВ ЖИЛЬЯ", "다낭 임대인 및 파트너 전용", "ダナンの物件オーナー様へ")}
+              </span>
+              <h2 className="section-heading-serif" style={{ marginBottom: "0.5rem" }}>
+                {tx("Ký gửi căn hộ & biệt thự lên KIN Estates", "Submit Your Residence for Curation", "委托发布您的公寓或别墅", "Разместить квартиру в KIN Estates", "KIN Estates에 매물 등록 의뢰", "物件の掲載・管理を依頼する")}
+              </h2>
+              <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
+                {tx(
+                  "Gửi thông tin căn hộ cần cho thuê dài hạn. Hệ thống sẽ thông báo ngay tới Bot Telegram của Ban quản trị KIN Estates để kiểm duyệt và đăng tải.",
+                  "Submit your long-term residence details below. Our advisory team receives an instant Telegram Bot notification to review and publish your property.",
+                  "在下方提交您的长租房源信息，我们的管理团队将通过 Telegram 机器人实时收到通知并审核上架。",
+                  "Отправьте данные вашей квартиры ниже — команда получит мгновенное уведомление в Telegram для публикации.",
+                  "장기 임대 매물 정보를 남겨주시면 관리팀 텔레그램 봇으로 즉시 알림이 전송되어 검토 후 등록됩니다.",
+                  "長期賃貸物件の情報を送信いただくと、管理チームのTelegramボットへ即座に通知され審査・掲載されます。"
+                )}
+              </p>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  const title = String(fd.get("title") || "");
+                  const building = String(fd.get("building") || "");
+                  const address = String(fd.get("address") || "");
+                  const areaName = String(fd.get("areaName") || "An Thuong");
+                  const priceUsd = String(fd.get("priceUsd") || "800");
+                  const bedrooms = String(fd.get("bedrooms") || "1");
+                  const sizeM2 = String(fd.get("sizeM2") || "60");
+                  const clientName = String(fd.get("clientName") || "Chủ nhà đối tác");
+                  const contactHandle = String(fd.get("contactHandle") || "");
+                  const images = String(fd.get("images") || "");
+                  const notes = String(fd.get("notes") || "");
+
+                  const res = await fetch("/api/inquiries", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      type: "owner_listing",
+                      clientName,
+                      messenger: "Zalo / Telegram",
+                      contactHandle,
+                      apartmentCode: "PHONG-KY-GUI",
+                      apartmentTitle: `${title} (${building})`,
+                      budgetUsd: `$${priceUsd}/tháng`,
+                      bedrooms: `${bedrooms} PN · ${sizeM2}m²`,
+                      viewingTime: address,
+                      notes: `Địa chỉ: ${address} | Mô tả: ${notes}`,
+                      ownerPropertyData: {
+                        title,
+                        building,
+                        address,
+                        areaName,
+                        priceUsd,
+                        bedrooms: Number(bedrooms) || 1,
+                        sizeM2: Number(sizeM2) || 60,
+                        images,
+                        notes
+                      }
+                    })
+                  });
+                  const data = await res.json();
+                  if (data.ok) {
+                    setBookingFeedback(
+                      tx(
+                        "✓ Đã gửi thông tin phòng ký gửi! Ban quản trị KIN Estates đã nhận thông báo qua Bot Telegram để duyệt đăng.",
+                        "✓ Property submitted! Our team has been notified via Telegram Bot for immediate review.",
+                        "✓ 房源已提交！管理团队已通过 Telegram 收到通知。",
+                        "✓ Объект отправлен! Администратор получил уведомление в Telegram.",
+                        "✓ 매물 접수 완료! 관리팀 텔레그램으로 알림이 전송되었습니다.",
+                        "✓ 物件情報を送信しました！担当者へTelegram通知が送られました。"
+                      )
+                    );
+                    e.currentTarget.reset();
+                  }
+                }}
+              >
+                <div className="kin-form-grid">
+                  <div className="kin-input-group">
+                    <label>{tx("Tên căn hộ / Tiêu đề *", "Residence Title *")}</label>
+                    <input name="title" required placeholder="VD: Căn hộ 2PN View Sông Hàn" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Tòa nhà / Khu *", "Building / Compound *")}</label>
+                    <input name="building" required placeholder="VD: The Panoma / Hiyori" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Địa chỉ cụ thể *", "Exact Address *")}</label>
+                    <input name="address" required placeholder="VD: Đường Trần Thị Lý, Ngũ Hành Sơn" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Khu vực", "Area")}</label>
+                    <select name="areaName" defaultValue="An Thuong">
+                      <option value="An Thuong">An Thượng (Mỹ Khê)</option>
+                      <option value="Son Tra">Sơn Trà</option>
+                      <option value="Han Riverfront">Bờ Sông Hàn / Hải Châu</option>
+                      <option value="My Khe Beachfront">Mặt Biển Mỹ Khê</option>
+                    </select>
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Giá mong muốn ($ USD/tháng) *", "Monthly Rent ($ USD) *")}</label>
+                    <input name="priceUsd" required placeholder="VD: 850" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Số phòng ngủ", "Bedrooms")}</label>
+                    <input name="bedrooms" type="number" defaultValue={2} min={1} max={8} />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Diện tích (m²)", "Size (m²)")}</label>
+                    <input name="sizeM2" type="number" defaultValue={70} min={20} />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Tên Chủ Nhà / Người Đăng *", "Owner Name *")}</label>
+                    <input name="clientName" required placeholder="VD: Anh Minh" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("SĐT Zalo hoặc @Telegram *", "Zalo Phone or @Telegram *")}</label>
+                    <input name="contactHandle" required placeholder="VD: 0905... hoặc @username" />
+                  </div>
+                  <div className="kin-input-group">
+                    <label>{tx("Link Ảnh Căn Hộ (Tùy chọn)", "Photo URLs (Optional)")}</label>
+                    <input name="images" placeholder="https://..." />
+                  </div>
+                </div>
+                <div className="kin-input-group" style={{ marginTop: "0.85rem" }}>
+                  <label>{tx("Mô tả chi tiết (Nội thất, tầng, điện nước, thú cưng...)", "Detailed Description")}</label>
+                  <textarea name="notes" rows={2} placeholder="VD: Tầng 18 thoáng mát, điện giá nhà nước EVN..." />
+                </div>
+                <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                  <button type="submit" className="btn-luxe btn-luxe--navy">
+                    <span>{tx("🚀 Gửi Phòng Lên Hệ Thống & Báo Admin Telegram", "🚀 Submit Property & Alert Telegram Admin")}</span>
+                  </button>
+                  {bookingFeedback && (
+                    <span style={{ color: "var(--accent-emerald)", fontWeight: 700, fontSize: "0.86rem" }}>
+                      {bookingFeedback}
+                    </span>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
         </main>
+      )}
+
+      {/* ====================================================================
+          PAGE 7: ADMIN & TELEGRAM BOT + EXCEL CRM HUB (/admin)
+          ==================================================================== */}
+      {(route === "/admin" || route === "/manage") && (
+        <AdminHub
+          onPublicApartmentsChange={(pubApts) => setApartments(pubApts)}
+          onNavigateHome={() => navigate("/")}
+          onOpenApartmentPage={(code) => navigate(`/apartments/${code}`)}
+        />
       )}
 
       {/* ====================================================================
@@ -4238,6 +4477,9 @@ export const App: React.FC = () => {
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/how-to-rent")}>{tx("Quy trình thuê nhà", "How to Rent", "租房流程", "Процесс аренды", "임대 진행 절차", "賃貸の流れ")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/guides")}>{tx("Cẩm nang & Chỉ số giá", "Guides & Price Index", "生活指南与价格指数", "Гиды и индекс цен", "생활 가이드 & 가격 지수", "ガイド＆家賃指数")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")}>{tx("Về KIN Estates & Chủ nhà", "About KIN Estates", "关于 KIN Estates", "О компании KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</span>
+              <span style={{ cursor: "pointer", color: "#F5D9B8", fontWeight: 700 }} onClick={() => navigate("/admin")}>
+                🤖 {tx("Quản lý Bot Telegram & Excel (/admin)", "Telegram Bot & Excel Admin (/admin)", "电报机器人与Excel管理 (/admin)", "Админ-панель Telegram и Excel", "텔레그램 봇 & 엑셀 관리 (/admin)", "Telegramボット＆Excel管理 (/admin)")}
+              </span>
             </div>
           </div>
 
