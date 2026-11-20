@@ -1,6 +1,70 @@
 {
   "apartments": [
     {
+      "_id": "apt-1795017217145-8tvb",
+      "code": "DN-KIN-2247",
+      "title": {
+        "vi": "Căn hộ Kiến trúc Đà Nẵng",
+        "en": "Căn hộ Kiến trúc Đà Nẵng",
+        "zh": "Căn hộ Kiến trúc Đà Nẵng",
+        "ru": "Căn hộ Kiến trúc Đà Nẵng",
+        "ko": "Căn hộ Kiến trúc Đà Nẵng",
+        "ja": "Căn hộ Kiến trúc Đà Nẵng"
+      },
+      "building": "KIN Estates Residence",
+      "address": "Khu phố An Thượng, Ngũ Hành Sơn",
+      "areaName": "An Thuong",
+      "district": "Sơn Trà / Ngũ Hành Sơn",
+      "priceUsd": 950,
+      "priceVnd": 24200000,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "sizeM2": 75,
+      "floor": 20,
+      "orientation": "Đông Nam / Đón gió biển",
+      "minLeaseMonths": 3,
+      "depositMonths": 1,
+      "electricityRate": "Giá nhà nước EVN",
+      "waterRate": "Giá nhà nước",
+      "wifiIncluded": true,
+      "naturalLightScore": 9.5,
+      "remoteWorkSetup": "Bàn làm việc riêng + Cáp quang 300Mbps",
+      "petPolicy": "Thương lượng",
+      "status": "Available",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "featured": true,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644",
+      "adminNote": "",
+      "currentTenant": null,
+      "coordinates": {
+        "lat": 16.0513,
+        "lng": 108.2453
+      },
+      "architecturalNotes": {
+        "vi": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "en": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "zh": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ru": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ko": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ja": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps"
+      },
+      "tags": [
+        "Natural Light",
+        "Remote-Work Desk",
+        "State-Rate Electricity"
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85",
+        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "source": "telegram",
+      "createdAt": "2026-11-18T15:53:37.145Z",
+      "updatedAt": "2026-11-18T15:53:37.145Z"
+    },
+    {
       "_id": "apt-panoma-1902",
       "code": "DN-PAN-1902",
       "title": {
@@ -47,7 +111,12 @@
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-10T08:00:00.000Z"
+      "createdAt": "2026-11-10T08:00:00.000Z",
+      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-panoma-2405",
@@ -96,7 +165,12 @@
         "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-11T08:00:00.000Z"
+      "createdAt": "2026-11-11T08:00:00.000Z",
+      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-panoma-2801",
@@ -144,7 +218,12 @@
         "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-11T10:00:00.000Z"
+      "createdAt": "2026-11-11T10:00:00.000Z",
+      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-filmore-2401",
@@ -192,7 +271,12 @@
         "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-12T08:00:00.000Z"
+      "createdAt": "2026-11-12T08:00:00.000Z",
+      "address": "Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-filmore-1608",
@@ -239,7 +323,12 @@
         "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-12T11:00:00.000Z"
+      "createdAt": "2026-11-12T11:00:00.000Z",
+      "address": "Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-hiyori-1804",
@@ -286,7 +375,12 @@
         "https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-13T08:00:00.000Z"
+      "createdAt": "2026-11-13T08:00:00.000Z",
+      "address": "Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-hiyori-1202",
@@ -332,7 +426,12 @@
         "https://images.unsplash.com/photo-1600566753086-2d87185b9fd2?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-13T10:00:00.000Z"
+      "createdAt": "2026-11-13T10:00:00.000Z",
+      "address": "Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-monarchy-1508",
@@ -380,7 +479,12 @@
         "https://images.unsplash.com/photo-1600573472589-003525b2b729?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-14T08:00:00.000Z"
+      "createdAt": "2026-11-14T08:00:00.000Z",
+      "address": "Sơn Trà, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-anthuong-1102",
@@ -426,55 +530,12 @@
         "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=85",
         "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80"
       ],
-      "createdAt": "2026-11-14T11:00:00.000Z"
-    },
-    {
-      "_id": "apt-anthuong-villa01",
-      "code": "DN-ANT-V01",
-      "title": {
-        "vi": "Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)",
-        "en": "Nam Viet A Private Pool Architectural Villa — 3BR Sanctuary",
-        "ru": "Вилла с собственным бассейном и 3 спальнями в Нгуханьшон"
-      },
-      "building": "Nam Viet A Villa Compound",
-      "areaName": "Ngũ Hành Sơn",
-      "district": "Ngũ Hành Sơn",
-      "priceUsd": 1850,
-      "priceVnd": 47100000,
-      "bedrooms": 3,
-      "bathrooms": 4,
-      "sizeM2": 240,
-      "floor": 2,
-      "orientation": "Đông Nam / Sân vườn nhiệt đới & Hồ bơi riêng",
-      "minLeaseMonths": 6,
-      "depositMonths": 2,
-      "electricityRate": "Giá nhà nước (EVN)",
-      "naturalLightScore": 9.9,
-      "remoteWorkSetup": "Phòng làm việc riêng nhìn ra hồ bơi",
-      "petPolicy": "Thoải mái nuôi thú cưng",
-      "status": "Available",
-      "featured": true,
-      "coordinates": {
-        "lat": 16.0365,
-        "lng": 108.2418
-      },
-      "architecturalNotes": {
-        "vi": "Biệt thự kiến trúc nhiệt đới hiện đại có hồ bơi muối khoáng riêng, gara ô tô, khu vườn yên tĩnh gần sông Hàn và trường quốc tế.",
-        "en": "Modern tropical architectural villa with private saltwater pool, enclosed garage, and lush courtyard near international schools.",
-        "ru": "Современная тропическая вилла с частным бассейном, садом и гаражом."
-      },
-      "tags": [
-        "Biệt thự",
-        "Thú cưng",
-        "Bàn làm việc",
-        "Hồ bơi vô cực",
-        "Điện EVN"
-      ],
-      "images": [
-        "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=85",
-        "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=80"
-      ],
-      "createdAt": "2026-11-15T09:00:00.000Z"
+      "createdAt": "2026-11-14T11:00:00.000Z",
+      "address": "Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644"
     }
   ],
   "buildings": [
@@ -646,6 +707,27 @@
   ],
   "inquiries": [
     {
+      "_id": "inq-1795017233981",
+      "code": "KH-3758",
+      "type": "viewing",
+      "clientName": "Khách Test Thông Báo Telegram",
+      "messenger": "Telegram",
+      "contactHandle": "@KIN_Estates",
+      "apartmentCode": "DN-PAN-1902",
+      "apartmentTitle": "The Panoma 1 — 1PN View Sông Hàn",
+      "budgetUsd": "$654/tháng",
+      "bedrooms": "1-2 PN",
+      "viewingTime": "Hôm nay lúc 16:30",
+      "moveInDate": "Linh hoạt",
+      "leaseDuration": "6-12 tháng",
+      "notes": "Test thông báo tự động khi khách hàng đặt lịch xem phòng trên Website.",
+      "ownerPropertyData": null,
+      "status": "Viewing_Scheduled",
+      "adminNotes": "",
+      "createdAt": "2026-11-18T15:53:53.981Z",
+      "updatedAt": "2026-11-20T09:30:33.374Z"
+    },
+    {
       "_id": "inq-demo-01",
       "type": "viewing",
       "clientName": "ukashenko.alex (Digital Nomad)",
@@ -662,7 +744,88 @@
       "createdAt": "2026-11-16T11:09:57.143Z"
     }
   ],
-  "syncLogs": [],
+  "leases": [
+    {
+      "_id": "lease-demo-01",
+      "code": "HD-2026-01",
+      "apartmentCode": "DN-FIL-2401",
+      "apartmentTitle": "The Filmore — Căn Hộ 2PN Ban Công Cánh Chim View Cầu Rồng",
+      "building": "The Filmore Da Nang",
+      "address": "Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng",
+      "tenantName": "Lucas Meyer (Chuyên gia Đức)",
+      "tenantContact": "@lucas_meyer_de / +84 905 882 114",
+      "messenger": "Telegram",
+      "nationality": "Germany",
+      "priceUsd": 1350,
+      "priceVnd": 34400000,
+      "depositMonths": 2,
+      "paymentDay": 5,
+      "startDate": "2026-10-01",
+      "endDate": "2027-04-01",
+      "status": "Active",
+      "hideApartmentOnWeb": false,
+      "notes": "Hợp đồng 6 tháng, đã đăng ký tạm trú NA17 Công an P. Bình Thuận. Thanh toán ngày 05 hàng tháng.",
+      "createdAt": "2026-11-18T07:35:38.098Z"
+    }
+  ],
+  "syncLogs": [
+    {
+      "id": "sync-1795166986538",
+      "timestamp": "2026-11-20T09:29:46.538Z",
+      "direction": "outbound",
+      "action": "manual_sync",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017233984",
+      "timestamp": "2026-11-18T15:53:53.984Z",
+      "direction": "outbound",
+      "action": "new_inquiry",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017217148",
+      "timestamp": "2026-11-18T15:53:37.148Z",
+      "direction": "outbound",
+      "action": "create_apartment",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017171122",
+      "timestamp": "2026-11-18T15:52:51.122Z",
+      "direction": "outbound",
+      "action": "manual_sync",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017161438",
+      "timestamp": "2026-11-18T15:52:41.438Z",
+      "direction": "outbound",
+      "action": "delete_apartment",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017140665",
+      "timestamp": "2026-11-18T15:52:20.665Z",
+      "direction": "outbound",
+      "action": "update_status",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795017136921",
+      "timestamp": "2026-11-18T15:52:16.921Z",
+      "direction": "outbound",
+      "action": "update_status",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    }
+  ],
   "botMessages": [
     {
       "id": "msg-1794827398969-0b7l",
@@ -699,13 +862,2815 @@
           }
         ]
       ]
+    },
+    {
+      "id": "msg-1795017123422-w5lw",
+      "timestamp": "2026-11-18T15:52:03.422Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/list"
+    },
+    {
+      "id": "msg-1795017123425-72fx",
+      "timestamp": "2026-11-18T15:52:03.425Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *TẤT CẢ CĂN HỘ (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017133245-h4y7",
+      "timestamp": "2026-11-18T15:52:13.245Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795017133246-jqp6",
+      "timestamp": "2026-11-18T15:52:13.246Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017133970-44kk",
+      "timestamp": "2026-11-18T15:52:13.970Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795017133971-djbt",
+      "timestamp": "2026-11-18T15:52:13.971Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017134251-nt4i",
+      "timestamp": "2026-11-18T15:52:14.251Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795017134252-mun7",
+      "timestamp": "2026-11-18T15:52:14.252Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017134447-a3na",
+      "timestamp": "2026-11-18T15:52:14.447Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795017134448-xcd9",
+      "timestamp": "2026-11-18T15:52:14.448Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017134662-fv0s",
+      "timestamp": "2026-11-18T15:52:14.662Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795017134663-62so",
+      "timestamp": "2026-11-18T15:52:14.663Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-V01",
+            "callback_data": "/apt DN-ANT-V01"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017136918-vlet",
+      "timestamp": "2026-11-18T15:52:16.918Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/status DN-ANT-V01 Rented"
+    },
+    {
+      "id": "msg-1795017136923-llk3",
+      "timestamp": "2026-11-18T15:52:16.923Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🔄 *ĐÃ CẬP NHẬT TRẠNG THÁI:* Căn *DN-ANT-V01* (Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)) ➡️ *🔴 Đã cho thuê (Rented)*!",
+      "buttons": [
+        [
+          {
+            "text": "🟢 Đổi sang: Đang trống",
+            "callback_data": "/status DN-ANT-V01 Available"
+          },
+          {
+            "text": "🙈 Ẩn khỏi Web",
+            "callback_data": "/hide DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "💲 -50$ ($1800)",
+            "callback_data": "/price DN-ANT-V01 1800"
+          },
+          {
+            "text": "💲 +50$ ($1900)",
+            "callback_data": "/price DN-ANT-V01 1900"
+          },
+          {
+            "text": "🟡 Đã cọc",
+            "callback_data": "/status DN-ANT-V01 Reserved"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Gán khách thuê căn này",
+            "callback_data": "/rent_prompt DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa DN-ANT-V01",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "⬅️ Quay lại danh sách (/list)",
+            "callback_data": "/list"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017140662-61od",
+      "timestamp": "2026-11-18T15:52:20.662Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/status DN-ANT-V01 Available"
+    },
+    {
+      "id": "msg-1795017140666-6jmv",
+      "timestamp": "2026-11-18T15:52:20.666Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🔄 *ĐÃ CẬP NHẬT TRẠNG THÁI:* Căn *DN-ANT-V01* (Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)) ➡️ *🟢 Đang trống (Hiện trên Web)*!",
+      "buttons": [
+        [
+          {
+            "text": "🔴 Đổi sang: Đã thuê",
+            "callback_data": "/status DN-ANT-V01 Rented"
+          },
+          {
+            "text": "🙈 Ẩn khỏi Web",
+            "callback_data": "/hide DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "💲 -50$ ($1800)",
+            "callback_data": "/price DN-ANT-V01 1800"
+          },
+          {
+            "text": "💲 +50$ ($1900)",
+            "callback_data": "/price DN-ANT-V01 1900"
+          },
+          {
+            "text": "🟡 Đã cọc",
+            "callback_data": "/status DN-ANT-V01 Reserved"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Gán khách thuê căn này",
+            "callback_data": "/rent_prompt DN-ANT-V01"
+          },
+          {
+            "text": "🗑️ Xóa DN-ANT-V01",
+            "callback_data": "/delete DN-ANT-V01"
+          }
+        ],
+        [
+          {
+            "text": "⬅️ Quay lại danh sách (/list)",
+            "callback_data": "/list"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017161435-4ixr",
+      "timestamp": "2026-11-18T15:52:41.435Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/delete DN-ANT-V01"
+    },
+    {
+      "id": "msg-1795017161439-0pi1",
+      "timestamp": "2026-11-18T15:52:41.439Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🗑️ *ĐÃ XÓA BÀI ĐĂNG:* `DN-ANT-V01` — _Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)_ khỏi Website & Database!",
+      "buttons": [
+        [
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng từng bước (/wizard)",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "🏡 Phòng ký gửi (/owners)",
+            "callback_data": "/owners"
+          },
+          {
+            "text": "📊 File Excel & Sync (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017171120-opeg",
+      "timestamp": "2026-11-18T15:52:51.120Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/excel"
+    },
+    {
+      "id": "msg-1795017171123-ph4v",
+      "timestamp": "2026-11-18T15:52:51.123Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📊 *LIÊN KẾT & QUẢN LÝ QUA EXCEL / GOOGLE SHEETS 2 CHIỀU*\n━━━━━━━━━━━━━━━━━━━━━━\nHệ thống hỗ trợ xuất & nhập trực tiếp bằng **Microsoft Excel (UTF-8 chuẩn tiếng Việt)** cho cả 3 bảng:\n\n1️⃣ *Bảng Excel Kho Căn Hộ:* `/api/excel/apartments.csv`\n   _(Mở bằng Excel -> Sửa giá, đổi cột Status thành Available/Rented/Hidden, sửa địa chỉ hoặc thêm dòng căn hộ mới -> Upload lại trên trang `/admin` để cập nhật hàng loạt!)_\n2️⃣ *Bảng Excel Khách Đặt Lịch & Điền Form:* `/api/excel/inquiries.csv`\n3️⃣ *Bảng Excel Hợp Đồng Khách Đang Thuê:* `/api/excel/leases.csv`\n\n✅ *Trạng thái đồng bộ:* Database & Excel CSV Feed đã cập nhật tức thì.",
+      "buttons": [
+        [
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng từng bước (/wizard)",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "🏡 Phòng ký gửi (/owners)",
+            "callback_data": "/owners"
+          },
+          {
+            "text": "📊 File Excel & Sync (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017187629-7dng",
+      "timestamp": "2026-11-18T15:53:07.629Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/list"
+    },
+    {
+      "id": "msg-1795017187630-cdiu",
+      "timestamp": "2026-11-18T15:53:07.630Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *TẤT CẢ CĂN HỘ (9 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "🗑️ Xóa",
+            "callback_data": "/delete DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017190950-gf2i",
+      "timestamp": "2026-11-18T15:53:10.950Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795017190952-m2b3",
+      "timestamp": "2026-11-18T15:53:10.952Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
+      "buttons": [
+        [
+          {
+            "text": "❌ Hủy đăng từng bước",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017208659-h0y2",
+      "timestamp": "2026-11-18T15:53:28.659Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "[Gửi 1 ảnh căn hộ]"
+    },
+    {
+      "id": "msg-1795017208662-4u1o",
+      "timestamp": "2026-11-18T15:53:28.662Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ Đã lưu tên: *Căn hộ Kiến trúc Đà Nẵng* (KIN Estates Residence)\n\n🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\nAnh chọn khu vực bên dưới hoặc gõ theo dạng: `Khu vực | Địa chỉ đường, quận`\n📌 _Ví dụ:_ `Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng`",
+      "buttons": [
+        [
+          {
+            "text": "🌊 An Thượng (Mỹ Khê)",
+            "callback_data": "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn"
+          },
+          {
+            "text": "🌉 Sông Hàn / Hải Châu",
+            "callback_data": "/wiz_area Han Riverfront | Đường Bạch Đằng / Trần Thị Lý"
+          }
+        ],
+        [
+          {
+            "text": "🌿 Sơn Trà (Hiyori/Monarchy)",
+            "callback_data": "/wiz_area Son Tra | Đường Võ Văn Kiệt, Quận Sơn Trà"
+          },
+          {
+            "text": "🏖️ Mặt biển Mỹ Khê",
+            "callback_data": "/wiz_area My Khe Beachfront | Đường Võ Nguyên Giáp, Đà Nẵng"
+          }
+        ],
+        [
+          {
+            "text": "❌ Hủy đăng",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017212049-7vpv",
+      "timestamp": "2026-11-18T15:53:32.049Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn"
+    },
+    {
+      "id": "msg-1795017212052-1nnr",
+      "timestamp": "2026-11-18T15:53:32.052Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ Khu vực: *An Thuong* — Địa chỉ: *Khu phố An Thượng, Ngũ Hành Sơn*\n\n🪄 *BƯỚC 3 / 5: GIÁ THUÊ, SỐ PHÒNG NGỦ, DIỆN TÍCH & TẦNG*\nAnh nhập cách nhau bởi dấu `|`: `Giá (USD hoặc tr VNĐ) | Số PN | Diện tích m2 | Tầng`\n\n📌 _Ví dụ:_ `850 | 2 | 72 | 18` (hoặc `18.5tr | 1 | 52 | 15`)",
+      "buttons": [
+        [
+          {
+            "text": "1PN • 50m² • $650",
+            "callback_data": "/wiz_spec 650 | 1 | 50 | 15"
+          },
+          {
+            "text": "2PN • 75m² • $950",
+            "callback_data": "/wiz_spec 950 | 2 | 75 | 20"
+          }
+        ],
+        [
+          {
+            "text": "❌ Hủy đăng",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017215471-r4ye",
+      "timestamp": "2026-11-18T15:53:35.471Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/wiz_spec 950 | 2 | 75 | 20"
+    },
+    {
+      "id": "msg-1795017215473-sy7q",
+      "timestamp": "2026-11-18T15:53:35.473Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ Thông số: *Giá 950 • 2PN • 75m² • Tầng 20*\n\n🪄 *BƯỚC 4 / 5: MÔ TẢ CHI TIẾT, GIÁ ĐIỆN & THÚ CƯNG*\nAnh nhập mô tả chi tiết căn hộ (có thể kèm `| Giá điện | Chính sách thú cưng`):\n\n📌 _Ví dụ:_ `Căn góc ban công thoáng mát, nội thất gỗ sồi mới 100%, bàn làm việc rộng | Giá nhà nước EVN | Cho nuôi mèo`",
+      "buttons": [
+        [
+          {
+            "text": "⚡ Dùng mô tả chuẩn kiến trúc + Điện EVN",
+            "callback_data": "/wiz_desc Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps | Giá nhà nước EVN | Thương lượng"
+          }
+        ],
+        [
+          {
+            "text": "❌ Hủy đăng",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017216483-vikd",
+      "timestamp": "2026-11-18T15:53:36.483Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/wiz_desc Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps | Giá nhà nước EVN | Thương lượng"
+    },
+    {
+      "id": "msg-1795017216486-n56a",
+      "timestamp": "2026-11-18T15:53:36.486Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ Đã lưu mô tả chi tiết.\n\n🪄 *BƯỚC 5 / 5 (CUỐI CÙNG): HÌNH ẢNH CĂN HỘ*\n• Anh có thể **gửi ảnh trực tiếp từ máy** vào khung chat này, hoặc **dán 1 hay nhiều link ảnh** (cách nhau dấu phẩy).\n• Hoặc bấm nút **Hoàn tất & Đăng ngay** bên dưới!",
+      "buttons": [
+        [
+          {
+            "text": "✅ Hoàn tất & Đăng lên Website ngay!",
+            "callback_data": "/wiz_finish"
+          }
+        ],
+        [
+          {
+            "text": "❌ Hủy đăng",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017217142-b3tr",
+      "timestamp": "2026-11-18T15:53:37.142Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/wiz_finish"
+    },
+    {
+      "id": "msg-1795017217149-l3vr",
+      "timestamp": "2026-11-18T15:53:37.149Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🎉 *HOÀN TẤT! CĂN HỘ [DN-KIN-2247] ĐÃ LÊN SÓNG WEBSITE!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Tên:* Căn hộ Kiến trúc Đà Nẵng\n• *Tòa nhà:* KIN Estates Residence (An Thuong)\n• *Địa chỉ:* Khu phố An Thượng, Ngũ Hành Sơn\n• *Giá thuê:* *$950/tháng* (~24.2tr VNĐ)\n• *Thông số:* 2PN • 75m² • Tầng 20\n• *Trạng thái:* *Available* (Đang hiển thị trên Web)",
+      "buttons": [
+        [
+          {
+            "text": "🔴 Đổi sang: Đã thuê",
+            "callback_data": "/status DN-KIN-2247 Rented"
+          },
+          {
+            "text": "🙈 Ẩn khỏi Web",
+            "callback_data": "/hide DN-KIN-2247"
+          }
+        ],
+        [
+          {
+            "text": "💲 -50$ ($900)",
+            "callback_data": "/price DN-KIN-2247 900"
+          },
+          {
+            "text": "💲 +50$ ($1000)",
+            "callback_data": "/price DN-KIN-2247 1000"
+          },
+          {
+            "text": "🟡 Đã cọc",
+            "callback_data": "/status DN-KIN-2247 Reserved"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Gán khách thuê căn này",
+            "callback_data": "/rent_prompt DN-KIN-2247"
+          },
+          {
+            "text": "🗑️ Xóa DN-KIN-2247",
+            "callback_data": "/delete DN-KIN-2247"
+          }
+        ],
+        [
+          {
+            "text": "⬅️ Quay lại danh sách (/list)",
+            "callback_data": "/list"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017233982-6dfl",
+      "timestamp": "2026-11-18T15:53:53.982Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot (Push Alert)",
+      "text": "🔔 *📅 KHÁCH ĐẶT LỊCH HẸN XEM CĂN HỘ!*\n━━━━━━━━━━━━━━━━━━━━━━\n🆔 Mã yêu cầu: *KH-3758*\n👤 Khách hàng: *Khách Test Thông Báo Telegram*\n📱 Liên hệ (Telegram): `@KIN_Estates`\n🏠 Căn hộ quan tâm: *DN-PAN-1902* (The Panoma 1 — 1PN View Sông Hàn)\n💰 Ngân sách / Giá: *$654/tháng* | 🛏 1-2 PN\n⏰ Thời gian hẹn xem / Dọn vào: *Hôm nay lúc 16:30*\n📝 Ghi chú: _Test thông báo tự động khi khách hàng đặt lịch xem phòng trên Website._",
+      "buttons": [
+        [
+          {
+            "text": "📞 Đã liên hệ (KH-3758)",
+            "callback_data": "/lead_status KH-3758 Contacted"
+          },
+          {
+            "text": "📅 Đã chốt giờ xem",
+            "callback_data": "/lead_status KH-3758 Viewing_Scheduled"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Chốt khách thuê căn này",
+            "callback_data": "/lead_to_lease KH-3758"
+          },
+          {
+            "text": "🏠 Xem căn DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017242914-getl",
+      "timestamp": "2026-11-18T15:54:02.914Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/lead_status KH-3758 Viewing_Scheduled"
+    },
+    {
+      "id": "msg-1795017242918-ej5q",
+      "timestamp": "2026-11-18T15:54:02.918Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ *ĐÃ CẬP NHẬT TRẠNG THÁI KHÁCH [KH-3758]:* Khách *Khách Test Thông Báo Telegram* (`@KIN_Estates`) ➡️ *Viewing_Scheduled*!",
+      "buttons": [
+        [
+          {
+            "text": "📬 Xem lại danh sách khách (/leads)",
+            "callback_data": "/leads"
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng từng bước (/wizard)",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "🏡 Phòng ký gửi (/owners)",
+            "callback_data": "/owners"
+          },
+          {
+            "text": "📊 File Excel & Sync (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795017249819-4xv1",
+      "timestamp": "2026-11-18T15:54:09.819Z",
+      "sender": "user",
+      "user": "Admin (KIN Estates)",
+      "text": "/lead_status KH-3758 Contacted"
+    },
+    {
+      "id": "msg-1795017249821-jr7u",
+      "timestamp": "2026-11-18T15:54:09.821Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ *ĐÃ CẬP NHẬT TRẠNG THÁI KHÁCH [KH-3758]:* Khách *Khách Test Thông Báo Telegram* (`@KIN_Estates`) ➡️ *Contacted*!",
+      "buttons": [
+        [
+          {
+            "text": "📬 Xem lại danh sách khách (/leads)",
+            "callback_data": "/leads"
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng từng bước (/wizard)",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "🏡 Phòng ký gửi (/owners)",
+            "callback_data": "/owners"
+          },
+          {
+            "text": "📊 File Excel & Sync (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795166637282-0or7",
+      "timestamp": "2026-11-20T09:23:57.282Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795166637284-ocfx",
+      "timestamp": "2026-11-20T09:23:57.284Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏛️ *KIN ESTATES — QUẢN LÝ CĂN HỘ & KHÁCH THUÊ TRÊN TELEGRAM*\n━━━━━━━━━━━━━━━━━━━━━━\n📊 *TỔNG QUAN HỆ THỐNG HIỆN TẠI:*\n• Tổng kho căn hộ: *10 căn* (_🟢 10 trống • 🔴 0 đã thuê • 🙈 0 đang ẩn_)\n• Khách đặt lịch & Điền form: *2 khách* (_🔔 1 yêu cầu mới_)\n• Hợp đồng khách đang thuê: *1 hợp đồng đang hiệu lực*\n\n📱 *CÁCH ĐĂNG CĂN HỘ & UP ẢNH TỪ ĐIỆN THOẠI:*\n• *Cách 1 (Dễ nhất):* Bấm nút `➕ Đăng căn hộ mới (/wizard)`, Bot hỏi từng bước rồi cuối cùng anh chọn ảnh trong điện thoại gửi lên!\n• *Cách 2:* Gửi trực tiếp 1 hoặc nhiều ảnh từ điện thoại vào Bot trước, sau đó điền thông tin!\n• *Cách 3:* Bấm `📝 Mẫu đăng nhanh (/form)`, điền thông tin gửi lên rồi gửi ảnh từ điện thoại theo sau!\n\n⚡ *CÁC NÚT QUẢN LÝ NHANH BÊN DƯỚI:*",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795166637285-fxjr",
+      "timestamp": "2026-11-20T09:23:57.285Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start df925b32116e4c009b5bf17e4a95212b"
+    },
+    {
+      "id": "msg-1795166637286-y8cn",
+      "timestamp": "2026-11-20T09:23:57.286Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🤖 Anh có thể chọn nhanh các nút chức năng bên dưới hoặc gửi ảnh trực tiếp từ điện thoại để đăng căn hộ mới nhé!",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795166971604-a04v",
+      "timestamp": "2026-11-20T09:29:31.604Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795166971606-o0yd",
+      "timestamp": "2026-11-20T09:29:31.606Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
+      "buttons": [
+        [
+          {
+            "text": "❌ Hủy đăng từng bước",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795166986536-ik4e",
+      "timestamp": "2026-11-20T09:29:46.536Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/excel"
+    },
+    {
+      "id": "msg-1795166986539-cads",
+      "timestamp": "2026-11-20T09:29:46.539Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📊 *QUẢN LÝ & CẬP NHẬT HÀNG LOẠT QUA FILE EXCEL NGAY TRÊN TELEGRAM*\n━━━━━━━━━━━━━━━━━━━━━━\nEm vừa đính kèm **3 file Excel (.csv chuẩn tiếng Việt)** ngay bên dưới tin nhắn này cho anh:\n1️⃣ `KIN_Estates_KhoCanHo.csv` — Danh sách căn hộ, giá, trạng thái, ẩn/hiện\n2️⃣ `KIN_Estates_KhachHang_LichHen.csv` — Danh sách khách đặt lịch xem nhà\n3️⃣ `KIN_Estates_KhachDangThue_HopDong.csv` — Danh sách khách đang thuê & thời hạn\n\n💡 *Cách sửa bằng Excel rồi cập nhật ngược lên Web:*\n• Anh mở file `KIN_Estates_KhoCanHo.csv` bằng Excel, sửa giá, đổi cột `Status` (`Available` / `Rented` / `Hidden`) hoặc thêm dòng căn hộ mới.\n• Lưu lại rồi **gửi trực tiếp file `.csv` đó vào khung chat Bot Telegram này**, Bot sẽ tự động đọc file và cập nhật toàn bộ lên Website!\n• _(Database & Excel CSV Feed đã cập nhật tức thì.)_",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167021076-vdml",
+      "timestamp": "2026-11-20T09:30:21.076Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/leads"
+    },
+    {
+      "id": "msg-1795167021078-vond",
+      "timestamp": "2026-11-20T09:30:21.078Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📬 *DANH SÁCH KHÁCH ĐẶT LỊCH XEM PHÒNG & ĐIỀN FORM (2):*\n\n1. *[KH-3758]* 📅 HẸN XEM PHÒNG — *📞 Đã liên hệ*\n   👤 Khách: *Khách Test Thông Báo Telegram* (Telegram: `@KIN_Estates`)\n   🏠 Căn hộ: *DN-PAN-1902* (The Panoma 1 — 1PN View Sông Hàn)\n   ⏰ Hẹn xem / Dọn vào: *Hôm nay lúc 16:30* | 💰 $654/tháng\n   📝 Ghi chú: _\"Test thông báo tự động khi khách hàng đặt lịch xem phòng trên Website.\"_\n\n2. *[inq-demo-01]* 📅 HẸN XEM PHÒNG — *🆕 Mới*\n   👤 Khách: *ukashenko.alex (Digital Nomad)* (Telegram: `@alex_nomad_dn`)\n   🏠 Căn hộ: *DN-FIL-2401* (The Filmore — Loft Kiến Trúc View Sông Hàn)\n   ⏰ Hẹn xem / Dọn vào: *2026-12-01* | 💰 $1,200 - $1,500\n   📝 Ghi chú: _\"Looking for high floor river view with dedicated dual-monitor desk.\"_",
+      "buttons": [
+        [
+          {
+            "text": "📞 Đã LH (KH-3758)",
+            "callback_data": "/lead_status KH-3758 Contacted"
+          },
+          {
+            "text": "📅 Chốt lịch xem",
+            "callback_data": "/lead_status KH-3758 Viewing_Scheduled"
+          },
+          {
+            "text": "🔑 Chốt thuê",
+            "callback_data": "/lead_to_lease KH-3758"
+          }
+        ],
+        [
+          {
+            "text": "📞 Đã LH (inq-demo-01)",
+            "callback_data": "/lead_status inq-demo-01 Contacted"
+          },
+          {
+            "text": "📅 Chốt lịch xem",
+            "callback_data": "/lead_status inq-demo-01 Viewing_Scheduled"
+          },
+          {
+            "text": "🔑 Chốt thuê",
+            "callback_data": "/lead_to_lease inq-demo-01"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167033373-futw",
+      "timestamp": "2026-11-20T09:30:33.373Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/lead_status KH-3758 Viewing_Scheduled"
+    },
+    {
+      "id": "msg-1795167033375-0lr6",
+      "timestamp": "2026-11-20T09:30:33.375Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ *ĐÃ CẬP NHẬT TRẠNG THÁI KHÁCH [KH-3758]:* Khách *Khách Test Thông Báo Telegram* (`@KIN_Estates`) ➡️ *Viewing_Scheduled*!",
+      "buttons": [
+        [
+          {
+            "text": "📬 Xem lại danh sách khách (/leads)",
+            "callback_data": "/leads"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167042044-m56w",
+      "timestamp": "2026-11-20T09:30:42.044Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/empty"
+    },
+    {
+      "id": "msg-1795167042046-unlq",
+      "timestamp": "2026-11-20T09:30:42.046Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📋 *CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB) (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / up ảnh từ ĐT / xóa)_\n\n1. *[DN-KIN-2247]* Căn hộ Kiến trúc Đà Nẵng\n   📍 KIN Estates Residence — Khu phố An Thượng, Ngũ Hành Sơn\n   💰 *$950/tháng* (~24.2tr) • 2PN • 75m² • 📸 3 ảnh\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m² • 📸 3 ảnh\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m² • 📸 3 ảnh\n   🏷️ 🟢 Trống\n\n4. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m² • 📸 2 ảnh\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m² • 📸 3 ảnh\n   🏷️ 🟢 Trống\n\n6. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m² • 📸 2 ảnh\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m² • 📸 2 ảnh\n   🏷️ 🟢 Trống\n\n8. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m² • 📸 2 ảnh\n   🏷️ 🟢 Trống\n\n9. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m² • 📸 2 ảnh\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m² • 📸 2 ảnh\n   🏷️ 🟢 Trống",
+      "buttons": [
+        [
+          {
+            "text": "⚙️ DN-KIN-2247",
+            "callback_data": "/apt DN-KIN-2247"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-KIN-2247 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-KIN-2247"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-KIN-2247"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-1902",
+            "callback_data": "/apt DN-PAN-1902"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-1902 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-1902"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2405",
+            "callback_data": "/apt DN-PAN-2405"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2405 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2405"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-PAN-2801",
+            "callback_data": "/apt DN-PAN-2801"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-PAN-2801 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-PAN-2801"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-2401",
+            "callback_data": "/apt DN-FIL-2401"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-2401 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-2401"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-FIL-1608",
+            "callback_data": "/apt DN-FIL-1608"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-FIL-1608 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-FIL-1608"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1804",
+            "callback_data": "/apt DN-HIY-1804"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1804 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1804"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-HIY-1202",
+            "callback_data": "/apt DN-HIY-1202"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-HIY-1202 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-HIY-1202"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-HIY-1202"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-MON-1508",
+            "callback_data": "/apt DN-MON-1508"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-MON-1508 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-MON-1508"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-MON-1508"
+          }
+        ],
+        [
+          {
+            "text": "⚙️ DN-ANT-1102",
+            "callback_data": "/apt DN-ANT-1102"
+          },
+          {
+            "text": "🔴 Đặt Đã thuê",
+            "callback_data": "/status DN-ANT-1102 Rented"
+          },
+          {
+            "text": "🙈 Ẩn",
+            "callback_data": "/hide DN-ANT-1102"
+          },
+          {
+            "text": "📸 Ảnh",
+            "callback_data": "/addphoto DN-ANT-1102"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Lọc: Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Lọc: Đã thuê/Ẩn",
+            "callback_data": "/rented"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167063613-0qvs",
+      "timestamp": "2026-11-20T09:31:03.613Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/rented"
+    },
+    {
+      "id": "msg-1795167063615-mv43",
+      "timestamp": "2026-11-20T09:31:03.615Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "📭 Không có căn hộ nào trong mục *CĂN ĐÃ THUÊ / ĐÃ CỌC / ĐANG ẨN*.",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167116674-6ywh",
+      "timestamp": "2026-11-20T09:31:56.674Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/tenants"
+    },
+    {
+      "id": "msg-1795167116675-t2fc",
+      "timestamp": "2026-11-20T09:31:56.675Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🔑 *QUẢN LÝ KHÁCH HÀNG ĐANG THUÊ & THỜI HẠN HỢP ĐỒNG (1):*\n_(Khi khách trả phòng, bấm nút \"Trả phòng & Mở trống\" để căn hộ tự động hiện lại trạng thái Đang trống trên Web)_\n\n1. *[HD-2026-01]* Căn: *DN-FIL-2401* — 🟢 Đang thuê (Còn 132 ngày)\n   👤 Khách thuê: *Lucas Meyer (Chuyên gia Đức)* (`@lucas_meyer_de / +84 905 882 114`)\n   🏢 The Filmore Da Nang (Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng)\n   💰 *$1350/tháng* (Cọc 2 tháng) | 📅 *2026-10-01* → *2027-04-01*\n   📝 _Hợp đồng 6 tháng, đã đăng ký tạm trú NA17 Công an P. Bình Thuận. Thanh toán ngày 05 hàng tháng._\n\n💡 *Thêm khách thuê mới nhanh:*\n`/rent DN-PAN-1902 | Nguyễn Văn A | 0905123456 | 2026-11-20 | 2027-05-20 | 654`",
+      "buttons": [
+        [
+          {
+            "text": "🔓 Trả phòng & Mở trống DN-FIL-2401",
+            "callback_data": "/checkout DN-FIL-2401"
+          },
+          {
+            "text": "🙈 Ẩn DN-FIL-2401 khỏi Web",
+            "callback_data": "/hide DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn hộ mới (/wizard)",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "🏠 Kho Căn hộ (/list)",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "🟢 Căn đang trống (/empty)",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Căn đã thuê / Ẩn (/rented)",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📝 Mẫu đăng nhanh (/form)",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Tải / Nhập File Excel (/excel)",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167140151-4ivl",
+      "timestamp": "2026-11-20T09:32:20.151Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795167140153-j40h",
+      "timestamp": "2026-11-20T09:32:20.153Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
+      "buttons": [
+        [
+          {
+            "text": "❌ Hủy đăng từng bước",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167149118-93zm",
+      "timestamp": "2026-11-20T09:32:29.118Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795167149120-68nn",
+      "timestamp": "2026-11-20T09:32:29.120Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
+      "buttons": [
+        [
+          {
+            "text": "❌ Hủy đăng từng bước",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795167158522-izfb",
+      "timestamp": "2026-11-20T09:32:38.522Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)"
+    },
+    {
+      "id": "msg-1795167158525-e588",
+      "timestamp": "2026-11-20T09:32:38.525Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "✅ Đã lưu tên: *The Panoma 2PN Góc View Sông Hàn* (The Panoma (Sun Cosmo))\n\n🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\nAnh bấm chọn khu vực bên dưới hoặc gõ theo dạng: `Khu vực | Địa chỉ đường, quận`\n📌 _Ví dụ:_ `Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng`",
+      "buttons": [
+        [
+          {
+            "text": "🌊 An Thượng (Mỹ Khê)",
+            "callback_data": "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn"
+          },
+          {
+            "text": "🌉 Sông Hàn / Hải Châu",
+            "callback_data": "/wiz_area Han Riverfront | Đường Bạch Đằng / Trần Thị Lý"
+          }
+        ],
+        [
+          {
+            "text": "🌿 Sơn Trà (Hiyori/Monarchy)",
+            "callback_data": "/wiz_area Son Tra | Đường Võ Văn Kiệt, Quận Sơn Trà"
+          },
+          {
+            "text": "🏖️ Mặt biển Mỹ Khê",
+            "callback_data": "/wiz_area My Khe Beachfront | Đường Võ Nguyên Giáp, Đà Nẵng"
+          }
+        ],
+        [
+          {
+            "text": "❌ Hủy đăng",
+            "callback_data": "/cancel"
+          }
+        ]
+      ]
     }
   ],
+  "wizardSessions": {
+    "9075026090": {
+      "step": 2,
+      "draft": {
+        "images": [],
+        "title": "The Panoma 2PN Góc View Sông Hàn",
+        "building": "The Panoma (Sun Cosmo)"
+      }
+    }
+  },
   "settings": {
     "telegramBotToken": "",
     "telegramAdminChatId": "",
     "googleSheetsWebhookUrl": "",
     "googleSheetsCsvUrl": "",
-    "usdToVndRate": 25480
+    "usdToVndRate": 25480,
+    "hideRentedByDefault": false
   }
 }

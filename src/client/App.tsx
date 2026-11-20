@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CustomSelect, SelectOption } from "./components/CustomSelect";
-import { AdminHub } from "./components/AdminHub";
 import {
   IconMap,
   IconSearch,
@@ -1749,21 +1748,6 @@ export const App: React.FC = () => {
               <span>{currency === "USD" ? "$ USD" : "₫ VND"}</span>
             </button>
 
-            {/* Quick Access to Telegram Bot + Excel + CRM Management Hub */}
-            <button
-              type="button"
-              className="header-pill-trigger"
-              onClick={() => navigate("/admin")}
-              title="Trung tâm quản lý Bot Telegram, Excel & Căn hộ"
-              style={
-                route === "/admin"
-                  ? { background: "#14171E", color: "#F5D9B8", borderColor: "#9E7B4F" }
-                  : undefined
-              }
-            >
-              <span>🤖 {tx("Quản lý", "Admin", "管理", "Админ", "관리", "管理")}</span>
-            </button>
-
             <button
               type="button"
               className="btn-luxe btn-luxe--navy"
@@ -1823,14 +1807,6 @@ export const App: React.FC = () => {
                 <span>→</span>
               </button>
             ))}
-            <button
-              type="button"
-              className={`mobile-drawer-link ${route === "/admin" ? "active" : ""}`}
-              onClick={() => navigate("/admin")}
-            >
-              <span>🤖 {tx("Trung tâm Quản lý & Bot Telegram", "Admin & Telegram Bot Hub", "管理中心与电报机器人", "Панель управления и Бот", "관리 센터 & 텔레그램 봇", "管理センター＆Telegramボット")}</span>
-              <span>→</span>
-            </button>
           </div>
           <button
             type="button"
@@ -4077,7 +4053,7 @@ export const App: React.FC = () => {
                 </div>
                 <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                   <button type="submit" className="btn-luxe btn-luxe--navy">
-                    <span>{tx("🚀 Gửi Phòng Lên Hệ Thống & Báo Admin Telegram", "🚀 Submit Property & Alert Telegram Admin")}</span>
+                    <span>{tx("Gửi thông tin căn hộ đến KIN Estates →", "Submit Residence to KIN Estates →", "提交房源至 KIN Estates →", "Отправить объект в KIN Estates →", "KIN Estates에 매물 제출 →", "KIN Estatesへ物件情報を送信 →")}</span>
                   </button>
                   {bookingFeedback && (
                     <span style={{ color: "var(--accent-emerald)", fontWeight: 700, fontSize: "0.86rem" }}>
@@ -4089,17 +4065,6 @@ export const App: React.FC = () => {
             </div>
           </div>
         </main>
-      )}
-
-      {/* ====================================================================
-          PAGE 7: ADMIN & TELEGRAM BOT + EXCEL CRM HUB (/admin)
-          ==================================================================== */}
-      {(route === "/admin" || route === "/manage") && (
-        <AdminHub
-          onPublicApartmentsChange={(pubApts) => setApartments(pubApts)}
-          onNavigateHome={() => navigate("/")}
-          onOpenApartmentPage={(code) => navigate(`/apartments/${code}`)}
-        />
       )}
 
       {/* ====================================================================
@@ -4477,9 +4442,6 @@ export const App: React.FC = () => {
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/how-to-rent")}>{tx("Quy trình thuê nhà", "How to Rent", "租房流程", "Процесс аренды", "임대 진행 절차", "賃貸の流れ")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/guides")}>{tx("Cẩm nang & Chỉ số giá", "Guides & Price Index", "生活指南与价格指数", "Гиды и индекс цен", "생활 가이드 & 가격 지수", "ガイド＆家賃指数")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")}>{tx("Về KIN Estates & Chủ nhà", "About KIN Estates", "关于 KIN Estates", "О компании KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</span>
-              <span style={{ cursor: "pointer", color: "#F5D9B8", fontWeight: 700 }} onClick={() => navigate("/admin")}>
-                🤖 {tx("Quản lý Bot Telegram & Excel (/admin)", "Telegram Bot & Excel Admin (/admin)", "电报机器人与Excel管理 (/admin)", "Админ-панель Telegram и Excel", "텔레그램 봇 & 엑셀 관리 (/admin)", "Telegramボット＆Excel管理 (/admin)")}
-              </span>
             </div>
           </div>
 

@@ -5,19 +5,88 @@ const sheetsService = require("./googleSheetsService");
 let botInstance = null;
 let activeToken = "";
 
+function getTelegramAdminChatId() {
+  return String(process.env.TELEGRAM_ADMIN_CHAT_ID || db.getSettings().telegramAdminChatId || "").trim();
+}
+
+function isTelegramAdminChat(chat) {
+  if (!chat || chat.type !== "private") return false;
+  const username = String(chat.username || "").toLowerCase();
+  const adminChatId = getTelegramAdminChatId();
+  if (!adminChatId) {
+    // Auto-bind admin chat ID on first private interaction (especially for @KIN_Estates)
+    db.updateSettings({ telegramAdminChatId: String(chat.id) });
+    return true;
+  }
+  if (username === "kin_estates" && String(chat.id) !== adminChatId) {
+    db.updateSettings({ telegramAdminChatId: String(chat.id) });
+    return true;
+  }
+  return String(chat.id) === adminChatId || username === "kin_estates";
+}
+
+async function resolveTelegramPhotoList(token, photoSizes) {
+  if (!Array.isArray(photoSizes) || photoSizes.length === 0) return [];
+  // Pick high quality size (~800-1280px)
+  const chosen = photoSizes.length >= 3 ? photoSizes[photoSizes.length - 2] : photoSizes[photoSizes.length - 1];
+  const fallbackProxyUrl = `/api/telegram/photo/${encodeURIComponent(chosen.file_id)}`;
+  if (!token) return [fallbackProxyUrl];
+
+  try {
+    const fRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(chosen.file_id)}`);
+    const fJson = await fRes.json();
+    if (fJson.ok && fJson.result?.file_path) {
+      const imgRes = await fetch(`https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`);
+      if (imgRes.ok) {
+        const arrBuf = await imgRes.arrayBuffer();
+        const buf = Buffer.from(arrBuf);
+        if (buf.length > 0 && buf.length <= 450 * 1024) {
+          return [`data:image/jpeg;base64,${buf.toString("base64")}`];
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Photo base64 resolve fallback to proxy:", err.message);
+  }
+  return [fallbackProxyUrl];
+}
+
+async function registerTelegramBotCommands(token) {
+  if (!token) return;
+  try {
+    const commands = [
+      { command: "start", description: "🏛️ Bảng điều khiển chính & Tổng quan kho căn hộ" },
+      { command: "wizard", description: "🪄 Đăng căn hộ mới từng bước + Up ảnh từ ĐT" },
+      { command: "list", description: "🏠 Danh sách tất cả căn hộ (Đổi trạng thái, Ẩn/Hiện, Up ảnh)" },
+      { command: "empty", description: "🟢 Xem các căn hộ đang trống (Hiện trên Web)" },
+      { command: "rented", description: "🔴 Xem các căn đã cho thuê / đã cọc / đang ẩn" },
+      { command: "leads", description: "📅 Danh sách khách đặt lịch xem nhà & điền form" },
+      { command: "tenants", description: "🔑 Quản lý khách đang thuê & Thời hạn hợp đồng" },
+      { command: "excel", description: "📊 Xuất & Nhập 3 file Excel (.csv) ngay trong Telegram" },
+      { command: "form", description: "📝 Lấy mẫu chữ điền nhanh thông tin căn hộ" },
+      { command: "cancel", description: "❌ Hủy thao tác đang nhập" }
+    ];
+    await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commands })
+    });
+  } catch (err) {
+    console.warn("Could not set Telegram commands menu:", err.message);
+  }
+}
+
 /**
- * KIN ESTATES — All-In-One Telegram Bot Real Estate & CRM Management Engine
- * Features:
- * 1. Full Apartment CRUD:
- *    - Step-by-step interactive wizard (/wizard)
- *    - Natural multi-line template parser (/form or "ĐĂNG CĂN HỘ")
- *    - 1-line fast add (/add)
- *    - Photo upload support from Telegram mobile gallery
- *    - 1-click Hide/Show (/hide, /show), Status toggle (Available / Reserved / Rented), Price edit (/price), Field edit (/edit), Delete (/delete)
- * 2. Instant Admin Notifications when clients submit viewing forms, shortlist forms, landlord submissions, or click contact buttons
- * 3. Customer & Viewing Schedule Management (/leads, /appointments, /owners) with 1-click status updates & 1-click approve landlord listing
- * 4. Active Tenant & Lease Expiration Management (/tenants, /rent, /checkout) — tracks who rents which unit, start/end dates, remaining days, and 1-click checkout to reopen unit
- * 5. Excel (.csv UTF-8 BOM) & Google Sheets 2-Way Sync (/excel, /sync)
+ * KIN ESTATES — 100% Mobile-First Telegram Bot Property, Customer & Lease Manager
+ * Optimized so the Admin never needs an admin web panel:
+ * 1. Native Phone Photo Uploads:
+ *    - Send 1 or multiple photos (album) directly from phone gallery into Telegram chat
+ *    - Proxy endpoint /api/telegram/photo/:fileId serves photos cleanly on the website without links
+ *    - Buttons: [📸 Up thêm ảnh từ ĐT] & [🔄 Thay bộ ảnh mới từ ĐT] on every apartment
+ * 2. Native Excel File Send & Receive inside Telegram Chat:
+ *    - /excel sends the 3 .csv Excel files directly into the Telegram chat as attachments
+ *    - Sending an edited .csv file back to the Bot in Telegram automatically imports & updates the database
+ * 3. Full Apartment CRUD, Customer Viewing Alerts, Active Tenant & Lease Expiration Tracking
  */
 
 function parseMultilineListingText(text = "") {
@@ -50,7 +119,9 @@ function parseMultilineListingText(text = "") {
     else if (key.includes("thú cưng") || key.includes("pet")) data.petPolicy = val;
     else if (key.includes("mô tả") || key.includes("mo ta") || key.includes("chi tiết") || key === "description" || key === "notes") data.architecturalNotes = val;
     else if (key.includes("tiện ích") || key.includes("tag")) data.tags = val;
-    else if (key.includes("ảnh") || key.includes("anh") || key.includes("image") || key.includes("hình") || key.includes("photo")) data.images = val;
+    else if (key.includes("ảnh") || key.includes("anh") || key.includes("image") || key.includes("hình") || key.includes("photo")) {
+      if (val.startsWith("http") || val.startsWith("/")) data.images = val;
+    }
     else if (key.includes("chủ nhà") || key.includes("landlord")) data.landlordName = val;
     else if (key.includes("sđt chủ") || key.includes("phone")) data.landlordPhone = val;
     else if (key.includes("trạng thái") || key === "status") data.status = val;
@@ -62,27 +133,26 @@ function calcDaysRemaining(endDateStr) {
   if (!endDateStr) return null;
   const end = new Date(endDateStr);
   if (isNaN(end.getTime())) return null;
-  const diff = Math.ceil((end.getTime() - Date.now()) / 86400000);
-  return diff;
+  return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
 function getMainMenuButtons() {
   return [
     [
-      { text: "🏠 Kho Căn hộ (/list)", callback_data: "/list" },
-      { text: "➕ Đăng từng bước (/wizard)", callback_data: "/wizard" }
+      { text: "➕ Đăng căn hộ mới (/wizard)", callback_data: "/wizard" },
+      { text: "🏠 Kho Căn hộ (/list)", callback_data: "/list" }
     ],
     [
-      { text: "📝 Mẫu đăng nhanh (/form)", callback_data: "/form" },
-      { text: "🟢 Căn đang trống (/empty)", callback_data: "/empty" }
+      { text: "🟢 Căn đang trống (/empty)", callback_data: "/empty" },
+      { text: "🔴 Căn đã thuê / Ẩn (/rented)", callback_data: "/rented" }
     ],
     [
       { text: "📅 Khách & Lịch hẹn (/leads)", callback_data: "/leads" },
       { text: "🔑 Khách đang thuê (/tenants)", callback_data: "/tenants" }
     ],
     [
-      { text: "🏡 Phòng ký gửi (/owners)", callback_data: "/owners" },
-      { text: "📊 File Excel & Sync (/excel)", callback_data: "/excel" }
+      { text: "📝 Mẫu đăng nhanh (/form)", callback_data: "/form" },
+      { text: "📊 Tải / Nhập File Excel (/excel)", callback_data: "/excel" }
     ]
   ];
 }
@@ -99,6 +169,16 @@ function getApartmentControlButtons(apt) {
       {
         text: isVisible ? "🙈 Ẩn khỏi Web" : "👁️ Hiện lên Web",
         callback_data: isVisible ? `/hide ${apt.code}` : `/show ${apt.code}`
+      }
+    ],
+    [
+      {
+        text: "📸 Up thêm ảnh từ ĐT",
+        callback_data: `/addphoto ${apt.code}`
+      },
+      {
+        text: "🔄 Thay bộ ảnh mới từ ĐT",
+        callback_data: `/setphoto ${apt.code}`
       }
     ],
     [
@@ -132,10 +212,11 @@ function getApartmentControlButtons(apt) {
 async function processTelegramCommand(rawText, meta = {}) {
   const text = (rawText || "").trim();
   const userKey = String(meta.chatId || meta.username || "admin");
+  const incomingPhotos = Array.isArray(meta.photoUrls) ? meta.photoUrls : [];
 
-  if (!text && (!meta.photoUrls || meta.photoUrls.length === 0)) {
+  if (!text && incomingPhotos.length === 0) {
     return {
-      reply: "Hãy nhập lệnh hoặc chọn các nút chức năng bên dưới.",
+      reply: "Hãy chọn nút chức năng bên dưới hoặc gửi ảnh / lệnh.",
       buttons: getMainMenuButtons()
     };
   }
@@ -143,31 +224,128 @@ async function processTelegramCommand(rawText, meta = {}) {
   db.appendBotHistory({
     sender: "user",
     user: meta.username || "Admin (Telegram)",
-    text: text || `[Gửi ${meta.photoUrls?.length || 1} ảnh căn hộ]`
+    text: text || `[Đã tải lên ${incomingPhotos.length} ảnh từ điện thoại]`
   });
 
   const lower = text.toLowerCase();
 
-  // Check if user is canceling wizard
+  // Cancel any active wizard or photo upload session
   if (lower === "/cancel" || lower === "hủy" || lower === "huy") {
     db.setWizardSession(userKey, null);
     const res = {
-      reply: "✅ Đã thoát chế độ nhập từng bước. Anh chọn chức năng bên dưới nhé:",
+      reply: "✅ Đã hoàn tất / thoát chế độ nhập. Anh chọn chức năng bên dưới nhé:",
       buttons: getMainMenuButtons()
     };
     recordBotReply(res);
     return res;
   }
 
-  // Check if user is inside interactive /wizard session (and did not type another slash command except /wizard_done)
-  const activeWizard = db.getWizardSession(userKey);
+  // Check if user is in "photo_upload" session for an existing apartment (/addphoto or /setphoto)
+  const activeSession = db.getWizardSession(userKey);
+  if (activeSession && activeSession.mode === "photo_upload") {
+    if (incomingPhotos.length > 0) {
+      const apt = await db.getApartmentByCodeOrId(activeSession.apartmentCode);
+      if (apt) {
+        const currentImgs = activeSession.replace && !activeSession.replacedOnce
+          ? []
+          : Array.isArray(apt.images)
+          ? apt.images
+          : [];
+        const updatedImgs = [...currentImgs, ...incomingPhotos];
+        const updated = await db.updateApartment(apt.code, { images: updatedImgs });
+        activeSession.replacedOnce = true;
+        db.setWizardSession(userKey, activeSession);
+        await sheetsService.pushToGoogleSheetsWebhook("update_photos", updated);
+
+        const res = {
+          reply:
+            `📸 *ĐÃ NHẬN & CẬP NHẬT ẢNH TỪ ĐIỆN THOẠI CHO CĂN [${updated.code}]!*\n` +
+            `• Tổng số ảnh hiện tại của căn hộ: *${updated.images.length} ảnh*\n` +
+            `• Anh có thể gửi tiếp ảnh khác từ thư viện điện thoại, hoặc bấm nút **Hoàn tất** bên dưới!`,
+          buttons: [
+            [{ text: `✅ Hoàn tất cập nhật ảnh (${updated.code})`, callback_data: `/apt ${updated.code}` }],
+            [{ text: "🏠 Về Danh sách Căn hộ (/list)", callback_data: "/list" }]
+          ],
+          mutated: true
+        };
+        recordBotReply(res);
+        return res;
+      }
+    } else if (lower.startsWith("/apt ") || lower.startsWith("/")) {
+      db.setWizardSession(userKey, null);
+    }
+  }
+
+  // Start photo upload mode from phone for an existing apartment (/addphoto CODE or /setphoto CODE)
+  if (lower.startsWith("/addphoto ") || lower.startsWith("/setphoto ")) {
+    const isReplace = lower.startsWith("/setphoto ");
+    const code = text.split(/\s+/)[1]?.toUpperCase();
+    const apt = await db.getApartmentByCodeOrId(code);
+    if (!apt) {
+      const res = { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
+      recordBotReply(res);
+      return res;
+    }
+    db.setWizardSession(userKey, {
+      mode: "photo_upload",
+      apartmentCode: apt.code,
+      replace: isReplace,
+      replacedOnce: false
+    });
+    const res = {
+      reply:
+        `📱 *${isReplace ? "THAY BỘ ẢNH MỚI" : "THÊM ẢNH TỪ ĐIỆN THOẠI"} CHO CĂN [${apt.code}]*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `Bây giờ anh hãy bấm biểu tượng **Kẹp giấy (📎)** trên Telegram điện thoại, chọn **1 hoặc nhiều bức ảnh** từ Album ảnh của anh rồi bấm Gửi vào đây!\n\n` +
+        `• Hệ thống sẽ tự động tải ảnh từ điện thoại của anh lên Website (không cần dùng link).\n` +
+        `• Gửi xong anh bấm nút **Hoàn tất** bên dưới nhé!`,
+      buttons: [
+        [{ text: `✅ Hoàn tất & Xem căn ${apt.code}`, callback_data: `/apt ${apt.code}` }],
+        [{ text: "❌ Hủy", callback_data: "/cancel" }]
+      ]
+    };
+    recordBotReply(res);
+    return res;
+  }
+
+  // Check if user is inside interactive /wizard session
   if (
-    activeWizard &&
+    activeSession &&
+    activeSession.mode !== "photo_upload" &&
     (!text.startsWith("/") || lower.startsWith("/wiz_"))
   ) {
-    const wizRes = await handleWizardStep(userKey, activeWizard, text, meta);
+    const wizRes = await handleWizardStep(userKey, activeSession, text, meta);
     recordBotReply(wizRes);
     return wizRes;
+  }
+
+  // If user sends photos directly from phone WITHOUT being in a session:
+  // Either they included a caption (create apartment with those photos!) OR we start a new apartment draft with those photos!
+  if (incomingPhotos.length > 0 && !text) {
+    // Check if there is a draft waiting for more photos or create a new wizard session pre-filled with the uploaded photos!
+    const existingWiz = db.getWizardSession(userKey);
+    const prevImgs = existingWiz?.draft?.images || [];
+    const mergedImgs = [...prevImgs, ...incomingPhotos];
+    db.setWizardSession(userKey, {
+      step: 1,
+      draft: {
+        ...(existingWiz?.draft || {}),
+        images: mergedImgs
+      }
+    });
+    const res = {
+      reply:
+        `📸 *ĐÃ NHẬN ${mergedImgs.length} ẢNH TỪ ĐIỆN THOẠI CỦA ANH!*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• Anh có thể gửi thêm ảnh tiếp (nếu muốn nhiều ảnh), **HOẶC** nhập ngay **Tên căn hộ | Tên tòa nhà** để đăng căn hộ với bộ ảnh vừa gửi!\n\n` +
+        `📌 _Ví dụ gõ:_ \`The Panoma 2PN View Sông Hàn | The Panoma (Sun Cosmo)\``,
+      buttons: [
+        [{ text: "📝 Hoặc lấy Mẫu điền 1 lần (/form)", callback_data: "/form" }],
+        [{ text: "❌ Hủy", callback_data: "/cancel" }]
+      ]
+    };
+    recordBotReply(res);
+    return res;
   }
 
   // Check if user pasted a multi-line natural template ("ĐĂNG CĂN HỘ" or has "Tên:" and "Giá:")
@@ -176,14 +354,25 @@ async function processTelegramCommand(rawText, meta = {}) {
     (/(^|\n)\s*(tên|tiêu đề|title)\s*[:：]/i.test(text) && /(^|\n)\s*(giá|price)\s*[:：]/i.test(text))
   ) {
     const parsed = parseMultilineListingText(text);
-    if (meta.photoUrls && meta.photoUrls.length > 0) {
-      parsed.images = [...(meta.photoUrls || []), ...(parsed.images ? [parsed.images] : [])].join(",");
+    const savedWizImgs = db.getWizardSession(userKey)?.draft?.images || [];
+    const allUploadedImgs = [...savedWizImgs, ...incomingPhotos];
+    if (allUploadedImgs.length > 0) {
+      parsed.images = allUploadedImgs;
     }
+
     const created = await db.createApartment({
       ...parsed,
       source: "telegram"
     });
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
+
+    // Put session into photo_upload mode for this newly created apartment so if the user sends photos right after, they attach automatically!
+    db.setWizardSession(userKey, {
+      mode: "photo_upload",
+      apartmentCode: created.code,
+      replace: allUploadedImgs.length === 0,
+      replacedOnce: allUploadedImgs.length > 0
+    });
 
     const res = {
       reply:
@@ -195,8 +384,8 @@ async function processTelegramCommand(rawText, meta = {}) {
         `📍 Địa chỉ: ${created.address}\n` +
         `💰 Giá thuê: *$${created.priceUsd}/tháng* (~${(created.priceVnd / 1000000).toFixed(1)}tr VNĐ)\n` +
         `🛏 Thông số: ${created.bedrooms}PN • ${created.bathrooms}WC • ${created.sizeM2}m² • Tầng ${created.floor}\n` +
-        `👁️ Trạng thái: *${created.status}* (${created.isVisible !== false ? "Đang hiện trên Web" : "Đang ẩn"})\n` +
-        `🔗 Link xem ngay: \`/apartments/${created.code}\``,
+        `👁️ Trạng thái: *${created.status}* (Đang hiện trên Web)\n\n` +
+        `📸 *Mẹo up ảnh bằng điện thoại:* Ngay bây giờ anh có thể bấm biểu tượng Kẹp giấy 📎 gửi tiếp 1 hoặc nhiều ảnh từ điện thoại vào đây, Bot sẽ tự động gắn vào căn *${created.code}*!`,
       buttons: getApartmentControlButtons(created),
       mutated: true
     };
@@ -208,24 +397,17 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower === "/start" || lower === "/menu" || lower === "/help") {
     const status = db.getDbStatus();
     const reply =
-      `🏛️ *KIN ESTATES — TRUNG TÂM QUẢN LÝ BẤT ĐỘNG SẢN & CRM TELEGRAM*\n` +
+      `🏛️ *KIN ESTATES — QUẢN LÝ CĂN HỘ & KHÁCH THUÊ TRÊN TELEGRAM*\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `📊 *TỔNG QUAN HỆ THỐNG HIỆN TẠI:*\n` +
       `• Tổng kho căn hộ: *${status.totalApartments} căn* (_🟢 ${status.availableCount} trống • 🔴 ${status.rentedCount} đã thuê • 🙈 ${status.hiddenCount} đang ẩn_)\n` +
       `• Khách đặt lịch & Điền form: *${status.totalInquiries} khách* (_🔔 ${status.newInquiriesCount} yêu cầu mới_)\n` +
       `• Hợp đồng khách đang thuê: *${status.activeLeasesCount} hợp đồng đang hiệu lực*\n\n` +
-      `⚡ *CÁC LỆNH ĐIỀU KHIỂN ĐẦY ĐỦ:*\n` +
-      `• \`/wizard\` — Đăng căn hộ mới từng bước (Dễ nhất, hỗ trợ gửi ảnh)\n` +
-      `• \`/form\` — Lấy mẫu điền căn hộ nhiều dòng (Copy & Paste)\n` +
-      `• \`/list\` — Danh sách căn hộ + Nút Ẩn/Hiện, Đổi trạng thái, Đổi giá, Xóa\n` +
-      `• \`/apt MÃ_CĂN\` — Mở bảng điều khiển chi tiết 1 căn hộ\n` +
-      `• \`/price MÃ_CĂN GIÁ_MỚI\` — Đổi giá (VD: \`/price DN-PAN-1902 700\` hoặc \`18tr\`)\n` +
-      `• \`/hide MÃ_CĂN\` | \`/show MÃ_CĂN\` — Ẩn / Hiện căn hộ trên Web\n` +
-      `• \`/leads\` — Quản lý khách đặt lịch hẹn đi xem phòng\n` +
-      `• \`/tenants\` — Quản lý khách đang thuê căn nào & thời hạn hợp đồng\n` +
-      `• \`/rent MÃ_CĂN | Tên khách | SĐT | Ngày vào | Ngày hết | Giá\` — Gán khách thuê\n` +
-      `• \`/checkout MÃ_CĂN\` — Khách trả phòng, mở trống lại căn hộ\n` +
-      `• \`/excel\` — Tải & đồng bộ bảng Excel (.csv chuẩn tiếng Việt)`;
+      `📱 *CÁCH ĐĂNG CĂN HỘ & UP ẢNH TỪ ĐIỆN THOẠI:*\n` +
+      `• *Cách 1 (Dễ nhất):* Bấm nút \`➕ Đăng căn hộ mới (/wizard)\`, Bot hỏi từng bước rồi cuối cùng anh chọn ảnh trong điện thoại gửi lên!\n` +
+      `• *Cách 2:* Gửi trực tiếp 1 hoặc nhiều ảnh từ điện thoại vào Bot trước, sau đó điền thông tin!\n` +
+      `• *Cách 3:* Bấm \`📝 Mẫu đăng nhanh (/form)\`, điền thông tin gửi lên rồi gửi ảnh từ điện thoại theo sau!\n\n` +
+      `⚡ *CÁC NÚT QUẢN LÝ NHANH BÊN DƯỚI:*`;
 
     const res = { reply, buttons: getMainMenuButtons() };
     recordBotReply(res);
@@ -234,9 +416,10 @@ async function processTelegramCommand(rawText, meta = {}) {
 
   // 2. /wizard — Interactive step-by-step apartment creation
   if (lower === "/wizard") {
+    const existingImgs = db.getWizardSession(userKey)?.draft?.images || [];
     db.setWizardSession(userKey, {
       step: 1,
-      draft: {}
+      draft: { images: existingImgs }
     });
     const res = {
       reply:
@@ -251,11 +434,11 @@ async function processTelegramCommand(rawText, meta = {}) {
     return res;
   }
 
-  // 3. /form — Copy-paste template for fast full-product upload
+  // 3. /form — Copy-paste template (No image link required — upload photos directly from phone!)
   if (lower === "/form") {
     const reply =
-      `📝 *MẪU ĐĂNG CĂN HỘ ĐẦY ĐỦ (CHẠM ĐỂ COPY & GỬI LẠI CHO BOT):*\n` +
-      `Anh chỉ cần copy đoạn mẫu dưới đây, sửa thông tin (có thể gửi kèm ảnh trong tin nhắn) rồi gửi lại vào đây, Bot sẽ tự động tạo sản phẩm đầy đủ lên Web:\n\n` +
+      `📝 *MẪU ĐĂNG CĂN HỘ TRÊN ĐIỆN THOẠI (KHÔNG CẦN LINK ẢNH):*\n` +
+      `Anh chạm vào khung chữ bên dưới để **Copy**, sửa thông tin rồi gửi lại vào Bot (có thể chọn ảnh từ điện thoại gửi kèm hoặc gửi ảnh ngay sau tin nhắn đều được!):\n\n` +
       "```\n" +
       `ĐĂNG CĂN HỘ\n` +
       `Tên: Căn hộ 2PN View Biển & Sông Hàn\n` +
@@ -270,13 +453,11 @@ async function processTelegramCommand(rawText, meta = {}) {
       `Điện: Giá nhà nước EVN\n` +
       `Thú cưng: Cho phép thú cưng nhỏ\n` +
       `Mô tả: Căn góc 2 mặt thoáng kính Low-E cách âm, đầy đủ sofa da, máy giặt sấy, bàn làm việc rộng và cáp quang 300Mbps.\n` +
-      `Ảnh: https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200\n` +
       "```";
     const res = {
       reply,
       buttons: [
-        [{ text: "🪄 Chuyển sang Đăng từng bước (/wizard)", callback_data: "/wizard" }],
-        [{ text: "⚡ Đăng thử 1 căn mẫu ngay", callback_data: "/quick_demo_add" }],
+        [{ text: "🪄 Hoặc Đăng từng bước (/wizard)", callback_data: "/wizard" }],
         ...getMainMenuButtons()
       ]
     };
@@ -332,7 +513,7 @@ async function processTelegramCommand(rawText, meta = {}) {
       return (
         `${idx + 1}. *[${a.code}]* ${a.title?.vi || a.title?.en}\n` +
         `   📍 ${a.building} — ${a.address || a.areaName}\n` +
-        `   💰 *$${a.priceUsd}/tháng* (~${(a.priceVnd / 1000000).toFixed(1)}tr) • ${a.bedrooms}PN • ${a.sizeM2}m²\n` +
+        `   💰 *$${a.priceUsd}/tháng* (~${(a.priceVnd / 1000000).toFixed(1)}tr) • ${a.bedrooms}PN • ${a.sizeM2}m² • 📸 ${(a.images || []).length} ảnh\n` +
         `   🏷️ ${statusBadge}${visBadge}${tenantLine}`
       );
     });
@@ -355,8 +536,8 @@ async function processTelegramCommand(rawText, meta = {}) {
           callback_data: isVis ? `/hide ${a.code}` : `/show ${a.code}`
         },
         {
-          text: `🗑️ Xóa`,
-          callback_data: `/delete ${a.code}`
+          text: `📸 Ảnh`,
+          callback_data: `/addphoto ${a.code}`
         }
       ]);
     });
@@ -368,7 +549,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     ]);
 
     const res = {
-      reply: `📋 *${filterLabel} (${apartments.length} căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n` + lines.join("\n\n"),
+      reply: `📋 *${filterLabel} (${apartments.length} căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / up ảnh từ ĐT / xóa)_\n\n` + lines.join("\n\n"),
       buttons: inlineButtons
     };
     recordBotReply(res);
@@ -377,6 +558,7 @@ async function processTelegramCommand(rawText, meta = {}) {
 
   // 5. /apt <code_or_id> — Detailed single apartment control panel
   if (lower.startsWith("/apt ")) {
+    db.setWizardSession(userKey, null);
     const code = text.split(/\s+/)[1];
     const apt = await db.getApartmentByCodeOrId(code);
     if (!apt) {
@@ -393,7 +575,7 @@ async function processTelegramCommand(rawText, meta = {}) {
       : `\n🔑 *Khách đang thuê:* _Chưa có (Đang mở đón khách)_`;
 
     const reply =
-      `🏠 *CHI TIẾT & ĐIỀU KHIỂN CĂN HỘ [${apt.code}]*\n` +
+      `🏠 *ĐIỀU KHIỂN CĂN HỘ [${apt.code}]*\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `• *Tên:* ${apt.title?.vi || apt.title?.en}\n` +
       `• *Tòa nhà:* ${apt.building}\n` +
@@ -401,14 +583,16 @@ async function processTelegramCommand(rawText, meta = {}) {
       `• *Khu vực:* ${apt.areaName}\n` +
       `• *Giá thuê:* *$${apt.priceUsd}/tháng* (~${(apt.priceVnd / 1000000).toFixed(1)} triệu VNĐ)\n` +
       `• *Thông số:* ${apt.bedrooms} PN • ${apt.bathrooms || 1} WC • ${apt.sizeM2} m² • Tầng ${apt.floor || 12}\n` +
+      `• *Số lượng ảnh:* *${(apt.images || []).length} ảnh*\n` +
       `• *Điện / Nước:* ${apt.electricityRate}\n` +
       `• *Thú cưng:* ${apt.petPolicy}\n` +
       `• *Trạng thái:* *${apt.status}* | *Hiển thị Web:* *${apt.isVisible !== false ? "👁️ Đang hiện" : "🙈 Đang ẩn"}*` +
       tenantInfo +
       `\n• *Mô tả:* _${apt.architecturalNotes?.vi || ""}_\n\n` +
-      `💡 *Mẹo sửa nhanh bằng lệnh:*\n` +
+      `💡 *Mẹo sửa nhanh:*\n` +
+      `• Bấm **📸 Up thêm ảnh từ ĐT** hoặc **🔄 Thay bộ ảnh mới từ ĐT** bên dưới để gửi ảnh trực tiếp từ máy điện thoại!\n` +
       `• Đổi giá: \`/price ${apt.code} 850\` (hoặc \`21tr\`)\n` +
-      `• Sửa thông tin: \`/edit ${apt.code} address=Số 10 Bạch Đằng | title=Tên mới\``;
+      `• Sửa chữ: \`/edit ${apt.code} address=Số 10 Bạch Đằng | title=Tên mới\``;
 
     const res = {
       reply,
@@ -418,65 +602,20 @@ async function processTelegramCommand(rawText, meta = {}) {
     return res;
   }
 
-  // 6. /quick_demo_add or /add
-  if (lower === "/quick_demo_add") {
-    const created = await db.createApartment({
-      title: {
-        vi: "Peninsula Ocean Suite — Căn Hộ 2PN Góc View Biển Mỹ Khê",
-        en: "Peninsula Ocean Suite — 2BR Corner My Khe Oceanfront Residence"
-      },
-      building: "Peninsula Da Nang",
-      address: "Đường Võ Nguyên Giáp, Quận Sơn Trà, Đà Nẵng",
-      areaName: "My Khe Beachfront",
-      priceUsd: 890,
-      bedrooms: 2,
-      bathrooms: 2,
-      sizeM2: 74,
-      floor: 22,
-      featured: true,
-      tags: ["Sea View", "Remote-Work Desk", "Natural Light", "Infinity Pool"],
-      images: [
-        "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1400&q=85",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85"
-      ],
-      source: "telegram"
-    });
-    await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
-
-    const res = {
-      reply:
-        `✅ *ĐÃ ĐĂNG CĂN HỘ MỚI TỪ TELEGRAM THÀNH CÔNG!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• Mã căn: *${created.code}*\n` +
-        `• Tên: *${created.title.vi}*\n` +
-        `• Địa chỉ: ${created.address}\n` +
-        `• Giá thuê: *$${created.priceUsd}/tháng* (~${(created.priceVnd / 1000000).toFixed(1)}tr) • ${created.bedrooms}PN • ${created.sizeM2}m²\n` +
-        `• Website & File Excel đã tự động đồng bộ!`,
-      buttons: getApartmentControlButtons(created),
-      mutated: true
-    };
-    recordBotReply(res);
-    return res;
-  }
-
-  if (lower.startsWith("/add")) {
+  // 6. /add (1-line quick add)
+  if (lower.startsWith("/add") && !lower.startsWith("/addphoto")) {
     const body = text.replace(/^\/add\s*/i, "").trim();
     if (!body) {
       const res = {
         reply:
-          `📝 *3 CÁCH ĐĂNG CĂN HỘ MỚI TRÊN TELEGRAM:*\n\n` +
-          `1️⃣ *Đăng từng bước (Dễ nhất):* Bấm nút \`🪄 Đăng từng bước (/wizard)\` bên dưới, Bot sẽ hỏi từng mục.\n\n` +
-          `2️⃣ *Đăng theo mẫu nhiều dòng:* Bấm \`📝 Mẫu đăng nhanh (/form)\` để copy mẫu.\n\n` +
-          `3️⃣ *Đăng nhanh 1 dòng:* Gửi theo cú pháp:\n` +
-          `\`/add Tên căn | Khu vực | Giá USD | Số PN | m2 | Tòa nhà | Địa chỉ | Mô tả | Link ảnh\`\n\n` +
-          `*Ví dụ:*\n` +
-          `\`/add Sơn Trà Ocean Loft | Son Tra | 950 | 2 | 75 | Hiyori Garden Tower | Số 2 Võ Văn Kiệt, Sơn Trà | Căn góc view biển Mỹ Khê, nội thất gỗ óc chó | https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200\``,
+          `📝 *CÁCH ĐĂNG CĂN HỘ & UP ẢNH BẰNG ĐIỆN THOẠI:*\n\n` +
+          `1️⃣ *Đăng từng bước (Khuyên dùng):* Bấm nút \`🪄 Đăng từng bước (/wizard)\` bên dưới, Bot hỏi từng câu rồi anh chọn ảnh trong điện thoại gửi lên!\n\n` +
+          `2️⃣ *Đăng theo mẫu:* Bấm \`📝 Mẫu đăng nhanh (/form)\`, điền chữ rồi gửi kèm ảnh từ điện thoại!`,
         buttons: [
           [
             { text: "🪄 Đăng từng bước (/wizard)", callback_data: "/wizard" },
             { text: "📝 Lấy mẫu điền (/form)", callback_data: "/form" }
           ],
-          [{ text: "⚡ Đăng thử 1 căn mẫu ngay", callback_data: "/quick_demo_add" }],
           ...getMainMenuButtons()
         ]
       };
@@ -492,17 +631,9 @@ async function processTelegramCommand(rawText, meta = {}) {
       bedrooms = "1",
       sizeM2 = "65",
       building = "KIN Estates Residence",
-      addressOrNotes = "Đà Nẵng",
-      notesMaybe = "",
-      imageUrl = ""
+      address = "Đà Nẵng",
+      notes = "Thiết kế chuẩn kiến trúc hiện đại, ánh sáng tự nhiên ngập tràn."
     ] = parts;
-
-    const hasExplicitAddress = parts.length >= 8;
-    const address = hasExplicitAddress ? addressOrNotes : `${building}, ${areaName}, Đà Nẵng`;
-    const notes = hasExplicitAddress
-      ? notesMaybe
-      : addressOrNotes || "Thiết kế chuẩn kiến trúc hiện đại, ánh sáng tự nhiên ngập tràn.";
-    const imgFinal = hasExplicitAddress ? imageUrl : notesMaybe.startsWith("http") ? notesMaybe : imageUrl;
 
     const created = await db.createApartment({
       title: { vi: titleVi, en: titleVi },
@@ -513,22 +644,27 @@ async function processTelegramCommand(rawText, meta = {}) {
       building,
       address,
       architecturalNotes: { vi: notes, en: notes },
-      images: imgFinal ? [imgFinal] : meta.photoUrls,
+      images: incomingPhotos.length > 0 ? incomingPhotos : undefined,
       featured: true,
       source: "telegram"
     });
 
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
 
+    db.setWizardSession(userKey, {
+      mode: "photo_upload",
+      apartmentCode: created.code,
+      replace: incomingPhotos.length === 0,
+      replacedOnce: incomingPhotos.length > 0
+    });
+
     const res = {
       reply:
-        `🎉 *ĐĂNG BÀI THÀNH CÔNG LÊN WEBSITE & DATABASE!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• Mã căn: *${created.code}*\n` +
-        `• Tiêu đề: *${created.title.vi}*\n` +
+        `🎉 *ĐĂNG BÀI THÀNH CÔNG LÊN WEBSITE!*\n` +
+        `• Mã căn: *${created.code}* — *${created.title.vi}*\n` +
         `• Địa chỉ: ${created.address} (${created.building})\n` +
-        `• Thông số: *${created.bedrooms} PN • ${created.sizeM2}m² • $${created.priceUsd}/tháng (~${(created.priceVnd / 1000000).toFixed(1)}tr)*\n` +
-        `• Đồng bộ Excel & Google Sheets: *Đã cập nhật*`,
+        `• Giá: *$${created.priceUsd}/tháng* • ${created.bedrooms}PN • ${created.sizeM2}m²\n\n` +
+        `📸 *Anh có thể gửi tiếp ảnh từ điện thoại ngay bây giờ để gắn vào căn ${created.code}!*`,
       buttons: getApartmentControlButtons(created),
       mutated: true
     };
@@ -547,7 +683,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     }
     await sheetsService.pushToGoogleSheetsWebhook("hide_apartment", updated);
     const res = {
-      reply: `🙈 *ĐÃ ẨN CĂN HỘ KHỎI WEBSITE:* Căn *${updated.code}* (_${updated.title?.vi}_) hiện đã được ẩn với khách hàng nhưng vẫn lưu trong kho quản lý của anh.`,
+      reply: `🙈 *ĐÃ ẨN CĂN HỘ KHỎI WEBSITE:* Căn *${updated.code}* (_${updated.title?.vi}_) hiện đã được ẩn khỏi trang khách hàng.`,
       buttons: getApartmentControlButtons(updated),
       mutated: true
     };
@@ -656,9 +792,9 @@ async function processTelegramCommand(rawText, meta = {}) {
         reply:
           `✏️ *HƯỚNG DẪN SỬA THÔNG TIN CĂN HỘ:*\n` +
           `Gửi lệnh: \`/edit MÃ_CĂN trường=giá trị mới | trường2=giá trị 2\`\n\n` +
-          `*Các trường hỗ trợ:* \`title\`, \`building\`, \`address\`, \`area\`, \`price\`, \`br\` (số PN), \`m2\`, \`floor\`, \`desc\`, \`img\`, \`pet\`, \`elec\`\n\n` +
+          `*Các trường hỗ trợ:* \`title\`, \`building\`, \`address\`, \`area\`, \`price\`, \`br\`, \`m2\`, \`floor\`, \`desc\`, \`pet\`, \`elec\`\n\n` +
           `*Ví dụ:*\n` +
-          `\`/edit DN-PAN-1902 price=700 | address=Đường Trần Thị Lý, Ngũ Hành Sơn | desc=Căn góc mới nâng cấp thêm ghế công thái học\``,
+          `\`/edit DN-PAN-1902 price=700 | address=Đường Trần Thị Lý, Ngũ Hành Sơn | desc=Căn góc mới nâng cấp\``,
         buttons: getMainMenuButtons()
       };
       recordBotReply(res);
@@ -685,7 +821,6 @@ async function processTelegramCommand(rawText, meta = {}) {
       else if (k === "m2" || k === "size") updates.sizeM2 = Number(v);
       else if (k === "floor" || k === "tầng") updates.floor = Number(v);
       else if (k === "desc" || k === "mô tả") updates.architecturalNotes = v;
-      else if (k === "img" || k === "images" || k === "ảnh") updates.images = v;
       else if (k === "pet" || k === "thú cưng") updates.petPolicy = v;
       else if (k === "elec" || k === "điện") updates.electricityRate = v;
     }
@@ -886,7 +1021,8 @@ async function processTelegramCommand(rawText, meta = {}) {
         `• Mã căn mới: *${created.code}*\n` +
         `• Tên: *${created.title.vi}*\n` +
         `• Chủ nhà: ${inq.clientName} (\`${inq.contactHandle}\`)\n` +
-        `• Giá: *$${created.priceUsd}/tháng*`,
+        `• Giá: *$${created.priceUsd}/tháng*\n` +
+        `📸 Bấm **Up thêm ảnh từ ĐT** bên dưới để chọn ảnh từ điện thoại gắn vào căn hộ này!`,
       buttons: getApartmentControlButtons(created),
       mutated: true
     };
@@ -1014,7 +1150,7 @@ async function processTelegramCommand(rawText, meta = {}) {
         `Chạm để copy lệnh mẫu bên dưới, sửa tên khách & thời hạn rồi gửi lại:\n\n` +
         `\`/rent ${aptCode} | Tên Khách Thuê | @telegram_hoac_SDT | ${today} | ${sixMo} | 850\``,
       buttons: [
-        [{ text: `⚡ Gán nhanh khách mẫu vào ${aptCode}`, callback_data: `/rent ${aptCode} | Khách hàng KIN Estates | @kin_tenant | ${today} | ${sixMo}` }],
+        [{ text: `⚡ Gán nhanh khách vào ${aptCode}`, callback_data: `/rent ${aptCode} | Khách hàng KIN Estates | @kin_tenant | ${today} | ${sixMo}` }],
         ...getMainMenuButtons()
       ]
     };
@@ -1108,19 +1244,21 @@ async function processTelegramCommand(rawText, meta = {}) {
     return res;
   }
 
-  // 14. /excel or /sync — Excel & Google Sheets 2-Way Management
+  // 14. /excel or /sync — Send Excel files directly inside Telegram chat & support Excel file upload back into chat!
   if (lower.startsWith("/excel") || lower.startsWith("/sync")) {
     const syncRes = await sheetsService.pushToGoogleSheetsWebhook("manual_sync", {});
     const res = {
       reply:
-        `📊 *LIÊN KẾT & QUẢN LÝ QUA EXCEL / GOOGLE SHEETS 2 CHIỀU*\n` +
+        `📊 *QUẢN LÝ & CẬP NHẬT HÀNG LOẠT QUA FILE EXCEL NGAY TRÊN TELEGRAM*\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `Hệ thống hỗ trợ xuất & nhập trực tiếp bằng **Microsoft Excel (UTF-8 chuẩn tiếng Việt)** cho cả 3 bảng:\n\n` +
-        `1️⃣ *Bảng Excel Kho Căn Hộ:* \`/api/excel/apartments.csv\`\n` +
-        `   _(Mở bằng Excel -> Sửa giá, đổi cột Status thành Available/Rented/Hidden, sửa địa chỉ hoặc thêm dòng căn hộ mới -> Upload lại trên trang \`/admin\` để cập nhật hàng loạt!)_\n` +
-        `2️⃣ *Bảng Excel Khách Đặt Lịch & Điền Form:* \`/api/excel/inquiries.csv\`\n` +
-        `3️⃣ *Bảng Excel Hợp Đồng Khách Đang Thuê:* \`/api/excel/leases.csv\`\n\n` +
-        `✅ *Trạng thái đồng bộ:* ${syncRes.message || "Đã đồng bộ dữ liệu mới nhất."}`,
+        `Em vừa đính kèm **3 file Excel (.csv chuẩn tiếng Việt)** ngay bên dưới tin nhắn này cho anh:\n` +
+        `1️⃣ \`KIN_Estates_KhoCanHo.csv\` — Danh sách căn hộ, giá, trạng thái, ẩn/hiện\n` +
+        `2️⃣ \`KIN_Estates_KhachHang_LichHen.csv\` — Danh sách khách đặt lịch xem nhà\n` +
+        `3️⃣ \`KIN_Estates_KhachDangThue_HopDong.csv\` — Danh sách khách đang thuê & thời hạn\n\n` +
+        `💡 *Cách sửa bằng Excel rồi cập nhật ngược lên Web:*\n` +
+        `• Anh mở file \`KIN_Estates_KhoCanHo.csv\` bằng Excel, sửa giá, đổi cột \`Status\` (\`Available\` / \`Rented\` / \`Hidden\`) hoặc thêm dòng căn hộ mới.\n` +
+        `• Lưu lại rồi **gửi trực tiếp file \`.csv\` đó vào khung chat Bot Telegram này**, Bot sẽ tự động đọc file và cập nhật toàn bộ lên Website!\n` +
+        `• _(${syncRes.message || "Đã đồng bộ"})_`,
       buttons: getMainMenuButtons(),
       sendExcelFiles: true
     };
@@ -1130,7 +1268,7 @@ async function processTelegramCommand(rawText, meta = {}) {
 
   const fallback = {
     reply:
-      `🤖 Em chưa nhận diện được lệnh vừa nhập. Anh có thể chọn nhanh các nút chức năng bên dưới hoặc gõ \`/menu\`, \`/wizard\`, \`/form\`, \`/list\`, \`/leads\`, \`/tenants\`, \`/excel\` nhé!`,
+      `🤖 Anh có thể chọn nhanh các nút chức năng bên dưới hoặc gửi ảnh trực tiếp từ điện thoại để đăng căn hộ mới nhé!`,
     buttons: getMainMenuButtons()
   };
   recordBotReply(fallback);
@@ -1140,8 +1278,22 @@ async function processTelegramCommand(rawText, meta = {}) {
 async function handleWizardStep(userKey, session, text, meta = {}) {
   const step = session.step || 1;
   const draft = session.draft || {};
+  const incomingPhotos = Array.isArray(meta.photoUrls) ? meta.photoUrls : [];
+
+  if (incomingPhotos.length > 0) {
+    draft.images = [...(draft.images || []), ...incomingPhotos];
+  }
 
   if (step === 1) {
+    if (!text && incomingPhotos.length > 0) {
+      db.setWizardSession(userKey, { step: 1, draft });
+      return {
+        reply:
+          `📸 Đã lưu *${draft.images.length} ảnh* từ điện thoại!\n` +
+          `Bây giờ anh hãy nhập *Tên căn hộ | Tên tòa nhà* để tiếp tục Bước 1 nhé:`,
+        buttons: [[{ text: "❌ Hủy", callback_data: "/cancel" }]]
+      };
+    }
     const parts = text.split("|").map((s) => s.trim());
     draft.title = parts[0] || "Căn hộ Kiến trúc Đà Nẵng";
     draft.building = parts[1] || "KIN Estates Residence";
@@ -1150,7 +1302,7 @@ async function handleWizardStep(userKey, session, text, meta = {}) {
       reply:
         `✅ Đã lưu tên: *${draft.title}* (${draft.building})\n\n` +
         `🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\n` +
-        `Anh chọn khu vực bên dưới hoặc gõ theo dạng: \`Khu vực | Địa chỉ đường, quận\`\n` +
+        `Anh bấm chọn khu vực bên dưới hoặc gõ theo dạng: \`Khu vực | Địa chỉ đường, quận\`\n` +
         `📌 _Ví dụ:_ \`Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\``,
       buttons: [
         [
@@ -1222,23 +1374,39 @@ async function handleWizardStep(userKey, session, text, meta = {}) {
     if (parts[1]) draft.electricityRate = parts[1];
     if (parts[2]) draft.petPolicy = parts[2];
     db.setWizardSession(userKey, { step: 5, draft });
+    const count = (draft.images || []).length;
     return {
       reply:
         `✅ Đã lưu mô tả chi tiết.\n\n` +
-        `🪄 *BƯỚC 5 / 5 (CUỐI CÙNG): HÌNH ẢNH CĂN HỘ*\n` +
-        `• Anh có thể **gửi ảnh trực tiếp từ máy** vào khung chat này, hoặc **dán 1 hay nhiều link ảnh** (cách nhau dấu phẩy).\n` +
-        `• Hoặc bấm nút **Hoàn tất & Đăng ngay** bên dưới!`,
+        `📸 *BƯỚC 5 / 5: GỬI ẢNH CĂN HỘ TỪ ĐIỆN THOẠI*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• Bây giờ anh hãy bấm biểu tượng **Kẹp giấy (📎)** trên Telegram điện thoại, chọn **1 hoặc nhiều bức ảnh** từ Album điện thoại rồi bấm Gửi vào đây!\n` +
+        `• _(Hiện đã có: *${count} ảnh*)_\n` +
+        `• Sau khi gửi ảnh xong, anh bấm nút **✅ Hoàn tất & Đăng lên Website ngay** bên dưới nhé!`,
       buttons: [
-        [{ text: "✅ Hoàn tất & Đăng lên Website ngay!", callback_data: "/wiz_finish" }],
+        [{ text: `✅ Hoàn tất & Đăng lên Website ngay!`, callback_data: "/wiz_finish" }],
         [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
       ]
     };
   }
 
   if (step === 5) {
-    if (meta.photoUrls && meta.photoUrls.length > 0) {
-      draft.images = [...(draft.images || []), ...meta.photoUrls];
-    } else if (text && !text.startsWith("/wiz_finish")) {
+    // If the user just uploaded 1 or more photos from their phone, append them and ask if they want to send more or finish!
+    if (incomingPhotos.length > 0 && !text.startsWith("/wiz_finish")) {
+      db.setWizardSession(userKey, { step: 5, draft });
+      const totalImgs = (draft.images || []).length;
+      return {
+        reply:
+          `📸 *ĐÃ NHẬN THÊM ẢNH TỪ ĐIỆN THOẠI (Tổng cộng: ${totalImgs} ảnh)!*\n` +
+          `• Anh có thể gửi thêm ảnh khác, hoặc bấm nút **✅ Đã đủ ảnh — Đăng lên Website ngay!** bên dưới:`,
+        buttons: [
+          [{ text: `✅ Đã đủ ${totalImgs} ảnh — Đăng lên Website ngay!`, callback_data: "/wiz_finish" }],
+          [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
+        ]
+      };
+    }
+
+    if (text && !text.startsWith("/wiz_finish")) {
       const urls = text
         .split(/[\n,|]+/)
         .map((s) => s.trim())
@@ -1252,7 +1420,13 @@ async function handleWizardStep(userKey, session, text, meta = {}) {
       ...draft,
       source: "telegram"
     });
-    db.setWizardSession(userKey, null);
+    // Keep session in photo_upload mode for this apartment in case more photos from a Telegram album arrive milliseconds later!
+    db.setWizardSession(userKey, {
+      mode: "photo_upload",
+      apartmentCode: created.code,
+      replace: false,
+      replacedOnce: true
+    });
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
 
     return {
@@ -1264,6 +1438,7 @@ async function handleWizardStep(userKey, session, text, meta = {}) {
         `• *Địa chỉ:* ${created.address}\n` +
         `• *Giá thuê:* *$${created.priceUsd}/tháng* (~${(created.priceVnd / 1000000).toFixed(1)}tr VNĐ)\n` +
         `• *Thông số:* ${created.bedrooms}PN • ${created.sizeM2}m² • Tầng ${created.floor}\n` +
+        `• *Số ảnh đã tải lên:* *${(created.images || []).length} ảnh*\n` +
         `• *Trạng thái:* *${created.status}* (Đang hiển thị trên Web)`,
       buttons: getApartmentControlButtons(created),
       mutated: true
@@ -1281,6 +1456,44 @@ function recordBotReply(res) {
     text: res.reply,
     buttons: res.buttons || []
   });
+}
+
+// Send the 3 CSV Excel files directly into a Telegram chat via Multipart FormData
+async function sendExcelFilesToTelegramChat(token, chatId) {
+  if (!token || !chatId) return;
+  try {
+    const files = [
+      {
+        name: "KIN_Estates_KhoCanHo.csv",
+        caption: "📊 1. File Excel Kho Căn Hộ (Sửa giá/trạng thái rồi gửi lại file này vào Bot để cập nhật)",
+        content: await sheetsService.generateApartmentsCsv(true)
+      },
+      {
+        name: "KIN_Estates_KhachHang_LichHen.csv",
+        caption: "📅 2. File Excel Danh Sách Khách Đặt Lịch & Điền Form",
+        content: await sheetsService.generateInquiriesCsv(true)
+      },
+      {
+        name: "KIN_Estates_KhachDangThue_HopDong.csv",
+        caption: "🔑 3. File Excel Hợp Đồng Khách Đang Thuê & Thời Hạn",
+        content: await sheetsService.generateLeasesCsv(true)
+      }
+    ];
+
+    for (const f of files) {
+      const formData = new FormData();
+      formData.append("chat_id", String(chatId));
+      formData.append("caption", f.caption);
+      const blob = new Blob([f.content], { type: "text/csv;charset=utf-8" });
+      formData.append("document", blob, f.name);
+      await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+        method: "POST",
+        body: formData
+      });
+    }
+  } catch (err) {
+    console.error("Error sending Excel files to Telegram chat:", err.message);
+  }
 }
 
 async function notifyNewInquiryToTelegram(inquiry) {
@@ -1334,7 +1547,7 @@ async function notifyNewInquiryToTelegram(inquiry) {
 
   const settings = db.getSettings();
   const token = activeToken || settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = settings.telegramAdminChatId || process.env.TELEGRAM_ADMIN_CHAT_ID;
+  const chatId = getTelegramAdminChatId();
 
   if (botInstance && chatId) {
     try {
@@ -1346,7 +1559,6 @@ async function notifyNewInquiryToTelegram(inquiry) {
       console.error("Failed to push Telegram message via botInstance:", err.message);
     }
   } else if (token && chatId) {
-    // Serverless HTTP push fallback (works on Vercel without active polling daemon!)
     try {
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
@@ -1366,28 +1578,54 @@ async function notifyNewInquiryToTelegram(inquiry) {
 
 // Handle incoming Telegram Webhook update (for Vercel Serverless or Webhook mode)
 async function handleTelegramWebhookUpdate(update) {
+  if (botInstance) return { ok: true };
+
   const settings = db.getSettings();
   const token = activeToken || settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
 
   if (update.message) {
     const msg = update.message;
+    if (!isTelegramAdminChat(msg.chat)) return { ok: true };
     const chatId = msg.chat.id;
-    if (!settings.telegramAdminChatId) {
-      db.updateSettings({ telegramAdminChatId: String(chatId) });
-    }
-    const photoUrls = [];
-    if (msg.photo && msg.photo.length > 0 && token) {
-      const largest = msg.photo[msg.photo.length - 1];
+
+    // 1. Check if Admin uploaded an edited Excel (.csv) document directly into the Telegram chat!
+    if (msg.document && msg.document.file_name && /\.(csv|tsv|txt)$/i.test(msg.document.file_name) && token) {
       try {
-        const fRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${largest.file_id}`);
+        const fRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${msg.document.file_id}`);
         const fJson = await fRes.json();
         if (fJson.ok && fJson.result?.file_path) {
-          photoUrls.push(`https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`);
+          const csvRes = await fetch(`https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`);
+          const csvText = await csvRes.text();
+          const isLeaseFile = /lease|hopdong|khachdangthue/i.test(msg.document.file_name);
+          const importResult = isLeaseFile
+            ? await sheetsService.importLeasesFromExcelPayload(csvText)
+            : await sheetsService.importRowsFromSheetPayload(csvText);
+
+          const replyText =
+            `📊 *ĐÃ NHẬP & CẬP NHẬT TỪ FILE EXCEL TRÊN TELEGRAM THÀNH CÔNG!*\n` +
+            `• File nhận được: \`${msg.document.file_name}\`\n` +
+            `• Số mục đã đồng bộ lên Website: *${importResult.createdOrUpdated} mục*\n` +
+            `• Mã đã cập nhật: \`${(importResult.codes || []).join(", ")}\``;
+
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: replyText,
+              parse_mode: "Markdown",
+              reply_markup: { inline_keyboard: getMainMenuButtons() }
+            })
+          });
+          return { ok: true };
         }
-      } catch (e) {
-        // ignore photo fetch error
+      } catch (err) {
+        console.error("Excel Telegram upload error:", err.message);
       }
     }
+
+    // 2. Check if Admin uploaded photos from their phone gallery!
+    const photoUrls = await resolveTelegramPhotoList(token, msg.photo);
 
     const rawText = msg.caption || msg.text || (photoUrls.length > 0 ? "" : "/menu");
     const result = await processTelegramCommand(rawText, {
@@ -1407,13 +1645,17 @@ async function handleTelegramWebhookUpdate(update) {
           reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
         })
       });
+      if (result.sendExcelFiles) {
+        await sendExcelFilesToTelegramChat(token, chatId);
+      }
     }
     return result;
   }
 
   if (update.callback_query) {
     const query = update.callback_query;
-    const chatId = query.message?.chat?.id;
+    if (!isTelegramAdminChat(query.message?.chat)) return { ok: true };
+    const chatId = query.message.chat.id;
     const result = await processTelegramCommand(query.data, {
       chatId,
       username: query.from?.username || "Telegram Admin"
@@ -1434,6 +1676,9 @@ async function handleTelegramWebhookUpdate(update) {
           reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
         })
       });
+      if (result.sendExcelFiles) {
+        await sendExcelFilesToTelegramChat(token, chatId);
+      }
     }
     return result;
   }
@@ -1442,18 +1687,20 @@ async function handleTelegramWebhookUpdate(update) {
 
 function initTelegramBot(customToken) {
   const settings = db.getSettings();
-  const token = customToken || settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const token = (customToken || process.env.TELEGRAM_BOT_TOKEN || settings.telegramBotToken || "").trim();
 
-  if (!token || token.trim() === "") {
+  if (!token) {
     if (db.getBotHistory().length === 0) {
       processTelegramCommand("/start", { username: "Admin Mobile" });
     }
-    return { active: false, mode: "Interactive Bot Console Ready (Nhập Bot Token để kết nối Telegram thật)" };
+    return { active: false, mode: "Waiting for TELEGRAM_BOT_TOKEN" };
   }
 
-  activeToken = token.trim();
+  activeToken = token;
+  registerTelegramBotCommands(token);
+
   if (process.env.VERCEL) {
-    return { active: true, mode: "Telegram Webhook Serverless Ready" };
+    return { active: true, mode: "Telegram Webhook Serverless Active" };
   }
 
   if (botInstance && activeToken === token) {
@@ -1467,20 +1714,38 @@ function initTelegramBot(customToken) {
     botInstance = new TelegramBot(token, { polling: true });
 
     botInstance.on("message", async (msg) => {
+      if (!isTelegramAdminChat(msg.chat)) return;
       const chatId = msg.chat.id;
-      if (!db.getSettings().telegramAdminChatId) {
-        db.updateSettings({ telegramAdminChatId: String(chatId) });
-      }
-      const photoUrls = [];
-      if (msg.photo && msg.photo.length > 0) {
-        const largest = msg.photo[msg.photo.length - 1];
+
+      // Handle Excel .csv file uploaded directly in Telegram chat
+      if (msg.document && msg.document.file_name && /\.(csv|tsv|txt)$/i.test(msg.document.file_name)) {
         try {
-          const fileLink = await botInstance.getFileLink(largest.file_id);
-          if (fileLink) photoUrls.push(fileLink);
-        } catch (e) {
-          // ignore
+          const fileLink = await botInstance.getFileLink(msg.document.file_id);
+          const csvRes = await fetch(fileLink);
+          const csvText = await csvRes.text();
+          const isLeaseFile = /lease|hopdong|khachdangthue/i.test(msg.document.file_name);
+          const importResult = isLeaseFile
+            ? await sheetsService.importLeasesFromExcelPayload(csvText)
+            : await sheetsService.importRowsFromSheetPayload(csvText);
+
+          await botInstance.sendMessage(
+            chatId,
+            `📊 *ĐÃ NHẬP & CẬP NHẬT TỪ FILE EXCEL TRÊN TELEGRAM THÀNH CÔNG!*\n` +
+              `• File: \`${msg.document.file_name}\`\n` +
+              `• Đã đồng bộ: *${importResult.createdOrUpdated} mục* (\`${(importResult.codes || []).join(", ")}\`)`,
+            {
+              parse_mode: "Markdown",
+              reply_markup: { inline_keyboard: getMainMenuButtons() }
+            }
+          );
+          return;
+        } catch (err) {
+          console.error("Polling CSV upload error:", err.message);
         }
       }
+
+      // Handle phone photo uploads (embeds directly + proxy route fallback)
+      const photoUrls = await resolveTelegramPhotoList(token, msg.photo);
       const rawText = msg.caption || msg.text || (photoUrls.length > 0 ? "" : "/menu");
       const result = await processTelegramCommand(rawText, {
         chatId,
@@ -1491,9 +1756,13 @@ function initTelegramBot(customToken) {
         parse_mode: "Markdown",
         reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
       });
+      if (result.sendExcelFiles) {
+        await sendExcelFilesToTelegramChat(token, chatId);
+      }
     });
 
     botInstance.on("callback_query", async (query) => {
+      if (!isTelegramAdminChat(query.message?.chat)) return;
       const chatId = query.message.chat.id;
       const data = query.data;
       const result = await processTelegramCommand(data, {
@@ -1505,6 +1774,9 @@ function initTelegramBot(customToken) {
         parse_mode: "Markdown",
         reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
       });
+      if (result.sendExcelFiles) {
+        await sendExcelFilesToTelegramChat(token, chatId);
+      }
     });
 
     console.log("✓ Live Telegram Bot Polling started successfully!");
@@ -1516,15 +1788,16 @@ function initTelegramBot(customToken) {
 }
 
 function getBotStatus() {
+  const hasToken = Boolean(activeToken || process.env.TELEGRAM_BOT_TOKEN || db.getSettings().telegramBotToken);
   return {
-    connected: Boolean(botInstance || activeToken || db.getSettings().telegramBotToken),
+    connected: Boolean(botInstance || activeToken || hasToken),
     mode: botInstance
       ? "Live Telegram Bot Polling (@BotFather Connected)"
-      : activeToken || db.getSettings().telegramBotToken
+      : hasToken
       ? "Telegram Webhook & Push Active"
-      : "Interactive Bot Console + Sẵn sàng kết nối @BotFather Token",
-    hasToken: Boolean(activeToken || db.getSettings().telegramBotToken),
-    adminChatId: db.getSettings().telegramAdminChatId || "Tự động nhận diện khi Admin nhắn /start"
+      : "Ready for TELEGRAM_BOT_TOKEN",
+    hasToken,
+    adminChatId: getTelegramAdminChatId() || "Auto-binds on first /start from @KIN_Estates"
   };
 }
 
@@ -1533,5 +1806,7 @@ module.exports = {
   processTelegramCommand,
   notifyNewInquiryToTelegram,
   handleTelegramWebhookUpdate,
+  sendExcelFilesToTelegramChat,
+  registerTelegramBotCommands,
   getBotStatus
 };

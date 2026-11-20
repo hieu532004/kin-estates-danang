@@ -314,6 +314,128 @@ app.post("/api/telegram/webhook", async (req, res) => {
   }
 });
 
+// Proxy route to serve photos uploaded directly from phone via Telegram Bot (Zero external link needed)
+app.get("/api/telegram/photo/:fileId", async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const token =
+      db.getSettings().telegramBotToken ||
+      process.env.TELEGRAM_BOT_TOKEN ||
+      "";
+    if (!token || !fileId) {
+      return res.redirect("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85");
+    }
+    const fRes = await fetch(
+      `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`
+    );
+    const fJson = await fRes.json();
+    if (!fJson.ok || !fJson.result?.file_path) {
+      return res.redirect("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85");
+    }
+    const imgRes = await fetch(
+      `https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`
+    );
+    if (!imgRes.ok) {
+      return res.redirect("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85");
+    }
+    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+    const arrayBuffer = await imgRes.arrayBuffer();
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    console.error("Telegram photo proxy error:", err.message);
+    return res.redirect("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85");
+  }
+});
+
+// 1-Click Telegram Bot Activator & Webhook Setup Utility (/api/telegram/connect)
+app.get("/api/telegram/connect", async (req, res) => {
+  const token = String(req.query.token || "").trim();
+  const chatId = String(req.query.chatId || "").trim();
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host = req.headers["x-forwarded-host"] || req.get("host");
+  const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+  const webhookUrl = `${proto}://${host}/api/telegram/webhook`;
+
+  let resultHtml = "";
+  if (token) {
+    try {
+      const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const meJson = await meRes.json();
+      if (!meJson.ok) {
+        resultHtml = `<div style="background:#fef2f2;border:1px solid #ef4444;color:#991b1b;padding:16px;border-radius:12px;margin-bottom:20px;">❌ <b>Token không hợp lệ:</b> ${meJson.description || "Vui lòng kiểm tra lại Token từ @BotFather"}</div>`;
+      } else {
+        db.updateSettings({
+          telegramBotToken: token,
+          ...(chatId ? { telegramAdminChatId: chatId } : {})
+        });
+        await telegramService.registerTelegramBotCommands(token);
+        let hookDesc = "Đang chạy chế độ Local Polling trực tiếp";
+        if (!isLocal) {
+          const whRes = await fetch(
+            `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`
+          );
+          const whJson = await whRes.json();
+          hookDesc = whJson.description || "Webhook connected";
+        } else {
+          await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`);
+          telegramService.initTelegramBot(token);
+        }
+        const botUser = meJson.result.username;
+        resultHtml = `
+          <div style="background:#ecfdf5;border:1px solid #10b981;color:#065f46;padding:20px;border-radius:14px;margin-bottom:24px;">
+            <h3 style="margin:0 0 8px 0;font-size:18px;">✅ Đã kết nối Bot @${botUser} thành công!</h3>
+            <p style="margin:0 0 6px 0;font-size:14px;">• <b>Tên Bot:</b> ${meJson.result.first_name} (@${botUser})</p>
+            <p style="margin:0 0 6px 0;font-size:14px;">• <b>Trạng thái Webhook:</b> ${hookDesc}</p>
+            <p style="margin:0 0 16px 0;font-size:14px;">• <b>Menu lệnh tiếng Việt (/wizard, /list, /excel...):</b> Đã cài tự động vào Bot</p>
+            <a href="https://t.me/${botUser}?start=admin" target="_blank" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:700;font-size:14px;">🚀 Mở Bot @${botUser} trên Telegram & Bấm Start ngay →</a>
+          </div>
+        `;
+      }
+    } catch (e) {
+      resultHtml = `<div style="background:#fef2f2;border:1px solid #ef4444;color:#991b1b;padding:16px;border-radius:12px;margin-bottom:20px;">❌ Lỗi kết nối: ${e.message}</div>`;
+    }
+  }
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kết nối Bot Telegram — KIN Estates</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f6f2; color: #14191f; margin: 0; padding: 24px; display: flex; justify-content: center; }
+    .card { max-width: 580px; width: 100%; background: #fff; border-radius: 20px; padding: 28px; box-shadow: 0 18px 45px rgba(15,23,42,0.08); border: 1px solid rgba(15,23,42,0.08); }
+    input { width: 100%; box-sizing: border-box; padding: 13px 15px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 14px; margin-top: 6px; margin-bottom: 16px; }
+    button { width: 100%; background: #14191f; color: #fff; border: none; padding: 14px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    button:hover { background: #29323d; }
+    .step { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13.5px; line-height: 1.55; }
+    code { background: #e2e8f0; padding: 2px 6px; border-radius: 5px; font-size: 12.5px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;color:#9a7b4f;text-transform:uppercase;margin-bottom:6px;">KIN ESTATES • PRIVATE TELEGRAM BOT CONNECTOR</div>
+    <h2 style="margin:0 0 12px 0;font-size:22px;">Kích hoạt Bot Quản Lý trên Điện Thoại</h2>
+    ${resultHtml}
+    <div class="step">
+      <b>Bước 1:</b> Mở Telegram tìm <a href="https://t.me/BotFather" target="_blank"><b>@BotFather</b></a> → Gửi <code>/newbot</code> → Đặt tên Bot → Copy mã <b>HTTP API Token</b>.<br/>
+      <b>Bước 2:</b> Dán mã Token vào ô bên dưới và bấm <b>Kết nối & Kích hoạt Bot ngay</b>. Hệ thống sẽ tự động cài đặt Webhook và Menu lệnh cho tài khoản <b>@KIN_Estates</b> của anh!
+    </div>
+    <form method="GET" action="/api/telegram/connect">
+      <label style="font-size:13px;font-weight:600;">Telegram Bot Token (Từ @BotFather)</label>
+      <input type="text" name="token" placeholder="Ví dụ: 7891234567:AAFl0XYZ..." value="${token}" required />
+      <label style="font-size:13px;font-weight:600;">Admin Chat ID (Không bắt buộc — Tự động nhận khi anh bấm /start)</label>
+      <input type="text" name="chatId" placeholder="Tự động nhận diện @KIN_Estates khi anh nhắn /start" value="${chatId || db.getSettings().telegramAdminChatId || ""}" />
+      <button type="submit">⚡ Kết nối & Kích hoạt Bot Telegram ngay →</button>
+    </form>
+  </div>
+</body>
+</html>`);
+});
+
 app.post("/api/telegram/config", async (req, res) => {
   const {
     telegramBotToken,
@@ -455,7 +577,7 @@ app.get("*", (req, res) => {
 async function startServer() {
   await ensureInitialized();
   if (!process.env.VERCEL) {
-    app.listen(PORT, () => {
+    app.listen(PORT, process.env.BIND_HOST, () => {
       console.log(`\n🏛️ KIN ESTATES — Da Nang Private Residences & CRM running at http://localhost:${PORT}`);
     });
   }
