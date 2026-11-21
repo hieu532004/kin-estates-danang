@@ -1,9 +1,13 @@
 const fs = require("fs");
 const path = require("path");
+const { createHash, randomUUID } = require("node:crypto");
 const mongoose = require("mongoose");
 const { initialApartments, initialBuildings, neighborhoods } = require("../data/seedData");
 
-const STORE_PATH = path.join(__dirname, "..", "data", "mongodb_store.json");
+const STORE_PATH = process.env.KIN_STORE_PATH
+  ? path.resolve(process.env.KIN_STORE_PATH)
+  : path.join(__dirname, "..", "data", "mongodb_store.json");
+const TELEGRAM_TOKEN_URL = /api\.telegram\.org\/(?:file\/)?bot\d+(?::|%3a)[\w-]+/i;
 
 // 1. Mongoose Schema: Apartments (Full Product CRUD + Visibility + Tenant Link)
 const ApartmentSchema = new mongoose.Schema(
@@ -37,6 +41,7 @@ const ApartmentSchema = new mongoose.Schema(
     remoteWorkSetup: { type: String, default: "Bàn làm việc riêng + Cáp quang 300Mbps" },
     petPolicy: { type: String, default: "Thương lượng (Hỏi chuyên viên)" },
     status: { type: String, default: "Available" }, // Available | Reserved | Rented | Hidden
+    availableFrom: String,
     isVisible: { type: Boolean, default: true }, // Controls whether shown on public website
     hideWhenRented: { type: Boolean, default: false },
     featured: { type: Boolean, default: false },
@@ -51,9 +56,14 @@ const ApartmentSchema = new mongoose.Schema(
       endDate: String,
       priceUsd: Number
     },
+    locationAccuracy: { type: String, enum: ["exact", "area"] },
     coordinates: {
-      lat: { type: Number, default: 16.0583 },
-      lng: { type: Number, default: 108.2412 }
+      type: new mongoose.Schema({ lat: Number, lng: Number }, { _id: false }),
+      default: null
+    },
+    reservationHold: {
+      type: new mongoose.Schema({ inquiryCode: String, confirmedAt: Date }, { _id: false }),
+      default: undefined
     },
     architecturalNotes: {
       vi: String,
@@ -73,25 +83,34 @@ const ApartmentSchema = new mongoose.Schema(
 // 2. Mongoose Schema: Inquiries / Customer Leads / Viewing Schedule / Landlord Submissions
 const InquirySchema = new mongoose.Schema(
   {
-    code: { type: String, default: () => `KH-${Math.floor(1000 + Math.random() * 9000)}` },
-    type: { type: String, default: "viewing" }, // viewing | shortlist | direct_contact | owner_listing
+    code: { type: String, index: true, default: () => newInquiryCode() },
+    type: { type: String, default: "viewing" }, // viewing | shortlist | direct_contact | owner_listing | lead | reservation
     clientName: String,
     messenger: String, // Telegram | WhatsApp | Zalo | Phone
     contactHandle: String,
-    apartmentCode: String,
+    apartmentCode: { type: String, index: true },
     apartmentTitle: String,
     budgetUsd: String,
     bedrooms: String,
     viewingTime: String,
+    requestedViewingTime: String,
+    viewingSlotKey: String,
     moveInDate: String,
     leaseDuration: String,
     notes: String,
     ownerPropertyData: mongoose.Schema.Types.Mixed, // When type === "owner_listing"
-    status: { type: String, default: "New" }, // New | Contacted | Viewing_Scheduled | Rented_Closed | Archived
+    status: { type: String, default: "New" }, // Inquiry statuses, or Pending | Confirmed | Cancelled for reservations
+    reservationConfirmedAt: Date,
+    reservationCancelledAt: Date,
+    submissionFingerprint: String,
+    submissionReceipt: mongoose.Schema.Types.Mixed,
     adminNotes: { type: String, default: "" }
   },
   { timestamps: true }
 );
+InquirySchema.index({ viewingSlotKey: 1 }, {
+  unique: true, partialFilterExpression: { viewingSlotKey: { $type: "string" } }
+});
 
 // 3. Mongoose Schema: Leases / Active Tenants (Quản lý khách đang thuê căn nào & thời hạn)
 const LeaseSchema = new mongoose.Schema(
@@ -201,8 +220,8 @@ let store = {
   botMessages: [],
   wizardSessions: {},
   settings: {
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
-    telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID || "",
+    telegramBotToken: "",
+    telegramAdminChatId: "",
     googleSheetsWebhookUrl: process.env.GOOGLE_SHEETS_WEBHOOK_URL || "",
     googleSheetsCsvUrl: process.env.GOOGLE_SHEETS_CSV_URL || "",
     usdToVndRate: 25480,
@@ -263,14 +282,31 @@ function loadJsonStore() {
   }
 }
 
-function saveJsonStore() {
+function saveJsonStore(snapshot = store, { strict = false } = {}) {
+  const directory = path.dirname(STORE_PATH);
+  const settings = { ...snapshot.settings };
+  if (process.env.TELEGRAM_BOT_TOKEN) delete settings.telegramBotToken;
+  if (process.env.TELEGRAM_ADMIN_CHAT_ID) delete settings.telegramAdminChatId;
+  const temporary = path.join(directory, `.${path.basename(STORE_PATH)}.${randomUUID()}.tmp`);
   try {
-    fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
-  } catch (err) {
-    // On read-only serverless filesystems (e.g. Vercel lambda), keep in-memory store updated without crashing
-    console.warn("Note: In-memory store updated (filesystem write skipped):", err.message);
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(temporary, JSON.stringify({ ...snapshot, settings }, null, 2),
+      { encoding: "utf8", flag: "wx", mode: 0o600, flush: strict });
+    fs.renameSync(temporary, STORE_PATH);
+  } catch {
+    if (strict) {
+      throw Object.assign(new Error("Could not save the local database"), { code: "STORE_WRITE_FAILED" });
+    }
+    console.warn("Note: In-memory store updated (filesystem write skipped)");
+  } finally {
+    try { fs.rmSync(temporary, { force: true }); } catch { /* Best-effort cleanup of the staging file. */ }
   }
+}
+
+function commitLocalStore(changes) {
+  const updated = { ...store, ...changes };
+  saveJsonStore(updated, { strict: true });
+  store = updated;
 }
 
 async function initDatabase() {
@@ -306,9 +342,9 @@ async function getApartments(filters = {}) {
   let list = [];
   if (isNativeMongoConnected) {
     const docs = await ApartmentModel.find().sort({ featured: -1, createdAt: -1 }).lean();
-    list = docs.map((d) => ({ ...d, _id: String(d._id) }));
+    list = docs.map(readMongoApartment);
   } else {
-    list = [...store.apartments];
+    list = store.apartments.map(apartmentForRead);
   }
 
   // If public catalog request (not includeHidden), hide apartments where isVisible === false or status === "Hidden"
@@ -319,13 +355,7 @@ async function getApartments(filters = {}) {
     filters.admin === true;
 
   if (!includeHidden) {
-    list = list.filter((a) => {
-      if (a.isVisible === false || a.status === "Hidden") return false;
-      if (a.status === "Rented" && (a.hideWhenRented || store.settings?.hideRentedByDefault)) {
-        return false;
-      }
-      return true;
-    });
+    list = list.filter(isPublicApartment);
   }
 
   if (filters.area && filters.area !== "all") {
@@ -375,23 +405,73 @@ async function getApartments(filters = {}) {
   return list;
 }
 
+function isPublicApartment(apartment) {
+  return apartment.isVisible !== false &&
+    apartment.status !== "Hidden" &&
+    !(apartment.status === "Rented" && (apartment.hideWhenRented || store.settings?.hideRentedByDefault));
+}
+
+async function hasPublicApartmentPhoto(urls) {
+  if (isNativeMongoConnected) {
+    return Boolean(await ApartmentModel.exists({
+      images: { $in: urls },
+      isVisible: { $ne: false },
+      status: { $ne: "Hidden" },
+      $or: [
+        { status: { $ne: "Rented" } },
+        ...(store.settings?.hideRentedByDefault ? [] : [{ hideWhenRented: { $ne: true } }])
+      ]
+    }));
+  }
+  return store.apartments.some(
+    (apartment) => isPublicApartment(apartment) && apartment.images?.some((image) => urls.includes(image))
+  );
+}
+
 async function getApartmentByCodeOrId(identifier) {
   if (!identifier) return null;
   const clean = String(identifier).trim().toUpperCase();
   if (isNativeMongoConnected) {
-    let doc = await ApartmentModel.findOne({ code: new RegExp(`^${clean}$`, "i") }).lean();
+    const codePattern = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    let doc = await ApartmentModel.findOne({ code: new RegExp(`^${codePattern}$`, "i") }).lean();
     if (!doc && mongoose.Types.ObjectId.isValid(identifier)) {
       doc = await ApartmentModel.findById(identifier).lean();
     }
-    if (doc) return { ...doc, _id: String(doc._id) };
+    return doc ? readMongoApartment(doc) : null;
   }
-  return (
-    store.apartments.find(
-      (a) =>
-        String(a._id).toUpperCase() === clean ||
-        String(a.code).toUpperCase() === clean
-    ) || null
-  );
+  const apartment = findLocalApartment(clean);
+  return apartment ? apartmentForRead(apartment) : null;
+}
+
+function withoutTelegramTokenUrls(images) {
+  return images.filter((image) => typeof image !== "string" || !TELEGRAM_TOKEN_URL.test(image));
+}
+
+function withSafeApartmentImages(apartment) {
+  if (!Array.isArray(apartment.images)) return apartment;
+  return { ...apartment, images: withoutTelegramTokenUrls(apartment.images) };
+}
+
+function apartmentForRead(apartment) {
+  return withSafeApartmentImages({
+    ...apartment,
+    ...normalizeApartmentLocation(apartment.locationAccuracy === "exact" ? "exact" : "area", apartment.coordinates)
+  });
+}
+
+function readMongoApartment(doc) {
+  return apartmentForRead({
+    ...doc,
+    _id: String(doc._id),
+    ...(doc.updatedAt instanceof Date ? { updatedAt: doc.updatedAt.toISOString() } : {})
+  });
+}
+
+function findLocalApartment(identifier) {
+  const clean = String(identifier ?? "").trim().toUpperCase();
+  return store.apartments.find((apartment) =>
+    String(apartment._id).toUpperCase() === clean || String(apartment.code).toUpperCase() === clean
+  ) || null;
 }
 
 function parsePriceInput(priceInput, priceVndInput) {
@@ -449,17 +529,12 @@ function normalizeAreaName(input = "") {
   return input || "An Thuong";
 }
 
-function normalizeApartmentPayload(payload) {
+function normalizeApartmentPayload(payload, { sparse = false } = {}) {
   const { priceUsd, priceVnd } = parsePriceInput(payload.priceUsd || payload.price, payload.priceVnd);
+  const fact = (value, fallback) => sparse ? value ?? null : value || fallback;
+  const numberFact = (value, fallback) =>
+    sparse ? (value == null ? null : Number(value)) : Number(value) || fallback;
   const areaName = normalizeAreaName(payload.areaName || payload.area || "An Thuong");
-  const areaCoords = {
-    "An Thuong": { lat: 16.0498, lng: 108.2459 },
-    "Son Tra": { lat: 16.0609, lng: 108.2345 },
-    "Han Riverfront": { lat: 16.0625, lng: 108.2255 },
-    "My Khe Beachfront": { lat: 16.0662, lng: 108.2462 }
-  };
-  const baseCoord = areaCoords[areaName] || { lat: 16.0583, lng: 108.2385 };
-  const jitter = () => (Math.random() - 0.5) * 0.004;
 
   const titleText =
     typeof payload.title === "string"
@@ -491,7 +566,7 @@ function normalizeApartmentPayload(payload) {
       ? payload.architecturalNotes.trim()
       : payload.architecturalNotes?.vi ||
         payload.description ||
-        "Không gian sống thiết kế chuẩn kiến trúc đương đại, tràn ngập ánh sáng tự nhiên, đầy đủ nội thất cao cấp và bàn làm việc tốc độ cao.";
+        (sparse ? "" : "Không gian sống thiết kế chuẩn kiến trúc đương đại, tràn ngập ánh sáng tự nhiên, đầy đủ nội thất cao cấp và bàn làm việc tốc độ cao.");
 
   const enNotesFallback = payload.descriptionEn || payload.architecturalNotes?.en || notesText;
   const notesObj =
@@ -523,7 +598,10 @@ function normalizeApartmentPayload(payload) {
       .map((s) => s.trim())
       .filter(Boolean);
   }
-  if (!Array.isArray(images) || images.length === 0) {
+  if (Array.isArray(images)) images = withoutTelegramTokenUrls(images);
+  const isTelegram = payload.source === "telegram";
+  const hasExplicitTelegramImages = isTelegram && Array.isArray(payload.images);
+  if (!Array.isArray(images) || (images.length === 0 && !hasExplicitTelegramImages)) {
     images = [
       "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85",
       "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
@@ -539,7 +617,7 @@ function normalizeApartmentPayload(payload) {
       .filter(Boolean);
   }
   if (!Array.isArray(tags) || tags.length === 0) {
-    tags = ["Natural Light", "Remote-Work Desk", "State-Rate Electricity"];
+    tags = sparse ? [] : ["Natural Light", "Remote-Work Desk", "State-Rate Electricity"];
   }
 
   const status = payload.status || "Available";
@@ -560,23 +638,24 @@ function normalizeApartmentPayload(payload) {
     building,
     address,
     areaName,
-    district: payload.district || "Sơn Trà / Ngũ Hành Sơn",
+    district: fact(payload.district, "Sơn Trà / Ngũ Hành Sơn"),
     priceUsd,
     priceVnd,
-    bedrooms: Number(payload.bedrooms) || 1,
-    bathrooms: Number(payload.bathrooms) || Number(payload.bedrooms) || 1,
-    sizeM2: Number(payload.sizeM2) || 65,
-    floor: Number(payload.floor) || 12,
-    orientation: payload.orientation || "Đông Nam / Đón gió biển",
-    minLeaseMonths: Number(payload.minLeaseMonths) || 3,
-    depositMonths: Number(payload.depositMonths) || 1,
-    electricityRate: payload.electricityRate || "Giá nhà nước (EVN ~2,800đ/kWh)",
-    waterRate: payload.waterRate || "Giá nhà nước",
-    wifiIncluded: payload.wifiIncluded !== undefined ? Boolean(payload.wifiIncluded) : true,
-    naturalLightScore: Number(payload.naturalLightScore) || 9.5,
-    remoteWorkSetup: payload.remoteWorkSetup || "Bàn làm việc riêng + Cáp quang 300Mbps",
-    petPolicy: payload.petPolicy || "Thương lượng (Cho phép thú cưng nhỏ)",
+    bedrooms: isTelegram && (payload.bedrooms === 0 || payload.bedrooms === "0") ? 0 : numberFact(payload.bedrooms, 1),
+    bathrooms: numberFact(payload.bathrooms, Number(payload.bedrooms) || 1),
+    sizeM2: numberFact(payload.sizeM2, 65),
+    floor: isTelegram && (payload.floor === 0 || payload.floor === "0") ? 0 : numberFact(payload.floor, 12),
+    orientation: fact(payload.orientation, "Đông Nam / Đón gió biển"),
+    minLeaseMonths: numberFact(payload.minLeaseMonths, 3),
+    depositMonths: numberFact(payload.depositMonths, 1),
+    electricityRate: fact(payload.electricityRate, "Giá nhà nước (EVN ~2,800đ/kWh)"),
+    waterRate: fact(payload.waterRate, "Giá nhà nước"),
+    wifiIncluded: payload.wifiIncluded !== undefined ? Boolean(payload.wifiIncluded) : fact(undefined, true),
+    naturalLightScore: numberFact(payload.naturalLightScore, 9.5),
+    remoteWorkSetup: fact(payload.remoteWorkSetup, "Bàn làm việc riêng + Cáp quang 300Mbps"),
+    petPolicy: fact(payload.petPolicy, "Thương lượng (Cho phép thú cưng nhỏ)"),
     status,
+    availableFrom: normalizeAvailableFrom(payload.availableFrom),
     isVisible,
     hideWhenRented: Boolean(payload.hideWhenRented),
     featured: payload.featured !== undefined ? Boolean(payload.featured) : true,
@@ -584,10 +663,7 @@ function normalizeApartmentPayload(payload) {
     landlordPhone: payload.landlordPhone || "",
     adminNote: payload.adminNote || "",
     currentTenant: payload.currentTenant || null,
-    coordinates: payload.coordinates || {
-      lat: Number((baseCoord.lat + jitter()).toFixed(4)),
-      lng: Number((baseCoord.lng + jitter()).toFixed(4))
-    },
+    ...normalizeApartmentLocation(payload.locationAccuracy, payload.coordinates),
     architecturalNotes: notesObj,
     tags,
     images,
@@ -597,34 +673,84 @@ function normalizeApartmentPayload(payload) {
   };
 }
 
-async function createApartment(payload) {
-  const normalized = normalizeApartmentPayload(payload);
+function apartmentAlreadyExists() {
+  return Object.assign(new Error("An apartment with this code already exists"), { code: "APARTMENT_EXISTS" });
+}
+
+async function createApartment(payload, { insertOnly = false, durable = false } = {}) {
+  const normalized = normalizeApartmentPayload(payload, { sparse: durable && payload.source === "telegram" });
+  if (!insertOnly) {
+    const existing = isNativeMongoConnected ? await getApartmentByCodeOrId(normalized.code) : findLocalApartment(normalized.code);
+    if (existing) {
+      if (payload.locationAccuracy === undefined && payload.coordinates === undefined) {
+        delete normalized.locationAccuracy;
+        delete normalized.coordinates;
+      }
+      if (payload.availableFrom === undefined) delete normalized.availableFrom;
+      return updateApartment(existing.code, normalized);
+    }
+  }
   if (isNativeMongoConnected) {
     const { _id, ...docData } = normalized;
-    const created = await ApartmentModel.findOneAndUpdate(
-      { code: normalized.code },
-      docData,
-      { upsert: true, new: true }
-    );
+    let created;
+    if (insertOnly) {
+      await ApartmentModel.init();
+      try {
+        created = await ApartmentModel.create(docData);
+      } catch (error) {
+        if (error.code === 11000) throw apartmentAlreadyExists();
+        throw error;
+      }
+    } else {
+      created = await ApartmentModel.findOneAndUpdate({ code: normalized.code }, docData, { upsert: true, new: true });
+    }
     normalized._id = String(created._id);
+    normalized.updatedAt = apartmentRevision(created.updatedAt) ?? normalized.updatedAt;
   }
-  const existingIdx = store.apartments.findIndex(
+  const apartments = [...store.apartments];
+  const existingIdx = apartments.findIndex(
     (a) => a.code.toUpperCase() === normalized.code.toUpperCase()
   );
+  if (!isNativeMongoConnected && insertOnly && existingIdx >= 0) throw apartmentAlreadyExists();
   if (existingIdx >= 0) {
-    store.apartments[existingIdx] = { ...store.apartments[existingIdx], ...normalized };
+    apartments[existingIdx] = { ...apartments[existingIdx], ...normalized };
   } else {
-    store.apartments.unshift(normalized);
+    apartments.unshift(normalized);
   }
-  saveJsonStore();
+  if (!isNativeMongoConnected && durable) {
+    commitLocalStore({ apartments });
+  } else {
+    store.apartments = apartments;
+    saveJsonStore();
+  }
   return normalized;
 }
 
-async function updateApartment(identifier, updates) {
-  const target = await getApartmentByCodeOrId(identifier);
-  if (!target) return null;
+function normalizeApartmentLocation(accuracy, coordinates) {
+  if (accuracy !== undefined && accuracy !== "exact" && accuracy !== "area") {
+    throw new Error("Location accuracy must be exact or area");
+  }
+  if (accuracy === "area" || (accuracy === undefined && coordinates == null)) {
+    return { locationAccuracy: "area", coordinates: null };
+  }
+  const { lat, lng } = coordinates || {};
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw new Error("Exact location requires a valid latitude and longitude");
+  }
+  return { locationAccuracy: "exact", coordinates: { lat, lng } };
+}
 
+function normalizeApartmentUpdates(target, { _id, reservationHold, ...updates }) {
   const rate = store.settings?.usdToVndRate || 25480;
+  if (updates.availableFrom !== undefined) updates.availableFrom = normalizeAvailableFrom(updates.availableFrom);
+  const addressChanged = updates.address !== undefined && updates.address !== target.address;
+  if (addressChanged && updates.coordinates === undefined) {
+    Object.assign(updates, normalizeApartmentLocation("area", null));
+  } else if (updates.locationAccuracy !== undefined || updates.coordinates !== undefined) {
+    const coordinates = updates.coordinates !== undefined ? updates.coordinates :
+      target.locationAccuracy === "exact" ? target.coordinates : null;
+    Object.assign(updates, normalizeApartmentLocation(updates.locationAccuracy, coordinates));
+  }
   if (updates.priceUsd !== undefined || updates.price !== undefined) {
     const parsed = parsePriceInput(updates.priceUsd ?? updates.price, updates.priceVnd);
     updates.priceUsd = parsed.priceUsd;
@@ -664,6 +790,7 @@ async function updateApartment(identifier, updates) {
       .map((s) => s.trim())
       .filter(Boolean);
   }
+  if (Array.isArray(updates.images)) updates.images = withoutTelegramTokenUrls(updates.images);
 
   if (typeof updates.tags === "string") {
     updates.tags = updates.tags
@@ -677,33 +804,88 @@ async function updateApartment(identifier, updates) {
   } else if (updates.status === "Available" && updates.isVisible === undefined) {
     updates.isVisible = true;
   }
+  if (target.reservationHold && updates.status === "Available") updates.status = "Reserved";
 
-  const merged = {
-    ...target,
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
+  return updates;
+}
 
-  if (isNativeMongoConnected) {
-    await ApartmentModel.findOneAndUpdate({ code: target.code }, merged, { new: true });
-  }
+function apartmentConflict() {
+  return Object.assign(new Error("Apartment changed since it was reviewed"), { code: "APARTMENT_CONFLICT" });
+}
 
+function apartmentRevision(value) {
+  return value instanceof Date ? value.toISOString() : value ?? null;
+}
+
+function nextApartmentRevision(updatedAt) {
+  const previous = new Date(updatedAt ?? 0).getTime();
+  return new Date(Math.max(Date.now(), Number.isFinite(previous) ? previous + 1 : 0));
+}
+
+function mirrorApartmentUpdate(target, updated, durable = false) {
   const idx = store.apartments.findIndex(
     (a) => a.code.toUpperCase() === target.code.toUpperCase() || String(a._id) === String(target._id)
   );
   if (idx >= 0) {
-    store.apartments[idx] = merged;
-    saveJsonStore();
+    if (durable) {
+      const apartments = [...store.apartments];
+      apartments[idx] = updated;
+      commitLocalStore({ apartments });
+    } else {
+      store.apartments[idx] = updated;
+      saveJsonStore();
+    }
   }
-  return merged;
+}
+
+async function updateApartment(identifier, updates, { expectedUpdatedAt } = {}) {
+  const conditional = expectedUpdatedAt !== undefined;
+  const expected = apartmentRevision(expectedUpdatedAt);
+
+  if (!isNativeMongoConnected) {
+    const target = findLocalApartment(identifier);
+    if (conditional && (!target || apartmentRevision(target.updatedAt) !== expected)) throw apartmentConflict();
+    if (!target) return null;
+    const updated = {
+      ...target,
+      ...normalizeApartmentUpdates(target, updates),
+      updatedAt: nextApartmentRevision(target.updatedAt).toISOString()
+    };
+    mirrorApartmentUpdate(target, updated, conditional);
+    return apartmentForRead(updated);
+  }
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const target = await getApartmentByCodeOrId(identifier);
+    if (conditional && (!target || apartmentRevision(target.updatedAt) !== expected)) throw apartmentConflict();
+    if (!target) return null;
+
+    // Compare every write with its read to keep the revision monotonic during concurrent updates.
+    const doc = await ApartmentModel.findOneAndUpdate(
+      { _id: target._id, updatedAt: target.updatedAt ?? null },
+      { $set: { ...normalizeApartmentUpdates(target, updates), updatedAt: nextApartmentRevision(target.updatedAt) } },
+      { new: true, timestamps: false }
+    ).lean();
+    if (doc) {
+      const updated = readMongoApartment(doc);
+      mirrorApartmentUpdate(target, updated);
+      return updated;
+    }
+    if (conditional) throw apartmentConflict();
+  }
+  throw apartmentConflict();
 }
 
 async function deleteApartment(identifier) {
-  const target = await getApartmentByCodeOrId(identifier);
+  const target = isNativeMongoConnected ? await getApartmentByCodeOrId(identifier) : findLocalApartment(identifier);
   if (!target) return null;
+  if (target.reservationHold) {
+    throw reservationError("RESERVATION_ACTION_REQUIRED", "Hủy giữ chỗ trước khi xóa căn hộ.");
+  }
 
   if (isNativeMongoConnected) {
-    await ApartmentModel.findOneAndDelete({ code: target.code });
+    const removed = await ApartmentModel.findOneAndDelete({ _id: target._id, reservationHold: null }).lean();
+    if (!removed) throw apartmentConflict();
   }
 
   store.apartments = store.apartments.filter(
@@ -716,106 +898,396 @@ async function deleteApartment(identifier) {
 // ============================================================================
 // INQUIRIES / CUSTOMER LEADS / VIEWING APPOINTMENTS / OWNER LISTINGS CRUD
 // ============================================================================
+function canonicalCode(value) {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
+}
+
+function newInquiryCode() {
+  return "KH-" + randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase();
+}
+
+function inquirySelector(identifier) {
+  const clean = canonicalCode(identifier);
+  const pattern = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const code = { code: new RegExp(`^${pattern}$`, "i") };
+  return mongoose.Types.ObjectId.isValid(clean) ? { $or: [{ _id: clean.toLowerCase() }, code] } : code;
+}
+
+function inquiryForRead(doc) {
+  return doc && { ...doc, _id: String(doc._id) };
+}
+
+function inquiryIndex(identifier) {
+  const code = canonicalCode(identifier);
+  return (store.inquiries || []).findIndex(
+    (inquiry) => canonicalCode(inquiry.code) === code || canonicalCode(String(inquiry._id)) === code
+  );
+}
+
 async function getInquiries(filters = {}) {
-  let list = [];
+  const type = typeof filters.type === "string" && filters.type !== "all" ? filters.type : null;
+  const status = typeof filters.status === "string" && filters.status !== "all" ? filters.status : null;
+  const codes = Array.isArray(filters.apartmentCodes)
+    ? [...new Set(filters.apartmentCodes.map(canonicalCode).filter(Boolean))] : null;
+  if (codes?.length === 0) return [];
+  const codeSet = codes && new Set(codes);
   if (isNativeMongoConnected) {
-    const docs = await InquiryModel.find().sort({ createdAt: -1 }).lean();
-    list = docs.map((d) => ({ ...d, _id: String(d._id) }));
-  } else {
-    list = [...(store.inquiries || [])];
+    const query = { ...(type ? { type } : {}), ...(status ? { status } : {}) };
+    if (codes) {
+      query.apartmentCode = { $in: codes.map((code) =>
+        new RegExp(`^${code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")) };
+    }
+    return (await InquiryModel.find(query).sort({ createdAt: -1 }).lean()).map(inquiryForRead);
   }
-  if (filters.type && filters.type !== "all") {
-    list = list.filter((i) => i.type === filters.type);
-  }
-  if (filters.status && filters.status !== "all") {
-    list = list.filter((i) => i.status === filters.status);
-  }
-  return list;
+  return (store.inquiries || []).filter((inquiry) =>
+    (!type || inquiry.type === type) && (!status || inquiry.status === status) &&
+    (!codeSet || codeSet.has(canonicalCode(inquiry.apartmentCode)))
+  );
 }
 
 async function getInquiryByCodeOrId(identifier) {
-  if (!identifier) return null;
-  const clean = String(identifier).trim().toUpperCase();
-  return (
-    (store.inquiries || []).find(
-      (i) =>
-        String(i._id).toUpperCase() === clean ||
-        String(i.code || "").toUpperCase() === clean
-    ) || null
-  );
+  if (!canonicalCode(identifier)) return null;
+  if (isNativeMongoConnected) {
+    return inquiryForRead(await InquiryModel.findOne(inquirySelector(identifier)).lean());
+  }
+  return store.inquiries?.[inquiryIndex(identifier)] || null;
 }
 
-async function createInquiry(payload) {
-  const randomCode = `KH-${Math.floor(1000 + Math.random() * 9000)}`;
+function isReservation(inquiry) {
+  return inquiry?.type === "reservation" || inquiry?.type === "booking";
+}
+
+const localCalendarYear = new Intl.DateTimeFormat("en", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric" });
+
+function normalizeViewingTime(value) {
+  if (typeof value !== "string") return null;
+  const input = value.trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})$/.exec(input);
+  const local = /^(\d{1,2}):(\d{2})\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(input);
+  if (!iso && !local) return null;
+  const [year, month, day, hour, minute] = (iso ? iso.slice(1) :
+    [local[5] || localCalendarYear.format(new Date()), local[4], local[3], local[1], local[2]]).map(Number);
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || hour > 23 || minute > 59) return null;
+  if (day > new Date(Date.UTC(year, month, 0)).getUTCDate()) return null;
+  const pad = (part) => String(part).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}`;
+}
+
+function normalizeAvailableFrom(value) {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !normalizeViewingTime(`${value} 00:00`)) {
+    throw new Error("Ngày có thể nhận căn phải theo mẫu YYYY-MM-DD và là ngày hợp lệ.");
+  }
+  return value;
+}
+
+function newViewingTime(type, value) {
+  if (value == null || value === "") return "";
+  if (!["viewing", "lead", "reservation", "booking"].includes(type)) return value;
+  const time = normalizeViewingTime(value);
+  if (!time) throw reservationError("INVALID_VIEWING_TIME", "Nhập giờ xem hợp lệ theo mẫu HH:mm DD/MM hoặc YYYY-MM-DD HH:mm.");
+  return time;
+}
+
+function reservationError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function availableForReservation(apartment) {
+  return apartment && isPublicApartment(apartment) && apartment.status === "Available" && !apartment.reservationHold;
+}
+
+async function createReservationInquiry(payload) {
+  return (await submitInquiry({ ...payload, type: "reservation" }, { durable: true })).inquiry;
+}
+
+async function reservationInquiryPayload(payload) {
+  const code = canonicalCode(payload.apartmentCode);
+  const apartment = isNativeMongoConnected ? await getApartmentByCodeOrId(code) : findLocalApartment(code);
+  if (!availableForReservation(apartment) || canonicalCode(apartment.code) !== code) {
+    throw reservationError("APARTMENT_UNAVAILABLE", "Căn hộ hiện không nhận yêu cầu giữ chỗ.");
+  }
+  return {
+    ...payload,
+    type: "reservation",
+    status: "Pending",
+    apartmentCode: canonicalCode(apartment.code),
+    apartmentTitle: apartment.title?.vi || apartment.title?.en || apartment.title || apartment.code
+  };
+}
+
+function submissionId(requestId) {
+  return createHash("sha256").update(`public-inquiry:${requestId}`).digest("hex").slice(0, 24);
+}
+
+function verifySubmission(previous, fingerprint) {
+  if (previous.submissionFingerprint !== fingerprint) {
+    throw reservationError("INQUIRY_REQUEST_CONFLICT", "Mã gửi yêu cầu này đã được dùng cho thông tin khác.");
+  }
+  return { inquiry: previous, replayed: true };
+}
+
+async function createInquiry(payload, options) {
+  return (await submitInquiry(payload, options)).inquiry;
+}
+
+async function submitInquiry(payload, { durable = false, requestId, fingerprint } = {}) {
+  const id = requestId ? submissionId(requestId) : null;
+  if (id) {
+    const previous = isNativeMongoConnected ? inquiryForRead(await InquiryModel.findById(id).lean())
+      : store.inquiries?.find((inquiry) => inquiry._id === id);
+    if (previous) return verifySubmission(previous, fingerprint);
+  }
+  if (isReservation(payload)) {
+    payload = await reservationInquiryPayload(payload);
+    // Local asynchronous callers can reach this point together. Recheck before committing synchronously.
+    if (id && !isNativeMongoConnected) {
+      const previous = store.inquiries?.find((inquiry) => inquiry._id === id);
+      if (previous) return verifySubmission(previous, fingerprint);
+    }
+  }
+  const now = new Date().toISOString();
+  const type = payload.type || "viewing";
+  const viewingTime = newViewingTime(type, payload.viewingTime);
+  if (payload.status === "Viewing_Scheduled" && !normalizeViewingTime(viewingTime)) {
+    throw reservationError("INVALID_VIEWING_TIME", "Cần nhập ngày giờ hẹn xem trước khi chốt lịch.");
+  }
   const inquiry = {
-    _id: payload._id || `inq-${Date.now()}`,
-    code: payload.code || randomCode,
-    type: payload.type || "viewing", // viewing | shortlist | direct_contact | owner_listing
+    _id: id || payload._id || `inq-${randomUUID()}`,
+    code: canonicalCode(payload.code) || newInquiryCode(),
+    type,
     clientName: payload.clientName || payload.contactHandle || "Khách hàng KIN Estates",
     messenger: payload.messenger || "Telegram / Zalo",
     contactHandle: payload.contactHandle || "",
-    apartmentCode: payload.apartmentCode || "CURATED-SHORTLIST",
+    apartmentCode: canonicalCode(payload.apartmentCode) || "CURATED-SHORTLIST",
     apartmentTitle: payload.apartmentTitle || "Yêu cầu tư vấn căn hộ",
-    budgetUsd: payload.budgetUsd || "$800 - $1,500",
-    bedrooms: payload.bedrooms || "1-2 PN",
-    viewingTime: payload.viewingTime || payload.moveInDate || "Sớm nhất",
-    moveInDate: payload.moveInDate || "Linh hoạt",
-    leaseDuration: payload.leaseDuration || "6-12 tháng",
+    budgetUsd: payload.budgetUsd || (durable ? "" : "$800 - $1,500"),
+    bedrooms: payload.bedrooms || (durable ? "" : "1-2 PN"),
+    viewingTime,
+    requestedViewingTime: payload.requestedViewingTime || "",
+    moveInDate: payload.moveInDate || "",
+    leaseDuration: payload.leaseDuration || (durable ? "" : "6-12 tháng"),
     notes: payload.notes || "",
     ownerPropertyData: payload.ownerPropertyData || null,
-    status: payload.status || "New",
+    status: isReservation(payload) ? "Pending" : payload.status || "New",
     adminNotes: payload.adminNotes || "",
-    createdAt: payload.createdAt || new Date().toISOString()
+    createdAt: payload.createdAt || now,
+    updatedAt: now
   };
+  if (id) {
+    inquiry.submissionFingerprint = fingerprint;
+    inquiry.submissionReceipt = { type: inquiry.type, status: inquiry.status, apartmentCode: inquiry.apartmentCode };
+  }
 
+  const slot = viewingSlotKey(inquiry);
   if (isNativeMongoConnected) {
     const { _id, ...docData } = inquiry;
-    const saved = await InquiryModel.create(docData);
-    inquiry._id = String(saved._id);
+    if (slot) {
+      await verifyNativeViewingSlot(inquiry, slot);
+      docData.viewingSlotKey = slot;
+    }
+    try {
+      const saved = await InquiryModel.create(id ? { ...docData, _id } : docData);
+      return { inquiry: inquiryForRead(saved.toObject()), replayed: false };
+    } catch (error) {
+      if (error.code === 11000 && id) {
+        const previous = inquiryForRead(await InquiryModel.findById(id).lean());
+        if (previous) return verifySubmission(previous, fingerprint);
+      }
+      if (error.code === 11000 && slot) throw viewingSlotConflict();
+      throw error;
+    }
   }
-  store.inquiries = store.inquiries || [];
-  store.inquiries.unshift(inquiry);
-  saveJsonStore();
-  return inquiry;
+  if (slot && (store.inquiries || []).some((item) => viewingSlotKey(item) === slot)) throw viewingSlotConflict();
+  const inquiries = [inquiry, ...(store.inquiries || [])];
+  if (durable) commitLocalStore({ inquiries });
+  else {
+    store.inquiries = inquiries;
+    saveJsonStore();
+  }
+  return { inquiry, replayed: false };
+}
+
+const INQUIRY_EDIT_FIELDS = [
+  "type", "clientName", "messenger", "contactHandle", "apartmentCode", "apartmentTitle",
+  "budgetUsd", "bedrooms", "viewingTime", "requestedViewingTime", "moveInDate", "leaseDuration", "notes",
+  "ownerPropertyData", "status", "adminNotes"
+];
+
+function inquiryPatch(inquiry, updates) {
+  const patch = Object.fromEntries(INQUIRY_EDIT_FIELDS.filter((field) =>
+    Object.hasOwn(updates, field)).map((field) => [field, updates[field]]));
+  if (patch.apartmentCode !== undefined) patch.apartmentCode = canonicalCode(patch.apartmentCode);
+  if (Object.hasOwn(patch, "viewingTime")) patch.viewingTime = newViewingTime(patch.type || inquiry.type, patch.viewingTime);
+  if ((patch.status === "Viewing_Scheduled" ||
+       (Object.hasOwn(patch, "viewingTime") && !patch.status && inquiry.status === "Viewing_Scheduled")) &&
+      !normalizeViewingTime(patch.viewingTime ?? inquiry.viewingTime)) {
+    throw reservationError("INVALID_VIEWING_TIME", "Cần nhập ngày giờ hẹn xem trước khi chốt lịch.");
+  }
+  if (isReservation({ type: patch.type }) && !isReservation(inquiry) ||
+      isReservation(inquiry) && ["type", "status", "apartmentCode"].some((field) =>
+        Object.hasOwn(patch, field) && patch[field] !== inquiry[field])) {
+    throw reservationError("RESERVATION_ACTION_REQUIRED", "Hãy dùng thao tác xác nhận hoặc hủy giữ chỗ.");
+  }
+  // Ordinary edits to reservation notes must not write an old reservation state back during a confirmation.
+  if (isReservation(inquiry)) {
+    delete patch.type;
+    delete patch.status;
+    delete patch.apartmentCode;
+  }
+  return patch;
 }
 
 async function updateInquiry(identifier, updates) {
-  const clean = String(identifier || "").trim().toUpperCase();
-  const idx = (store.inquiries || []).findIndex(
-    (i) =>
-      String(i._id).toUpperCase() === clean ||
-      String(i.code || "").toUpperCase() === clean
-  );
-  if (idx < 0) return null;
-
-  const updated = {
-    ...store.inquiries[idx],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
-  store.inquiries[idx] = updated;
-
+  if (!canonicalCode(identifier)) return null;
   if (isNativeMongoConnected) {
-    await InquiryModel.findOneAndUpdate({ code: updated.code }, updated);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const target = await getInquiryByCodeOrId(identifier);
+      if (!target) return null;
+      const patch = inquiryPatch(target, updates);
+      const slotChanged = ["status", "type", "apartmentCode", "viewingTime"].some((field) => Object.hasOwn(patch, field));
+      const candidate = { ...target, ...patch };
+      const slot = slotChanged && viewingSlotKey(candidate);
+      if (slot) {
+        await verifyNativeViewingSlot(candidate, slot);
+        patch.viewingSlotKey = slot;
+      }
+      try {
+        const updated = await InquiryModel.findOneAndUpdate(
+          { _id: target._id, updatedAt: target.updatedAt ?? null },
+          {
+            $set: { ...patch, updatedAt: nextApartmentRevision(target.updatedAt) },
+            ...(slotChanged && !slot ? { $unset: { viewingSlotKey: 1 } } : {})
+          },
+          { new: true, timestamps: false }
+        ).lean();
+        if (updated) return inquiryForRead(updated);
+      } catch (error) {
+        if (error.code === 11000 && slot) throw viewingSlotConflict();
+        throw error;
+      }
+    }
+    throw reservationError("INQUIRY_CONFLICT", "Yêu cầu vừa thay đổi. Tải lại và thử lại.");
   }
-  saveJsonStore();
-  return updated;
+  const idx = inquiryIndex(identifier);
+  if (idx < 0) return null;
+  const inquiries = [...store.inquiries];
+  inquiries[idx] = { ...inquiries[idx], ...inquiryPatch(inquiries[idx], updates), updatedAt: new Date().toISOString() };
+  const slot = viewingSlotKey(inquiries[idx]);
+  if (slot && inquiries.some((item, index) => index !== idx && viewingSlotKey(item) === slot)) throw viewingSlotConflict();
+  commitLocalStore({ inquiries });
+  return inquiries[idx];
+}
+
+function viewingSlotKey(inquiry) {
+  if (inquiry.status !== "Viewing_Scheduled" || !["viewing", "lead"].includes(inquiry.type)) return null;
+  const apartment = canonicalCode(inquiry.apartmentCode);
+  const time = normalizeViewingTime(inquiry.viewingTime);
+  if (!apartment || ["CURATED-SHORTLIST", "TRANG-CHU", "PHONG-KY-GUI"].includes(apartment) || !time) return null;
+  return `${apartment}:${time}`;
+}
+
+function viewingSlotConflict() {
+  return reservationError("VIEWING_SLOT_CONFLICT", "Căn hộ đã có lịch xem vào giờ này. Hãy chọn giờ khác.");
+}
+
+async function verifyNativeViewingSlot(inquiry, slot) {
+  await InquiryModel.init();
+  const apartment = canonicalCode(inquiry.apartmentCode).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Existing records may predate the unique slot index.
+  const candidates = await InquiryModel.find({
+    apartmentCode: new RegExp(`^${apartment}$`, "i"),
+    status: "Viewing_Scheduled",
+    viewingSlotKey: null
+  }).select("_id type apartmentCode status viewingTime").lean();
+  if (candidates.some((item) => String(item._id) !== String(inquiry._id) && viewingSlotKey(item) === slot)) {
+    throw viewingSlotConflict();
+  }
 }
 
 async function deleteInquiry(identifier) {
-  const clean = String(identifier || "").trim().toUpperCase();
-  const target = await getInquiryByCodeOrId(clean);
+  if (!canonicalCode(identifier)) return null;
+  const target = isNativeMongoConnected ? await getInquiryByCodeOrId(identifier)
+    : store.inquiries?.[inquiryIndex(identifier)];
   if (!target) return null;
-  store.inquiries = (store.inquiries || []).filter(
-    (i) =>
-      String(i._id).toUpperCase() !== clean &&
-      String(i.code || "").toUpperCase() !== clean
-  );
-  if (isNativeMongoConnected) {
-    await InquiryModel.findOneAndDelete({ code: target.code });
+  if (isReservation(target) && target.status === "Confirmed") {
+    throw reservationError("RESERVATION_ACTION_REQUIRED", "Hủy giữ chỗ trước khi xóa yêu cầu.");
   }
-  saveJsonStore();
+  if (isNativeMongoConnected) {
+    const filter = { _id: target._id, ...(isReservation(target) ? { status: { $ne: "Confirmed" } } : {}) };
+    const deleted = await InquiryModel.findOneAndDelete(filter).lean();
+    if (!deleted && isReservation(target)) {
+      throw reservationError("RESERVATION_ACTION_REQUIRED", "Tải lại yêu cầu và hủy giữ chỗ trước khi xóa.");
+    }
+    return inquiryForRead(deleted);
+  }
+  commitLocalStore({ inquiries: store.inquiries.filter((item) => item !== target) });
   return target;
+}
+
+function reservationTransition(inquiry, apartment, action) {
+  if (!isReservation(inquiry)) throw reservationError("RESERVATION_NOT_FOUND", "Không tìm thấy yêu cầu giữ chỗ.");
+  const ownsHold = apartment?.reservationHold?.inquiryCode === inquiry.code;
+  const now = new Date();
+  if (action === "confirm") {
+    if (inquiry.status === "Confirmed" && ownsHold) return null;
+    if (!["Pending", "New"].includes(inquiry.status)) {
+      throw reservationError("RESERVATION_CONFLICT", "Yêu cầu này không còn chờ xác nhận.");
+    }
+    if (!availableForReservation(apartment)) {
+      throw reservationError("APARTMENT_UNAVAILABLE", "Căn hộ đã có giữ chỗ hoặc không còn trống.");
+    }
+    return {
+      inquiry: { status: "Confirmed", reservationConfirmedAt: now },
+      apartment: { status: "Reserved", reservationHold: { inquiryCode: inquiry.code, confirmedAt: now } }
+    };
+  }
+  if (["Cancelled", "Canceled"].includes(inquiry.status)) return null;
+  return {
+    inquiry: { status: "Cancelled", reservationCancelledAt: now },
+    apartment: ownsHold ? {
+      status: apartment.status === "Reserved" ? "Available" : apartment.status,
+      reservationHold: null
+    } : null
+  };
+}
+
+async function transitionReservation(identifier, action) {
+  if (!["confirm", "cancel"].includes(action)) throw new Error("Unknown reservation action");
+
+  if (isNativeMongoConnected) {
+    return mongoose.connection.transaction(async (session) => {
+      const inquiry = canonicalCode(identifier) &&
+        await InquiryModel.findOne(inquirySelector(identifier)).session(session).lean();
+      if (!isReservation(inquiry)) return reservationTransition(inquiry, null, action);
+      const apartment = await ApartmentModel.findOne({
+        code: canonicalCode(inquiry.apartmentCode)
+      }).session(session).lean();
+      const change = reservationTransition(inquiry, apartment, action);
+      if (!change) return { inquiry: inquiryForRead(inquiry), changed: false };
+      if (change.apartment) {
+        await ApartmentModel.updateOne({ _id: apartment._id }, {
+          $set: { ...change.apartment, updatedAt: nextApartmentRevision(apartment.updatedAt) }
+        }, { session, timestamps: false });
+      }
+      const updated = await InquiryModel.findOneAndUpdate({ _id: inquiry._id }, { $set: change.inquiry },
+        { new: true, session }).lean();
+      return { inquiry: inquiryForRead(updated), changed: true };
+    });
+  }
+
+  const index = inquiryIndex(identifier);
+  const inquiry = store.inquiries?.[index];
+  const apartment = isReservation(inquiry) ? findLocalApartment(inquiry.apartmentCode) : null;
+  const change = reservationTransition(inquiry, apartment, action);
+  if (!change) return { inquiry, changed: false };
+  const inquiries = [...store.inquiries];
+  inquiries[index] = { ...inquiry, ...change.inquiry, updatedAt: new Date().toISOString() };
+  const apartments = change.apartment ? store.apartments.map((item) => item === apartment
+    ? { ...item, ...change.apartment, updatedAt: nextApartmentRevision(item.updatedAt).toISOString() } : item)
+    : store.apartments;
+  commitLocalStore({ inquiries, apartments });
+  return { inquiry: inquiries[index], changed: true };
 }
 
 // ============================================================================
@@ -982,7 +1454,7 @@ async function deleteLease(identifier) {
 // Wizard session state for multi-step Telegram apartment creation
 function getWizardSession(userKey = "default") {
   store.wizardSessions = store.wizardSessions || {};
-  return store.wizardSessions[userKey] || null;
+  return Object.hasOwn(store.wizardSessions, userKey) ? store.wizardSessions[userKey] : null;
 }
 
 function setWizardSession(userKey = "default", sessionData) {
@@ -990,10 +1462,49 @@ function setWizardSession(userKey = "default", sessionData) {
   if (!sessionData) {
     delete store.wizardSessions[userKey];
   } else {
-    store.wizardSessions[userKey] = sessionData;
+    Object.defineProperty(store.wizardSessions, userKey, {
+      value: sessionData, writable: true, enumerable: true, configurable: true
+    });
   }
   saveJsonStore();
-  return store.wizardSessions[userKey];
+  return Object.hasOwn(store.wizardSessions, userKey) ? store.wizardSessions[userKey] : undefined;
+}
+
+function getTelegramCollection(name) {
+  return isNativeMongoConnected ? mongoose.connection.db.collection(name) : null;
+}
+
+async function getTelegramSession(key = "default") {
+  const sessions = getTelegramCollection("telegram_sessions");
+  if (!sessions) return getWizardSession(key);
+
+  const _id = String(key);
+  const saved = await sessions.findOne({ _id });
+  if (saved) return saved.value;
+
+  const legacy = getWizardSession(_id);
+  if (!legacy) return null;
+  // Migrate once. A concurrent save or clear always takes precedence over the JSON copy.
+  const migrated = await sessions.findOneAndUpdate(
+    { _id },
+    { $setOnInsert: { value: legacy } },
+    { upsert: true, returnDocument: "after" }
+  );
+  return migrated.value;
+}
+
+async function setTelegramSession(key = "default", value) {
+  const sessions = getTelegramCollection("telegram_sessions");
+  if (!sessions) {
+    const wizardSessions = { ...store.wizardSessions, [key]: value };
+    if (value == null) delete wizardSessions[key];
+    commitLocalStore({ wizardSessions });
+    return value ?? null;
+  }
+
+  // A cleared value prevents a stale JSON copy from being migrated by another instance.
+  await sessions.updateOne({ _id: String(key) }, { $set: { value: value ?? null } }, { upsert: true });
+  return value ?? null;
 }
 
 function getBuildings() {
@@ -1005,7 +1516,11 @@ function getNeighborhoods() {
 }
 
 function getSettings() {
-  return store.settings;
+  return {
+    ...store.settings,
+    ...(process.env.TELEGRAM_BOT_TOKEN ? { telegramBotToken: process.env.TELEGRAM_BOT_TOKEN } : {}),
+    ...(process.env.TELEGRAM_ADMIN_CHAT_ID ? { telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID } : {})
+  };
 }
 
 function updateSettings(partial) {
@@ -1076,6 +1591,8 @@ function getDbStatus() {
 module.exports = {
   initDatabase,
   getApartments,
+  isPublicApartment,
+  hasPublicApartmentPhoto,
   getApartmentByCodeOrId,
   createApartment,
   updateApartment,
@@ -1083,8 +1600,12 @@ module.exports = {
   getInquiries,
   getInquiryByCodeOrId,
   createInquiry,
+  createReservationInquiry,
+  submitInquiry,
   updateInquiry,
   deleteInquiry,
+  transitionReservation,
+  normalizeViewingTime,
   getLeases,
   getLeaseByCodeOrId,
   createLease,
@@ -1092,6 +1613,9 @@ module.exports = {
   deleteLease,
   getWizardSession,
   setWizardSession,
+  getTelegramCollection,
+  getTelegramSession,
+  setTelegramSession,
   getBuildings,
   getNeighborhoods,
   getSettings,

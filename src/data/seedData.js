@@ -30,6 +30,7 @@ const initialApartments = [
     petPolicy: "Thương lượng với chủ nhà",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0488, lng: 108.2342 },
     architecturalNotes: {
       vi: "Thiết kế lấy cảm hứng từ nan chiếu Cẩm Nê truyền thống kết hợp mặt kính Low-E kịch trần. Tầm nhìn trực diện sông Hàn lộng gió, cách biển Mỹ Khê chỉ 5 phút di chuyển.",
@@ -70,6 +71,7 @@ const initialApartments = [
     petPolicy: "Cho nuôi mèo sạch sẽ",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0491, lng: 108.2346 },
     architecturalNotes: {
       vi: "Căn góc tầng cao 24 đón nắng sớm biển Mỹ Khê, phòng khách rộng kết nối ban công dài. Nội thất gỗ sồi tự nhiên và thiết bị bếp Bosch đồng bộ.",
@@ -110,6 +112,7 @@ const initialApartments = [
     petPolicy: "Cho nuôi thú cưng nhỏ",
     status: "Available",
     featured: false,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0485, lng: 108.2339 },
     architecturalNotes: {
       vi: "Diện tích 102m² hiếm có với 3 phòng ngủ đều có cửa sổ lớn đón sáng tự nhiên, phòng giặt sấy riêng biệt và đảo bếp đá thạch anh.",
@@ -149,6 +152,7 @@ const initialApartments = [
     petPolicy: "Thương lượng",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0583, lng: 108.2242 },
     architecturalNotes: {
       vi: "Tòa tháp căn hộ hạng sang bậc nhất bờ Tây sông Hàn. Ban công vươn không cột che chắn, hồ bơi nước ấm vô cực tầng thượng, phòng sauna tia hồng ngoại.",
@@ -189,6 +193,7 @@ const initialApartments = [
     petPolicy: "Không nuôi thú cưng",
     status: "Available",
     featured: false,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0586, lng: 108.2245 },
     architecturalNotes: {
       vi: "Phù hợp hoàn hảo cho chuyên gia độc thân hoặc cặp đôi làm việc tại trung tâm Hải Châu, đi bộ ra phố đi bộ Bạch Đằng chỉ 30 bước chân.",
@@ -228,6 +233,7 @@ const initialApartments = [
     petPolicy: "Không nuôi thú cưng (Quy định tòa nhà)",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0615, lng: 108.2348 },
     architecturalNotes: {
       vi: "Tòa nhà tiêu chuẩn Nhật Bản quản lý cực kỳ sạch sẽ và an ninh trên trục đường Võ Văn Kiệt. Đi bộ thẳng ra biển Mỹ Khê khoảng 10 phút.",
@@ -267,6 +273,7 @@ const initialApartments = [
     petPolicy: "Không nuôi thú cưng",
     status: "Available",
     featured: false,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0618, lng: 108.2351 },
     architecturalNotes: {
       vi: "Mức giá cực tốt tại Hiyori, đầy đủ máy giặt sấy, bồn tắm nằm, rèm cản nắng 2 lớp và ban công ngắm trọn Cầu Rồng.",
@@ -306,6 +313,7 @@ const initialApartments = [
     petPolicy: "Cho nuôi thú cưng (Pet-Friendly)",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0548, lng: 108.2315 },
     architecturalNotes: {
       vi: "Khu phức hợp sôi động với hồ bơi lớn, siêu thị, quán cà phê và hiệu thuốc ngay tầng trệt. Cho phép thuê linh hoạt từ 3 tháng và thân thiện với thú cưng.",
@@ -345,6 +353,7 @@ const initialApartments = [
     petPolicy: "Cho nuôi chó mèo (Pet-Friendly)",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0492, lng: 108.2456 },
     architecturalNotes: {
       vi: "Nằm trong hẻm yên tĩnh khu phố Tây An Thượng, đi bộ 4 phút ra bãi tắm Mỹ Khê và 50m tới các quán cà phê specialty, không gian coworking.",
@@ -384,6 +393,7 @@ const initialApartments = [
     petPolicy: "Thoải mái nuôi thú cưng",
     status: "Available",
     featured: true,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0365, lng: 108.2418 },
     architecturalNotes: {
       vi: "Biệt thự kiến trúc nhiệt đới hiện đại có hồ bơi muối khoáng riêng, gara ô tô, khu vườn yên tĩnh gần sông Hàn và trường quốc tế.",
@@ -414,6 +424,7 @@ const initialBuildings = [
     electricity: "Giá nhà nước (EVN)",
     petFriendly: "Tuỳ chủ nhà (Mèo/Chó nhỏ)",
     yearCompleted: 2025,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0488, lng: 108.2342 }
   },
   {
@@ -430,6 +441,7 @@ const initialBuildings = [
     electricity: "Giá nhà nước (EVN)",
     petFriendly: "Thương lượng",
     yearCompleted: 2024,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0583, lng: 108.2242 }
   },
   {
@@ -446,6 +458,7 @@ const initialBuildings = [
     electricity: "Giá nhà nước (EVN)",
     petFriendly: "Không nuôi thú cưng",
     yearCompleted: 2020,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0615, lng: 108.2348 }
   },
   {
@@ -462,6 +475,7 @@ const initialBuildings = [
     electricity: "Giá nhà nước (EVN)",
     petFriendly: "Cho phép nuôi thú cưng",
     yearCompleted: 2021,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0548, lng: 108.2315 }
   },
   {
@@ -478,6 +492,7 @@ const initialBuildings = [
     electricity: "3,500 – 4,000đ/kWh",
     petFriendly: "Cho phép nuôi thú cưng",
     yearCompleted: 2025,
+    locationAccuracy: 'exact',
     coordinates: { lat: 16.0492, lng: 108.2456 }
   }
 ];

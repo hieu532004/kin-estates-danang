@@ -1,5 +1,5 @@
 /**
- * CLI Utility to bind @BotFather Telegram Bot Token & Google Sheets Webhook in Backend
+ * Saves Telegram and optional Google Sheets settings in the local .env file.
  * Usage:
  *   node setup-telegram-bot.js <TELEGRAM_BOT_TOKEN> [GOOGLE_SHEETS_WEBHOOK_URL]
  */
@@ -23,10 +23,16 @@ Cách kết nối:
 2. Chạy lệnh:
    node setup-telegram-bot.js <TELEGRAM_BOT_TOKEN>
    (Hoặc điền TELEGRAM_BOT_TOKEN=... vào file .env)
-3. Mở Bot của bạn trên điện thoại Telegram và gõ /start để hiện bảng nút bấm!
+3. Điền TELEGRAM_ADMIN_CHAT_ID bằng ID chat riêng của tài khoản quản trị.
+4. Khởi động lại backend. Mở bot trong Telegram và gửi /start.
 =======================================================================
 `);
   process.exit(0);
+}
+
+if (!/^\d{6,16}:[A-Za-z0-9_-]{30,}$/.test(token)) {
+  console.error("Token Telegram không đúng định dạng.");
+  process.exit(1);
 }
 
 const envPath = path.join(__dirname, ".env");
@@ -46,20 +52,5 @@ if (sheetWebhook) {
   }
 }
 
-fs.writeFileSync(envPath, envContent, "utf8");
-
-fetch("http://localhost:3000/api/telegram/config", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    telegramBotToken: token,
-    ...(sheetWebhook ? { googleSheetsWebhookUrl: sheetWebhook } : {})
-  })
-})
-  .then((r) => r.json())
-  .then((res) => {
-    console.log("✓ Đã kích hoạt Telegram Bot thành công:", res.botStatus);
-  })
-  .catch(() => {
-    console.log("✓ Đã lưu Token vào .env! Hãy khởi động server (node server.js) để Bot bắt đầu nhận lệnh.");
-  });
+fs.writeFileSync(envPath, envContent, { encoding: "utf8", mode: 0o600 });
+console.log("Đã lưu cấu hình Telegram vào .env. Khởi động lại backend để áp dụng.");

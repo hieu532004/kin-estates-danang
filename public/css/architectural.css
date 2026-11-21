@@ -2844,6 +2844,23 @@ select:focus {
   color: #8A683E;
 }
 
+.apt-location-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.85rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.apt-location-status {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
 /* Next-Step Contact Card Placed Immediately Under Apartment Photos */
 .apt-next-step-card {
   position: relative;
@@ -3184,6 +3201,71 @@ select:focus {
 .kin-booking-input:focus {
   border-color: #0A1120;
   box-shadow: 0 0 0 3px rgba(10, 17, 32, 0.08);
+}
+
+.kin-inquiry-fields {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.kin-inquiry-types {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
+}
+
+.kin-inquiry-types label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem;
+  border: 1px solid #D9D4C8;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kin-inquiry-types label:has(input:checked) {
+  border-color: #8A683E;
+  background: #F2EDE2;
+}
+
+.kin-inquiry-types input {
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: #0A1120;
+}
+
+.kin-inquiry-field {
+  margin-bottom: 0.8rem;
+}
+
+.kin-inquiry-field--later {
+  margin: 0.8rem 0 0;
+}
+
+.kin-inquiry-fields textarea {
+  display: block;
+  resize: vertical;
+}
+
+.kin-inquiry-feedback {
+  margin: 0.85rem 0 0;
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  background: #E9F3EE;
+  color: #215C46;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.kin-inquiry-feedback--error {
+  background: #F8EDE5;
+  color: #773F23;
 }
 
 /* Privacy Policy Consent Checkbox Row */

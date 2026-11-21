@@ -4,3 +4,5 @@ package-lock.json
 .specify/
 .agents/
 public/videos/hero-danang.webm
+src/data/telegram-media/
+src/data/.mongodb_store.json.*.tmp

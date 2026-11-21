@@ -1,6 +1,10 @@
 const TelegramBot = require("node-telegram-bot-api");
 const db = require("../db/database");
 const sheetsService = require("./googleSheetsService");
+const { handleListingWorkflow, priceInput } = require("./telegramListingWorkflow");
+const { storeTelegramPhoto, getStoredTelegramPhoto } = require("./telegramMediaService");
+const { apartmentMapUrl } = require("./apartmentLocation");
+const { getApartmentContactSummary, handleApartmentCrmCommand } = require("./apartmentCrmService");
 
 let botInstance = null;
 let activeToken = "";
@@ -9,46 +13,20 @@ function getTelegramAdminChatId() {
   return String(process.env.TELEGRAM_ADMIN_CHAT_ID || db.getSettings().telegramAdminChatId || "").trim();
 }
 
-function isTelegramAdminChat(chat) {
-  if (!chat || chat.type !== "private") return false;
-  const username = String(chat.username || "").toLowerCase();
-  const adminChatId = getTelegramAdminChatId();
-  if (!adminChatId) {
-    // Auto-bind admin chat ID on first private interaction (especially for @KIN_Estates)
-    db.updateSettings({ telegramAdminChatId: String(chat.id) });
-    return true;
-  }
-  if (username === "kin_estates" && String(chat.id) !== adminChatId) {
-    db.updateSettings({ telegramAdminChatId: String(chat.id) });
-    return true;
-  }
-  return String(chat.id) === adminChatId || username === "kin_estates";
+function parseAvailabilityDate(value) {
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const local = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!iso && !local) return null;
+  const [year, month, day] = (iso ? iso.slice(1) : [local[3], local[2], local[1]]).map(Number);
+  if (year < 1900 || month < 1 || month > 12 || day < 1 ||
+      day > new Date(Date.UTC(year, month, 0)).getUTCDate()) return null;
+  const pad = number => String(number).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)}`;
 }
 
-async function resolveTelegramPhotoList(token, photoSizes) {
-  if (!Array.isArray(photoSizes) || photoSizes.length === 0) return [];
-  // Pick high quality size (~800-1280px)
-  const chosen = photoSizes.length >= 3 ? photoSizes[photoSizes.length - 2] : photoSizes[photoSizes.length - 1];
-  const fallbackProxyUrl = `/api/telegram/photo/${encodeURIComponent(chosen.file_id)}`;
-  if (!token) return [fallbackProxyUrl];
-
-  try {
-    const fRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(chosen.file_id)}`);
-    const fJson = await fRes.json();
-    if (fJson.ok && fJson.result?.file_path) {
-      const imgRes = await fetch(`https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`);
-      if (imgRes.ok) {
-        const arrBuf = await imgRes.arrayBuffer();
-        const buf = Buffer.from(arrBuf);
-        if (buf.length > 0 && buf.length <= 450 * 1024) {
-          return [`data:image/jpeg;base64,${buf.toString("base64")}`];
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("Photo base64 resolve fallback to proxy:", err.message);
-  }
-  return [fallbackProxyUrl];
+function isTelegramAdminChat(chat) {
+  const adminId = getTelegramAdminChatId();
+  return Boolean(adminId) && chat?.type === "private" && String(chat.id) === adminId;
 }
 
 async function registerTelegramBotCommands(token) {
@@ -56,13 +34,11 @@ async function registerTelegramBotCommands(token) {
   try {
     const commands = [
       { command: "start", description: "🏛️ Bảng điều khiển chính & Tổng quan kho căn hộ" },
-      { command: "wizard", description: "🪄 Đăng căn hộ mới từng bước + Up ảnh từ ĐT" },
-      { command: "list", description: "🏠 Danh sách tất cả căn hộ (Đổi trạng thái, Ẩn/Hiện, Up ảnh)" },
-      { command: "empty", description: "🟢 Xem các căn hộ đang trống (Hiện trên Web)" },
-      { command: "rented", description: "🔴 Xem các căn đã cho thuê / đã cọc / đang ẩn" },
-      { command: "leads", description: "📅 Danh sách khách đặt lịch xem nhà & điền form" },
-      { command: "tenants", description: "🔑 Quản lý khách đang thuê & Thời hạn hợp đồng" },
-      { command: "excel", description: "📊 Xuất & Nhập 3 file Excel (.csv) ngay trong Telegram" },
+      { command: "wizard", description: "➕ Đăng căn mới từ điện thoại" },
+      { command: "draft", description: "📝 Tiếp tục bản nháp" },
+      { command: "list", description: "🏠 Kho căn hộ, tìm theo tên hoặc mã" },
+      { command: "crm", description: "Khách hàng và lịch xem" },
+      { command: "bookings", description: "Yêu cầu đặt phòng" },
       { command: "form", description: "📝 Lấy mẫu chữ điền nhanh thông tin căn hộ" },
       { command: "cancel", description: "❌ Hủy thao tác đang nhập" }
     ];
@@ -72,7 +48,7 @@ async function registerTelegramBotCommands(token) {
       body: JSON.stringify({ commands })
     });
   } catch (err) {
-    console.warn("Could not set Telegram commands menu:", err.message);
+    console.warn("Could not set Telegram commands menu.");
   }
 }
 
@@ -101,18 +77,42 @@ function parseMultilineListingText(text = "") {
     if (!m) continue;
     const key = m[1].trim().toLowerCase();
     const val = m[2].trim();
+    if (/^\[[^\]]+\]$/.test(val)) continue;
 
     if (key.includes("mã") || key === "code" || key === "id") data.code = val.toUpperCase();
+    else if (["ghim bản đồ", "vị trí bản đồ", "bản đồ", "tọa độ", "map", "coordinates"].includes(key)) data.mapInput = val;
+    else if (["tên tiếng anh", "title en", "titleen"].includes(key)) data.titleEn = val;
     else if (key.includes("tên") || key.includes("tiêu đề") || key === "title" || key === "name") data.title = val;
     else if (key.includes("tòa") || key.includes("toa") || key === "building" || key.includes("dự án")) data.building = val;
     else if (key.includes("khu") || key === "area") data.areaName = db.normalizeAreaName(val);
     else if (key.includes("địa chỉ") || key.includes("dia chi") || key === "address") data.address = val;
     else if (key.includes("quận") || key === "district") data.district = val;
     else if (key.includes("giá") || key.includes("gia") || key === "price") data.price = val;
-    else if (key.includes("phòng ngủ") || key.includes("phong ngu") || key === "pn" || key === "bedrooms" || key === "br") data.bedrooms = parseInt(val, 10) || 1;
-    else if (key.includes("phòng tắm") || key.includes("wc") || key === "bathrooms") data.bathrooms = parseInt(val, 10) || 1;
-    else if (key.includes("diện tích") || key.includes("dien tich") || key === "m2" || key === "size") data.sizeM2 = parseFloat(val) || 60;
-    else if (key.includes("tầng") || key.includes("tang") || key === "floor") data.floor = parseInt(val, 10) || 10;
+    else if (key.includes("phòng ngủ") || key.includes("phong ngu") || key === "pn" || key === "bedrooms" || key === "br") {
+      if (/^\d{1,2}$/.test(val)) data.bedrooms = Number(val);
+    }
+    else if (key.includes("phòng tắm") || key.includes("wc") || key === "bathrooms") {
+      if (/^\d{1,2}$/.test(val)) data.bathrooms = Number(val);
+    }
+    else if (key.includes("diện tích") || key.includes("dien tich") || key === "m2" || key === "size") {
+      const size = val.match(/^(\d{1,5}(?:[.,]\d{1,2})?)\s*(?:m[²2])?$/i);
+      if (size && Number(size[1].replace(",", ".")) > 0) data.sizeM2 = Number(size[1].replace(",", "."));
+    }
+    else if (key.includes("tầng") || key.includes("tang") || key === "floor") {
+      if (/^-?\d{1,3}$/.test(val)) data.floor = Number(val);
+    }
+    else if (["ngày có thể vào", "ngày trống", "có thể vào từ", "available from"].includes(key)) {
+      const date = parseAvailabilityDate(val);
+      if (date) data.availableFrom = date;
+    }
+    else if (["thuê tối thiểu", "thời hạn thuê tối thiểu", "cọc", "đặt cọc", "tiền cọc"].includes(key)) {
+      const months = val.match(/^(\d{1,2})\s*(?:tháng)?$/i);
+      if (months) data[key.includes("cọc") ? "depositMonths" : "minLeaseMonths"] = Number(months[1]);
+    }
+    else if (["wi-fi", "wifi", "internet"].includes(key)) {
+      if (/^(có|đã gồm|bao gồm|đã gồm trong giá|bao gồm trong giá|yes|true)$/iu.test(val)) data.wifiIncluded = true;
+      if (/^(không|chưa gồm|no|false)$/iu.test(val)) data.wifiIncluded = false;
+    }
     else if (key.includes("hướng") || key === "orientation") data.orientation = val;
     else if (key.includes("điện") || key === "electricity") data.electricityRate = val;
     else if (key.includes("nước") || key === "water") data.waterRate = val;
@@ -139,33 +139,41 @@ function calcDaysRemaining(endDateStr) {
 function getMainMenuButtons() {
   return [
     [
-      { text: "➕ Đăng căn hộ mới (/wizard)", callback_data: "/wizard" },
-      { text: "🏠 Kho Căn hộ (/list)", callback_data: "/list" }
+      { text: "🏠 Kho căn hộ", callback_data: "/list" },
+      { text: "➕ Đăng căn mới", callback_data: "/wizard" }
     ],
     [
-      { text: "🟢 Căn đang trống (/empty)", callback_data: "/empty" },
-      { text: "🔴 Căn đã thuê / Ẩn (/rented)", callback_data: "/rented" }
+      { text: "👥 Khách & lịch xem", callback_data: "/crm" },
+      { text: "📅 Đặt phòng", callback_data: "/bookings" }
     ],
     [
-      { text: "📅 Khách & Lịch hẹn (/leads)", callback_data: "/leads" },
-      { text: "🔑 Khách đang thuê (/tenants)", callback_data: "/tenants" }
-    ],
-    [
-      { text: "📝 Mẫu đăng nhanh (/form)", callback_data: "/form" },
-      { text: "📊 Tải / Nhập File Excel (/excel)", callback_data: "/excel" }
+      { text: "📝 Bản nháp", callback_data: "/draft" },
+      { text: "📋 Mẫu đăng", callback_data: "/form" },
+      { text: "Công cụ", callback_data: "/tools" }
     ]
   ];
 }
 
-function getApartmentControlButtons(apt) {
+function getApartmentControlButtons(apt, contactCount, listBack = "/list") {
   const isAvailable = apt.status === "Available";
   const isVisible = apt.isVisible !== false && apt.status !== "Hidden";
+  const map = apartmentMapUrl(apt);
   return [
     [
+      { text: contactCount === undefined ? "Khách liên hệ" : `Khách liên hệ (${contactCount})`, callback_data: `/apt_contacts ${apt.code}` },
+      ...(isVisible && isAvailable && !apt.reservationHold ? [{ text: "Đặt phòng", callback_data: `/book ${apt.code}` }] : [])
+    ],
+    [
+      { text: "Sửa thông tin", callback_data: `/editfields ${apt.code}` },
+      ...(map ? [{ text: "Bản đồ", url: map }] : [])
+    ],
+    ...(apt.reservationHold ? [] : [[
       {
         text: isAvailable ? "🔴 Đổi sang: Đã thuê" : "🟢 Đổi sang: Đang trống",
         callback_data: `/status ${apt.code} ${isAvailable ? "Rented" : "Available"}`
-      },
+      }
+    ]]),
+    [
       {
         text: isVisible ? "🙈 Ẩn khỏi Web" : "👁️ Hiện lên Web",
         callback_data: isVisible ? `/hide ${apt.code}` : `/show ${apt.code}`
@@ -173,39 +181,20 @@ function getApartmentControlButtons(apt) {
     ],
     [
       {
-        text: "📸 Up thêm ảnh từ ĐT",
+        text: "📸 Thêm ảnh",
         callback_data: `/addphoto ${apt.code}`
       },
       {
-        text: "🔄 Thay bộ ảnh mới từ ĐT",
+        text: "🔄 Thay bộ ảnh",
         callback_data: `/setphoto ${apt.code}`
-      }
-    ],
-    [
-      {
-        text: `💲 -50$ ($${Math.max(200, apt.priceUsd - 50)})`,
-        callback_data: `/price ${apt.code} ${Math.max(200, apt.priceUsd - 50)}`
       },
       {
-        text: `💲 +50$ ($${apt.priceUsd + 50})`,
-        callback_data: `/price ${apt.code} ${apt.priceUsd + 50}`
-      },
-      {
-        text: "🟡 Đã cọc",
-        callback_data: `/status ${apt.code} Reserved`
+        text: "🖼 Chỉnh thư viện",
+        callback_data: `/gallery ${apt.code}`
       }
     ],
-    [
-      {
-        text: "🔑 Gán khách thuê căn này",
-        callback_data: `/rent_prompt ${apt.code}`
-      },
-      {
-        text: `🗑️ Xóa ${apt.code}`,
-        callback_data: `/delete ${apt.code}`
-      }
-    ],
-    [{ text: "⬅️ Quay lại danh sách (/list)", callback_data: "/list" }]
+    [{ text: "Thêm thao tác", callback_data: `/apt_tools ${apt.code}` },
+      { text: "Quay lại kho căn", callback_data: listBack }]
   ];
 }
 
@@ -214,343 +203,168 @@ async function processTelegramCommand(rawText, meta = {}) {
   const userKey = String(meta.chatId || meta.username || "admin");
   const incomingPhotos = Array.isArray(meta.photoUrls) ? meta.photoUrls : [];
 
-  if (!text && incomingPhotos.length === 0) {
+  if (!text && incomingPhotos.length === 0 && !meta.photoError && !meta.sharedLocation) {
     return {
       reply: "Hãy chọn nút chức năng bên dưới hoặc gửi ảnh / lệnh.",
       buttons: getMainMenuButtons()
     };
   }
 
-  db.appendBotHistory({
+  const lower = text.toLowerCase();
+  const template = /^đăng căn hộ(?:\s|$)/iu.test(text) ||
+    (/(^|\n)\s*(tên|tiêu đề|title)\s*[:：]/iu.test(text) && /(^|\n)\s*(giá|price)\s*[:：]/iu.test(text))
+    ? parseMultilineListingText(text) : null;
+  let crmText = text.replace(/^\/(?:leads|inquiries|khach)(?=\s|$)/i, "/crm")
+    .replace(/^\/lead_status\s+(\S+)\s+Viewing_Scheduled$/i, "/crm_view $1");
+  const crmKey = `crm:${userKey}`;
+  const startsListing = /^\/(?:wizard|draft|form|add|addphoto|setphoto|gallery|editfields)(?:\s|$)/i.test(text);
+  if (startsListing && await db.getTelegramSession(crmKey)) await db.setTelegramSession(crmKey, null);
+  if (lower === "/cancel" && await db.getTelegramSession(crmKey)) crmText = "/crm_cancel";
+  const crm = template || meta.sharedLocation ? null : await handleApartmentCrmCommand(crmText, { ...meta, userKey });
+  if (crm) return crm;
+
+  if (!meta.mediaGroupId) db.appendBotHistory({
     sender: "user",
     user: meta.username || "Admin (Telegram)",
-    text: text || `[Đã tải lên ${incomingPhotos.length} ảnh từ điện thoại]`
+    text: text || (meta.sharedLocation ? "[Đã gửi ghim bản đồ]" : `[Đã tải lên ${incomingPhotos.length} ảnh từ điện thoại]`)
   });
 
-  const lower = text.toLowerCase();
-
-  // Cancel any active wizard or photo upload session
-  if (lower === "/cancel" || lower === "hủy" || lower === "huy") {
-    db.setWizardSession(userKey, null);
-    const res = {
-      reply: "✅ Đã hoàn tất / thoát chế độ nhập. Anh chọn chức năng bên dưới nhé:",
-      buttons: getMainMenuButtons()
+  let quickListing;
+  if (/^\/add\s+\S/i.test(text)) {
+    const [title, areaName, price, bedrooms, sizeM2, building, address, architecturalNotes] =
+      text.replace(/^\/add\s+/i, "").split("|").map(value => value.trim());
+    quickListing = {
+      title, building, areaName: areaName && db.normalizeAreaName(areaName), price, address, architecturalNotes,
+      bedrooms: /^\d+$/.test(bedrooms) ? Number(bedrooms) : undefined,
+      sizeM2: Number(sizeM2) > 0 ? Number(sizeM2) : undefined
     };
-    recordBotReply(res);
-    return res;
   }
 
-  // Check if user is in "photo_upload" session for an existing apartment (/addphoto or /setphoto)
-  const activeSession = db.getWizardSession(userKey);
-  if (activeSession && activeSession.mode === "photo_upload") {
-    if (incomingPhotos.length > 0) {
-      const apt = await db.getApartmentByCodeOrId(activeSession.apartmentCode);
-      if (apt) {
-        const currentImgs = activeSession.replace && !activeSession.replacedOnce
-          ? []
-          : Array.isArray(apt.images)
-          ? apt.images
-          : [];
-        const updatedImgs = [...currentImgs, ...incomingPhotos];
-        const updated = await db.updateApartment(apt.code, { images: updatedImgs });
-        activeSession.replacedOnce = true;
-        db.setWizardSession(userKey, activeSession);
-        await sheetsService.pushToGoogleSheetsWebhook("update_photos", updated);
-
-        const res = {
-          reply:
-            `📸 *ĐÃ NHẬN & CẬP NHẬT ẢNH TỪ ĐIỆN THOẠI CHO CĂN [${updated.code}]!*\n` +
-            `• Tổng số ảnh hiện tại của căn hộ: *${updated.images.length} ảnh*\n` +
-            `• Anh có thể gửi tiếp ảnh khác từ thư viện điện thoại, hoặc bấm nút **Hoàn tất** bên dưới!`,
-          buttons: [
-            [{ text: `✅ Hoàn tất cập nhật ảnh (${updated.code})`, callback_data: `/apt ${updated.code}` }],
-            [{ text: "🏠 Về Danh sách Căn hộ (/list)", callback_data: "/list" }]
-          ],
-          mutated: true
-        };
-        recordBotReply(res);
-        return res;
-      }
-    } else if (lower.startsWith("/apt ") || lower.startsWith("/")) {
-      db.setWizardSession(userKey, null);
-    }
-  }
-
-  // Start photo upload mode from phone for an existing apartment (/addphoto CODE or /setphoto CODE)
-  if (lower.startsWith("/addphoto ") || lower.startsWith("/setphoto ")) {
-    const isReplace = lower.startsWith("/setphoto ");
-    const code = text.split(/\s+/)[1]?.toUpperCase();
-    const apt = await db.getApartmentByCodeOrId(code);
-    if (!apt) {
-      const res = { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
-      recordBotReply(res);
-      return res;
-    }
-    db.setWizardSession(userKey, {
-      mode: "photo_upload",
-      apartmentCode: apt.code,
-      replace: isReplace,
-      replacedOnce: false
-    });
-    const res = {
-      reply:
-        `📱 *${isReplace ? "THAY BỘ ẢNH MỚI" : "THÊM ẢNH TỪ ĐIỆN THOẠI"} CHO CĂN [${apt.code}]*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `Bây giờ anh hãy bấm biểu tượng **Kẹp giấy (📎)** trên Telegram điện thoại, chọn **1 hoặc nhiều bức ảnh** từ Album ảnh của anh rồi bấm Gửi vào đây!\n\n` +
-        `• Hệ thống sẽ tự động tải ảnh từ điện thoại của anh lên Website (không cần dùng link).\n` +
-        `• Gửi xong anh bấm nút **Hoàn tất** bên dưới nhé!`,
-      buttons: [
-        [{ text: `✅ Hoàn tất & Xem căn ${apt.code}`, callback_data: `/apt ${apt.code}` }],
-        [{ text: "❌ Hủy", callback_data: "/cancel" }]
-      ]
-    };
-    recordBotReply(res);
-    return res;
-  }
-
-  // Check if user is inside interactive /wizard session
-  if (
-    activeSession &&
-    activeSession.mode !== "photo_upload" &&
-    (!text.startsWith("/") || lower.startsWith("/wiz_"))
-  ) {
-    const wizRes = await handleWizardStep(userKey, activeSession, text, meta);
-    recordBotReply(wizRes);
-    return wizRes;
-  }
-
-  // If user sends photos directly from phone WITHOUT being in a session:
-  // Either they included a caption (create apartment with those photos!) OR we start a new apartment draft with those photos!
-  if (incomingPhotos.length > 0 && !text) {
-    // Check if there is a draft waiting for more photos or create a new wizard session pre-filled with the uploaded photos!
-    const existingWiz = db.getWizardSession(userKey);
-    const prevImgs = existingWiz?.draft?.images || [];
-    const mergedImgs = [...prevImgs, ...incomingPhotos];
-    db.setWizardSession(userKey, {
-      step: 1,
-      draft: {
-        ...(existingWiz?.draft || {}),
-        images: mergedImgs
-      }
-    });
-    const res = {
-      reply:
-        `📸 *ĐÃ NHẬN ${mergedImgs.length} ẢNH TỪ ĐIỆN THOẠI CỦA ANH!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• Anh có thể gửi thêm ảnh tiếp (nếu muốn nhiều ảnh), **HOẶC** nhập ngay **Tên căn hộ | Tên tòa nhà** để đăng căn hộ với bộ ảnh vừa gửi!\n\n` +
-        `📌 _Ví dụ gõ:_ \`The Panoma 2PN View Sông Hàn | The Panoma (Sun Cosmo)\``,
-      buttons: [
-        [{ text: "📝 Hoặc lấy Mẫu điền 1 lần (/form)", callback_data: "/form" }],
-        [{ text: "❌ Hủy", callback_data: "/cancel" }]
-      ]
-    };
-    recordBotReply(res);
-    return res;
-  }
-
-  // Check if user pasted a multi-line natural template ("ĐĂNG CĂN HỘ" or has "Tên:" and "Giá:")
-  if (
-    /^đăng căn hộ/i.test(text) ||
-    (/(^|\n)\s*(tên|tiêu đề|title)\s*[:：]/i.test(text) && /(^|\n)\s*(giá|price)\s*[:：]/i.test(text))
-  ) {
-    const parsed = parseMultilineListingText(text);
-    const savedWizImgs = db.getWizardSession(userKey)?.draft?.images || [];
-    const allUploadedImgs = [...savedWizImgs, ...incomingPhotos];
-    if (allUploadedImgs.length > 0) {
-      parsed.images = allUploadedImgs;
-    }
-
-    const created = await db.createApartment({
-      ...parsed,
-      source: "telegram"
-    });
-    await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
-
-    // Put session into photo_upload mode for this newly created apartment so if the user sends photos right after, they attach automatically!
-    db.setWizardSession(userKey, {
-      mode: "photo_upload",
-      apartmentCode: created.code,
-      replace: allUploadedImgs.length === 0,
-      replacedOnce: allUploadedImgs.length > 0
-    });
-
-    const res = {
-      reply:
-        `🎉 *ĐÃ ĐĂNG CĂN HỘ MỚI LÊN WEBSITE THÀNH CÔNG!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `🏷️ Mã căn: *${created.code}*\n` +
-        `🏠 Tên: *${created.title.vi}*\n` +
-        `🏢 Tòa nhà: ${created.building} (${created.areaName})\n` +
-        `📍 Địa chỉ: ${created.address}\n` +
-        `💰 Giá thuê: *$${created.priceUsd}/tháng* (~${(created.priceVnd / 1000000).toFixed(1)}tr VNĐ)\n` +
-        `🛏 Thông số: ${created.bedrooms}PN • ${created.bathrooms}WC • ${created.sizeM2}m² • Tầng ${created.floor}\n` +
-        `👁️ Trạng thái: *${created.status}* (Đang hiện trên Web)\n\n` +
-        `📸 *Mẹo up ảnh bằng điện thoại:* Ngay bây giờ anh có thể bấm biểu tượng Kẹp giấy 📎 gửi tiếp 1 hoặc nhiều ảnh từ điện thoại vào đây, Bot sẽ tự động gắn vào căn *${created.code}*!`,
-      buttons: getApartmentControlButtons(created),
-      mutated: true
-    };
-    recordBotReply(res);
-    return res;
+  const workflow = await handleListingWorkflow({
+    text, photos: incomingPhotos, userKey, parseListing: parseMultilineListingText, template, quickListing,
+    photoError: meta.photoError, albumId: meta.mediaGroupId, sharedLocation: meta.sharedLocation
+  });
+  if (workflow) {
+    if (!meta.mediaGroupId && !workflow.ignored) recordBotReply(workflow);
+    return workflow;
   }
 
   // 1. /start or /menu or /help
   if (lower === "/start" || lower === "/menu" || lower === "/help") {
     const status = db.getDbStatus();
     const reply =
-      `🏛️ *KIN ESTATES — QUẢN LÝ CĂN HỘ & KHÁCH THUÊ TRÊN TELEGRAM*\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `📊 *TỔNG QUAN HỆ THỐNG HIỆN TẠI:*\n` +
-      `• Tổng kho căn hộ: *${status.totalApartments} căn* (_🟢 ${status.availableCount} trống • 🔴 ${status.rentedCount} đã thuê • 🙈 ${status.hiddenCount} đang ẩn_)\n` +
-      `• Khách đặt lịch & Điền form: *${status.totalInquiries} khách* (_🔔 ${status.newInquiriesCount} yêu cầu mới_)\n` +
-      `• Hợp đồng khách đang thuê: *${status.activeLeasesCount} hợp đồng đang hiệu lực*\n\n` +
-      `📱 *CÁCH ĐĂNG CĂN HỘ & UP ẢNH TỪ ĐIỆN THOẠI:*\n` +
-      `• *Cách 1 (Dễ nhất):* Bấm nút \`➕ Đăng căn hộ mới (/wizard)\`, Bot hỏi từng bước rồi cuối cùng anh chọn ảnh trong điện thoại gửi lên!\n` +
-      `• *Cách 2:* Gửi trực tiếp 1 hoặc nhiều ảnh từ điện thoại vào Bot trước, sau đó điền thông tin!\n` +
-      `• *Cách 3:* Bấm \`📝 Mẫu đăng nhanh (/form)\`, điền thông tin gửi lên rồi gửi ảnh từ điện thoại theo sau!\n\n` +
-      `⚡ *CÁC NÚT QUẢN LÝ NHANH BÊN DƯỚI:*`;
+      `🏠 *KIN ESTATES*\n` +
+      `${status.totalApartments} căn · ${status.availableCount} đang trống · ${status.newInquiriesCount} yêu cầu mới\n\n` +
+      "Đăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.";
 
     const res = { reply, buttons: getMainMenuButtons() };
     recordBotReply(res);
     return res;
   }
 
-  // 2. /wizard — Interactive step-by-step apartment creation
-  if (lower === "/wizard") {
-    const existingImgs = db.getWizardSession(userKey)?.draft?.images || [];
-    db.setWizardSession(userKey, {
-      step: 1,
-      draft: { images: existingImgs }
-    });
+  if (lower === "/form" || lower === "/add") {
     const res = {
       reply:
-        `🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `Anh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu \`|\`):\n\n` +
-        `📌 _Ví dụ:_ \`The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)\`\n` +
-        `_(Gõ \`/cancel\` bất kỳ lúc nào để hủy)_`,
-      buttons: [[{ text: "❌ Hủy đăng từng bước", callback_data: "/cancel" }]]
+        "📋 *BÀI MẪU ĐĂNG CĂN HỘ ĐẦY ĐỦ (CHẠM VÀO KHUNG ĐỂ COPY):*\n" +
+        "Anh chạm vào khung mẫu bên dưới để sao chép, sửa theo thông tin căn hộ thực tế rồi gửi vào đây (sau đó bấm 📎 gửi album ảnh từ điện thoại và bấm 📎 → Vị trí hoặc điền dòng Ghim bản đồ):\n\n" +
+        "\x60\x60\x60\nĐĂNG CĂN HỘ\n" +
+        "Tên: The Panoma 2 — Căn hộ góc 2PN View Sông Hàn & Cầu Rồng\n" +
+        "Tên tiếng Anh: The Panoma 2 — Corner 2BR Han River & Dragon Bridge View\n" +
+        "Tòa nhà: The Panoma (Sun Cosmo)\n" +
+        "Khu vực: Ven sông Hàn\n" +
+        "Địa chỉ: 58 Trần Thị Lý, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng\n" +
+        "Quận: Ngũ Hành Sơn\n" +
+        "Ghim bản đồ: 16.0508, 108.2355\n" +
+        "Giá: 21tr VND\n" +
+        "Phòng ngủ: 2\n" +
+        "Phòng tắm: 2\n" +
+        "Diện tích: 74 m²\n" +
+        "Tầng: 22\n" +
+        "Hướng: Đông Nam - View sông Hàn\n" +
+        "Ngày có thể vào: 01/12/2026\n" +
+        "Thuê tối thiểu: 6 tháng\n" +
+        "Đặt cọc: 1 tháng\n" +
+        "Điện: Giá nhà nước EVN (~2.800 ₫/kWh)\n" +
+        "Nước: Giá nhà nước\n" +
+        "Wi-Fi: Có\n" +
+        "Thú cưng: Cho phép thú cưng nhỏ\n" +
+        "Tiện ích: View sông Hàn, Hồ bơi vô cực, Gym, Bàn làm việc, Chỗ đỗ ô tô\n" +
+        "Mô tả: Căn góc 2 mặt kính Low-E kịch trần cách âm tuyệt đối, nội thất gỗ sồi mới 100%, máy giặt sấy riêng, bàn làm việc cạnh cửa sổ lớn và cáp quang 300Mbps.\n\x60\x60\x60",
+      buttons: [[{ text: "Đăng từng bước", callback_data: "/wizard" }, { text: "Mở bản nháp", callback_data: "/draft" }]]
     };
     recordBotReply(res);
     return res;
   }
 
-  // 3. /form — Copy-paste template (No image link required — upload photos directly from phone!)
-  if (lower === "/form") {
-    const reply =
-      `📝 *MẪU ĐĂNG CĂN HỘ TRÊN ĐIỆN THOẠI (KHÔNG CẦN LINK ẢNH):*\n` +
-      `Anh chạm vào khung chữ bên dưới để **Copy**, sửa thông tin rồi gửi lại vào Bot (có thể chọn ảnh từ điện thoại gửi kèm hoặc gửi ảnh ngay sau tin nhắn đều được!):\n\n` +
-      "```\n" +
-      `ĐĂNG CĂN HỘ\n` +
-      `Tên: Căn hộ 2PN View Biển & Sông Hàn\n` +
-      `Tòa nhà: The Panoma (Sun Cosmo)\n` +
-      `Khu vực: Han Riverfront\n` +
-      `Địa chỉ: Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n` +
-      `Giá: 850\n` +
-      `Phòng ngủ: 2\n` +
-      `Phòng tắm: 2\n` +
-      `Diện tích: 72\n` +
-      `Tầng: 18\n` +
-      `Điện: Giá nhà nước EVN\n` +
-      `Thú cưng: Cho phép thú cưng nhỏ\n` +
-      `Mô tả: Căn góc 2 mặt thoáng kính Low-E cách âm, đầy đủ sofa da, máy giặt sấy, bàn làm việc rộng và cáp quang 300Mbps.\n` +
-      "```";
+  if (lower === "/tools") {
+    return { reply: "Công cụ quản lý", parseMode: null, buttons: [
+      [{ text: "Khách đang thuê", callback_data: "/tenants" }, { text: "Chủ nhà gửi căn", callback_data: "/owners" }],
+      [{ text: "Excel", callback_data: "/excel" }, { text: "Về menu", callback_data: "/menu" }]
+    ] };
+  }
+
+  if (lower.startsWith("/apt_tools ")) {
+    const apt = await db.getApartmentByCodeOrId(text.split(/\s+/)[1]);
+    if (!apt) return { reply: "Không tìm thấy căn hộ.", buttons: getMainMenuButtons() };
+    return { reply: `Thao tác căn ${apt.code}`, parseMode: null, buttons: [
+      [{ text: "Nhập hợp đồng thuê", callback_data: `/rent_prompt ${apt.code}` }],
+      [{ text: "Xóa bài đăng", callback_data: `/delete ${apt.code}` }, { text: "Quay lại", callback_data: `/apt ${apt.code}` }]
+    ] };
+  }
+
+  const listCommand = text.match(/^\/(list|empty|rented|hidden)(?:\s+(.+))?$/i);
+  if (listCommand) {
+    const filter = listCommand[1].toLowerCase();
+    const requested = listCommand[2] || "";
+    const paging = requested.match(/^p([1-9]\d*)(?:\s+|$)(.*)$/i);
+    const keyword = (paging ? paging[2] : requested).trim();
+    const clean = value => String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "")
+      .replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+    const term = clean(keyword);
+    const all = await db.getApartments({ includeHidden: true });
+    const apartments = all.filter(apt => {
+      const hidden = apt.isVisible === false || apt.status === "Hidden";
+      if (filter === "empty" && (hidden || apt.status !== "Available")) return false;
+      if (filter === "hidden" && !hidden) return false;
+      if (filter === "rented" && !hidden && !["Reserved", "Rented"].includes(apt.status)) return false;
+      return !term || [apt.code, apt.building, apt.title?.vi || apt.title, apt.areaName].some(value => clean(value).includes(term));
+    });
+    const pageSize = 8;
+    const pages = Math.max(1, Math.ceil(apartments.length / pageSize));
+    const page = Math.min(pages, Number(paging?.[1] || 1));
+    const entries = apartments.slice((page - 1) * pageSize, page * pageSize);
+    const contactSummary = await getApartmentContactSummary(entries.map(apt => apt.code));
+    const labels = { list: "Kho căn hộ", empty: "Đang trống", rented: "Đã thuê, đã cọc hoặc đang ẩn", hidden: "Đang ẩn" };
+    const statuses = { Available: "🟢", Rented: "🔴", Reserved: "🟡", Hidden: "⚪" };
+    const listBack = `/${filter}${page > 1 ? ` p${page}` : ""}${keyword ? ` ${keyword}` : ""}`;
+    const rows = entries.map(apt => {
+      const count = contactSummary.get(apt.code.toUpperCase())?.people || 0;
+      const title = String(apt.title?.vi || apt.title?.en || apt.title || apt.code);
+      const marker = apt.isVisible === false ? "⚪" : statuses[apt.status] || "⚪";
+      const detail = `/apt ${apt.code}`;
+      const fromList = `${detail} ${listBack}`;
+      return [{ text: `${marker} ${title.slice(0, 24)}${title.length > 24 ? "…" : ""} · ${count} khách`,
+        callback_data: listBack !== "/list" && Buffer.byteLength(fromList) <= 64 ? fromList : detail }];
+    });
+    const pageButton = (label, index) => ({
+      text: label,
+      callback_data: `/${filter} p${index}${keyword ? " " + keyword : ""}`
+    });
+    const pager = [
+      ...(page > 1 ? [pageButton("‹ Trang trước", page - 1)] : []),
+      ...(page < pages ? [pageButton("Trang sau ›", page + 1)] : [])
+    ].filter(item => Buffer.byteLength(item.callback_data) <= 64);
     const res = {
-      reply,
+      reply: [`${labels[filter]} · ${apartments.length} căn${pages > 1 ? ` (${page}/${pages})` : ""}`,
+        ...(keyword ? [`Tìm: ${keyword.slice(0, 120)}`] : []),
+        entries.length ? "Chọn căn để xem chi tiết, khách liên hệ và đặt phòng.\nTìm nhanh bằng /list rồi nhập mã hoặc tên trong cùng dòng." : "Không có căn phù hợp."].join("\n\n"),
+      parseMode: null,
       buttons: [
-        [{ text: "🪄 Hoặc Đăng từng bước (/wizard)", callback_data: "/wizard" }],
-        ...getMainMenuButtons()
+        ...rows, ...(pager.length ? [pager] : []),
+        [{ text: "Tất cả", callback_data: "/list" }, { text: "Đang trống", callback_data: "/empty" },
+          { text: "Đã thuê / Ẩn", callback_data: "/rented" }],
+        [{ text: "Đăng căn mới", callback_data: "/wizard" }, { text: "Menu", callback_data: "/menu" }]
       ]
-    };
-    recordBotReply(res);
-    return res;
-  }
-
-  // 4. /list, /empty, /rented, /hidden — List apartments with filters & 1-click actions
-  if (
-    lower === "/list" ||
-    lower.startsWith("/list ") ||
-    lower === "/empty" ||
-    lower === "/rented" ||
-    lower === "/hidden"
-  ) {
-    const allApartments = await db.getApartments({ includeHidden: true });
-    let apartments = allApartments;
-    let filterLabel = "TẤT CẢ CĂN HỘ";
-
-    if (lower === "/empty") {
-      apartments = allApartments.filter((a) => a.status === "Available" && a.isVisible !== false);
-      filterLabel = "CĂN HỘ ĐANG TRỐNG (HIỆN TRÊN WEB)";
-    } else if (lower === "/rented") {
-      apartments = allApartments.filter((a) => a.status === "Rented" || a.status === "Reserved" || a.isVisible === false);
-      filterLabel = "CĂN ĐÃ THUÊ / ĐÃ CỌC / ĐANG ẨN";
-    } else if (lower === "/hidden") {
-      apartments = allApartments.filter((a) => a.isVisible === false || a.status === "Hidden");
-      filterLabel = "CĂN HỘ ĐANG ẨN KHỎI WEB";
-    }
-
-    if (apartments.length === 0) {
-      const res = {
-        reply: `📭 Không có căn hộ nào trong mục *${filterLabel}*.`,
-        buttons: getMainMenuButtons()
-      };
-      recordBotReply(res);
-      return res;
-    }
-
-    const lines = apartments.map((a, idx) => {
-      const statusBadge =
-        a.status === "Available"
-          ? "🟢 Trống"
-          : a.status === "Rented"
-          ? "🔴 Đã thuê"
-          : a.status === "Reserved"
-          ? "🟡 Đã cọc"
-          : "🙈 Đang ẩn";
-      const visBadge = a.isVisible === false ? " *(Đang ẩn khỏi Web)*" : "";
-      const tenantLine = a.currentTenant
-        ? `\n   🔑 _Khách thuê: ${a.currentTenant.tenantName} (Hạn: ${a.currentTenant.endDate})_`
-        : "";
-      return (
-        `${idx + 1}. *[${a.code}]* ${a.title?.vi || a.title?.en}\n` +
-        `   📍 ${a.building} — ${a.address || a.areaName}\n` +
-        `   💰 *$${a.priceUsd}/tháng* (~${(a.priceVnd / 1000000).toFixed(1)}tr) • ${a.bedrooms}PN • ${a.sizeM2}m² • 📸 ${(a.images || []).length} ảnh\n` +
-        `   🏷️ ${statusBadge}${visBadge}${tenantLine}`
-      );
-    });
-
-    const inlineButtons = [];
-    apartments.slice(0, 10).forEach((a) => {
-      const isAvail = a.status === "Available";
-      const isVis = a.isVisible !== false && a.status !== "Hidden";
-      inlineButtons.push([
-        {
-          text: `⚙️ ${a.code}`,
-          callback_data: `/apt ${a.code}`
-        },
-        {
-          text: isAvail ? `🔴 Đặt Đã thuê` : `🟢 Đặt Trống`,
-          callback_data: `/status ${a.code} ${isAvail ? "Rented" : "Available"}`
-        },
-        {
-          text: isVis ? `🙈 Ẩn` : `👁️ Hiện`,
-          callback_data: isVis ? `/hide ${a.code}` : `/show ${a.code}`
-        },
-        {
-          text: `📸 Ảnh`,
-          callback_data: `/addphoto ${a.code}`
-        }
-      ]);
-    });
-
-    inlineButtons.push([
-      { text: "🟢 Lọc: Đang trống", callback_data: "/empty" },
-      { text: "🔴 Lọc: Đã thuê/Ẩn", callback_data: "/rented" },
-      { text: "➕ Đăng căn mới", callback_data: "/wizard" }
-    ]);
-
-    const res = {
-      reply: `📋 *${filterLabel} (${apartments.length} căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / up ảnh từ ĐT / xóa)_\n\n` + lines.join("\n\n"),
-      buttons: inlineButtons
     };
     recordBotReply(res);
     return res;
@@ -558,8 +372,7 @@ async function processTelegramCommand(rawText, meta = {}) {
 
   // 5. /apt <code_or_id> — Detailed single apartment control panel
   if (lower.startsWith("/apt ")) {
-    db.setWizardSession(userKey, null);
-    const code = text.split(/\s+/)[1];
+    const [, code, listBack] = text.match(/^\/apt\s+(\S+)(?:\s+(\/(?:list|empty|rented|hidden)(?:\s+[^\n]+)?))?$/i) || [];
     const apt = await db.getApartmentByCodeOrId(code);
     if (!apt) {
       const res = {
@@ -570,103 +383,25 @@ async function processTelegramCommand(rawText, meta = {}) {
       return res;
     }
 
-    const tenantInfo = apt.currentTenant
-      ? `\n🔑 *Khách đang thuê:* ${apt.currentTenant.tenantName} (${apt.currentTenant.tenantContact || "N/A"})\n📅 *Thời hạn thuê:* ${apt.currentTenant.startDate} → ${apt.currentTenant.endDate}`
-      : `\n🔑 *Khách đang thuê:* _Chưa có (Đang mở đón khách)_`;
-
-    const reply =
-      `🏠 *ĐIỀU KHIỂN CĂN HỘ [${apt.code}]*\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `• *Tên:* ${apt.title?.vi || apt.title?.en}\n` +
-      `• *Tòa nhà:* ${apt.building}\n` +
-      `• *Địa chỉ:* ${apt.address || apt.areaName}\n` +
-      `• *Khu vực:* ${apt.areaName}\n` +
-      `• *Giá thuê:* *$${apt.priceUsd}/tháng* (~${(apt.priceVnd / 1000000).toFixed(1)} triệu VNĐ)\n` +
-      `• *Thông số:* ${apt.bedrooms} PN • ${apt.bathrooms || 1} WC • ${apt.sizeM2} m² • Tầng ${apt.floor || 12}\n` +
-      `• *Số lượng ảnh:* *${(apt.images || []).length} ảnh*\n` +
-      `• *Điện / Nước:* ${apt.electricityRate}\n` +
-      `• *Thú cưng:* ${apt.petPolicy}\n` +
-      `• *Trạng thái:* *${apt.status}* | *Hiển thị Web:* *${apt.isVisible !== false ? "👁️ Đang hiện" : "🙈 Đang ẩn"}*` +
-      tenantInfo +
-      `\n• *Mô tả:* _${apt.architecturalNotes?.vi || ""}_\n\n` +
-      `💡 *Mẹo sửa nhanh:*\n` +
-      `• Bấm **📸 Up thêm ảnh từ ĐT** hoặc **🔄 Thay bộ ảnh mới từ ĐT** bên dưới để gửi ảnh trực tiếp từ máy điện thoại!\n` +
-      `• Đổi giá: \`/price ${apt.code} 850\` (hoặc \`21tr\`)\n` +
-      `• Sửa chữ: \`/edit ${apt.code} address=Số 10 Bạch Đằng | title=Tên mới\``;
+    const counts = (await getApartmentContactSummary([apt.code])).get(apt.code.toUpperCase()) ||
+      { people: 0, clicks: 0, bookings: 0 };
+    const labels = { Available: "Đang trống", Reserved: "Đang giữ chỗ", Rented: "Đã thuê", Hidden: "Đang ẩn" };
+    const specs = [apt.bedrooms != null ? `${apt.bedrooms} PN` : "", apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
+      apt.sizeM2 != null ? `${apt.sizeM2} m²` : "", apt.floor != null ? `Tầng ${apt.floor}` : ""].filter(Boolean);
+    const reply = [
+      `🏠 ${apt.title?.vi || apt.title?.en || apt.title || apt.code}`,
+      `${apt.code} · ${labels[apt.status] || apt.status}${apt.isVisible === false && apt.status !== "Hidden" ? " · Ẩn trên web" : ""}`,
+      `📍 ${apt.address || "Chưa nhập địa chỉ"}`,
+      `${Number(apt.priceVnd).toLocaleString("vi-VN")} ₫/tháng · ${(apt.images || []).length} ảnh`,
+      specs.join(" · "), apt.availableFrom ? `Vào ở từ ${apt.availableFrom.split("-").reverse().join("/")}` : "",
+      `👥 ${counts.people} khách liên hệ${counts.clicks ? ` · ${counts.clicks} lượt bấm` : ""}${counts.bookings ? ` · ${counts.bookings} yêu cầu đặt` : ""}`,
+      apt.architecturalNotes?.vi?.slice(0, 380)
+    ].filter(Boolean).join("\n");
 
     const res = {
       reply,
-      buttons: getApartmentControlButtons(apt)
-    };
-    recordBotReply(res);
-    return res;
-  }
-
-  // 6. /add (1-line quick add)
-  if (lower.startsWith("/add") && !lower.startsWith("/addphoto")) {
-    const body = text.replace(/^\/add\s*/i, "").trim();
-    if (!body) {
-      const res = {
-        reply:
-          `📝 *CÁCH ĐĂNG CĂN HỘ & UP ẢNH BẰNG ĐIỆN THOẠI:*\n\n` +
-          `1️⃣ *Đăng từng bước (Khuyên dùng):* Bấm nút \`🪄 Đăng từng bước (/wizard)\` bên dưới, Bot hỏi từng câu rồi anh chọn ảnh trong điện thoại gửi lên!\n\n` +
-          `2️⃣ *Đăng theo mẫu:* Bấm \`📝 Mẫu đăng nhanh (/form)\`, điền chữ rồi gửi kèm ảnh từ điện thoại!`,
-        buttons: [
-          [
-            { text: "🪄 Đăng từng bước (/wizard)", callback_data: "/wizard" },
-            { text: "📝 Lấy mẫu điền (/form)", callback_data: "/form" }
-          ],
-          ...getMainMenuButtons()
-        ]
-      };
-      recordBotReply(res);
-      return res;
-    }
-
-    const parts = body.split("|").map((s) => s.trim());
-    const [
-      titleVi,
-      areaName = "An Thuong",
-      priceInput = "850",
-      bedrooms = "1",
-      sizeM2 = "65",
-      building = "KIN Estates Residence",
-      address = "Đà Nẵng",
-      notes = "Thiết kế chuẩn kiến trúc hiện đại, ánh sáng tự nhiên ngập tràn."
-    ] = parts;
-
-    const created = await db.createApartment({
-      title: { vi: titleVi, en: titleVi },
-      areaName: db.normalizeAreaName(areaName),
-      price: priceInput,
-      bedrooms: Number(bedrooms) || 1,
-      sizeM2: Number(sizeM2) || 65,
-      building,
-      address,
-      architecturalNotes: { vi: notes, en: notes },
-      images: incomingPhotos.length > 0 ? incomingPhotos : undefined,
-      featured: true,
-      source: "telegram"
-    });
-
-    await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
-
-    db.setWizardSession(userKey, {
-      mode: "photo_upload",
-      apartmentCode: created.code,
-      replace: incomingPhotos.length === 0,
-      replacedOnce: incomingPhotos.length > 0
-    });
-
-    const res = {
-      reply:
-        `🎉 *ĐĂNG BÀI THÀNH CÔNG LÊN WEBSITE!*\n` +
-        `• Mã căn: *${created.code}* — *${created.title.vi}*\n` +
-        `• Địa chỉ: ${created.address} (${created.building})\n` +
-        `• Giá: *$${created.priceUsd}/tháng* • ${created.bedrooms}PN • ${created.sizeM2}m²\n\n` +
-        `📸 *Anh có thể gửi tiếp ảnh từ điện thoại ngay bây giờ để gắn vào căn ${created.code}!*`,
-      buttons: getApartmentControlButtons(created),
-      mutated: true
+      parseMode: null,
+      buttons: getApartmentControlButtons(apt, counts.people, listBack)
     };
     recordBotReply(res);
     return res;
@@ -675,7 +410,7 @@ async function processTelegramCommand(rawText, meta = {}) {
   // 7. /hide <code_or_id> and /show <code_or_id>
   if (lower.startsWith("/hide") || lower.startsWith("/an ")) {
     const code = text.split(/\s+/)[1];
-    const updated = await db.updateApartment(code, { isVisible: false, status: "Hidden" });
+    const updated = await db.updateApartment(code, { isVisible: false });
     if (!updated) {
       const res = { reply: `❌ Không tìm thấy mã căn hộ *${code}*.`, buttons: getMainMenuButtons() };
       recordBotReply(res);
@@ -698,6 +433,12 @@ async function processTelegramCommand(rawText, meta = {}) {
       const res = { reply: `❌ Không tìm thấy mã căn hộ *${code}*.`, buttons: getMainMenuButtons() };
       recordBotReply(res);
       return res;
+    }
+    if (target.source === "telegram" && !target.images?.length) {
+      return { reply: "Căn này cần ít nhất một ảnh trước khi hiện trên web.", buttons: getApartmentControlButtons(target) };
+    }
+    if (target.source === "telegram" && !target.address) {
+      return { reply: "Căn này cần địa chỉ trước khi hiện trên web.", buttons: getApartmentControlButtons(target) };
     }
     const nextStatus = target.status === "Hidden" ? "Available" : target.status;
     const updated = await db.updateApartment(code, { isVisible: true, status: nextStatus });
@@ -725,9 +466,12 @@ async function processTelegramCommand(rawText, meta = {}) {
       return res;
     }
     const nextStatus = parts[2] || (target.status === "Available" ? "Rented" : "Available");
+    if (!["Available", "Reserved", "Rented", "Hidden"].includes(nextStatus)) {
+      return { reply: "Trạng thái chưa hợp lệ. Hãy dùng các nút của căn hộ.", buttons: getApartmentControlButtons(target) };
+    }
     const updates = {
       status: nextStatus,
-      isVisible: nextStatus === "Hidden" ? false : true
+      isVisible: nextStatus !== "Hidden" && target.isVisible !== false && target.status !== "Hidden"
     };
     if (nextStatus === "Available") {
       updates.currentTenant = null;
@@ -755,7 +499,7 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower.startsWith("/price") || lower.startsWith("/gia ")) {
     const parts = text.split(/\s+/);
     const code = parts[1];
-    const rawPrice = parts.slice(2).join(" ");
+    const rawPrice = priceInput(parts.slice(2).join(" "));
     if (!code || !rawPrice) {
       const res = {
         reply: "⚠️ Cú pháp đổi giá: `/price MÃ_CĂN GIÁ_MỚI` (VD: `/price DN-PAN-1902 720` hoặc `/price DN-PAN-1902 18.5tr`)",
@@ -784,7 +528,7 @@ async function processTelegramCommand(rawText, meta = {}) {
   }
 
   // 10. /edit <code_or_id> key=val | key2=val2
-  if (lower.startsWith("/edit") || lower.startsWith("/sua ")) {
+  if (/^\/edit(?:\s|$)/i.test(text) || lower.startsWith("/sua ")) {
     const rest = text.replace(/^\/(edit|sua)\s+/i, "").trim();
     const firstSpace = rest.indexOf(" ");
     if (firstSpace < 0) {
@@ -842,8 +586,8 @@ async function processTelegramCommand(rawText, meta = {}) {
   }
 
   // 11. /delete <code_or_id>
-  if (lower.startsWith("/delete") || lower.startsWith("/xoa")) {
-    const code = text.split(/\s+/)[1];
+  if (/^\/(?:delete|xoa)(?:\s|$)/i.test(text)) {
+    const [, code, confirmation] = text.split(/\s+/);
     if (!code) {
       const res = {
         reply: "⚠️ Vui lòng nhập mã căn hộ cần xóa. Ví dụ: `/delete DN-FIL-2401` hoặc gõ `/list` để bấm nút Xóa.",
@@ -851,6 +595,18 @@ async function processTelegramCommand(rawText, meta = {}) {
       };
       recordBotReply(res);
       return res;
+    }
+    if (confirmation !== "confirm") {
+      const apt = await db.getApartmentByCodeOrId(code);
+      if (!apt) return { reply: "Không tìm thấy căn hộ.", buttons: getMainMenuButtons() };
+      return {
+        reply: `Xóa vĩnh viễn căn ${apt.code}? Bạn có thể ẩn căn nếu muốn giữ dữ liệu.`,
+        parseMode: null,
+        buttons: [
+          [{ text: "Xóa căn", callback_data: `/delete ${apt.code} confirm` }],
+          [{ text: "Quay lại căn hộ", callback_data: `/apt ${apt.code}` }]
+        ]
+      };
     }
     const removed = await db.deleteApartment(code);
     if (!removed) {
@@ -1030,49 +786,20 @@ async function processTelegramCommand(rawText, meta = {}) {
     return res;
   }
 
-  // Convert Lead directly to Active Lease (/lead_to_lease <code>)
+  // Older keyboards still point here. Show the request and keep lease entry explicit.
   if (lower.startsWith("/lead_to_lease ")) {
     const code = text.split(/\s+/)[1];
-    const inq = await db.getInquiryByCodeOrId(code);
-    if (!inq) {
-      const res = { reply: `❌ Không tìm thấy mã khách hàng *${code}*.`, buttons: getMainMenuButtons() };
-      recordBotReply(res);
-      return res;
-    }
-    const aptCode =
-      inq.apartmentCode && inq.apartmentCode !== "CURATED-SHORTLIST"
-        ? inq.apartmentCode
-        : "DN-PAN-1902";
-    const lease = await db.createLease({
-      apartmentCode: aptCode,
-      tenantName: inq.clientName,
-      tenantContact: inq.contactHandle,
-      messenger: inq.messenger,
-      notes: `Chốt thuê từ lịch hẹn xem phòng ${inq.code} (${inq.notes || ""})`
-    });
-    await db.updateInquiry(code, { status: "Rented_Closed" });
-    await sheetsService.pushToGoogleSheetsWebhook("create_lease", lease);
-
-    const res = {
-      reply:
-        `🔑 *ĐÃ CHỐT KHÁCH THUÊ & CẬP NHẬT TRẠNG THÁI CĂN HỘ!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• Mã hợp đồng: *${lease.code}*\n` +
-        `• Khách thuê: *${lease.tenantName}* (\`${lease.tenantContact}\`)\n` +
-        `• Căn hộ: *${lease.apartmentCode}* (${lease.apartmentTitle})\n` +
-        `• Thời hạn: *${lease.startDate}* ➡️ *${lease.endDate}*\n` +
-        `• Căn hộ *${lease.apartmentCode}* đã tự động chuyển sang trạng thái *🔴 Đã thuê (Rented)*!`,
+    const inquiry = await db.getInquiryByCodeOrId(code);
+    if (!inquiry) return { reply: "Không tìm thấy yêu cầu.", buttons: getMainMenuButtons() };
+    const apartment = await db.getApartmentByCodeOrId(inquiry.apartmentCode);
+    return {
+      reply: "Mở hồ sơ khách để xử lý yêu cầu. Chỉ nhập hợp đồng khi đã chốt ngày và giá thuê.",
+      parseMode: null,
       buttons: [
-        [
-          { text: "🙈 Ẩn luôn căn này khỏi Web", callback_data: `/hide ${lease.apartmentCode}` },
-          { text: "🔑 Xem DS Khách đang thuê", callback_data: "/tenants" }
-        ],
-        ...getMainMenuButtons()
-      ],
-      mutated: true
+        [{ text: "Hồ sơ khách", callback_data: `/lead ${inquiry.code || inquiry._id}` }],
+        ...(apartment ? [[{ text: "Nhập hợp đồng", callback_data: `/rent_prompt ${apartment.code}` }]] : [])
+      ]
     };
-    recordBotReply(res);
-    return res;
   }
 
   // 13. /tenants or /leases — Manage Active Tenants, Which Apartment They Rent, and Lease Expiration
@@ -1150,7 +877,7 @@ async function processTelegramCommand(rawText, meta = {}) {
         `Chạm để copy lệnh mẫu bên dưới, sửa tên khách & thời hạn rồi gửi lại:\n\n` +
         `\`/rent ${aptCode} | Tên Khách Thuê | @telegram_hoac_SDT | ${today} | ${sixMo} | 850\``,
       buttons: [
-        [{ text: `⚡ Gán nhanh khách vào ${aptCode}`, callback_data: `/rent ${aptCode} | Khách hàng KIN Estates | @kin_tenant | ${today} | ${sixMo}` }],
+        [{ text: "Quay lại căn hộ", callback_data: `/apt ${aptCode}` }],
         ...getMainMenuButtons()
       ]
     };
@@ -1275,180 +1002,6 @@ async function processTelegramCommand(rawText, meta = {}) {
   return fallback;
 }
 
-async function handleWizardStep(userKey, session, text, meta = {}) {
-  const step = session.step || 1;
-  const draft = session.draft || {};
-  const incomingPhotos = Array.isArray(meta.photoUrls) ? meta.photoUrls : [];
-
-  if (incomingPhotos.length > 0) {
-    draft.images = [...(draft.images || []), ...incomingPhotos];
-  }
-
-  if (step === 1) {
-    if (!text && incomingPhotos.length > 0) {
-      db.setWizardSession(userKey, { step: 1, draft });
-      return {
-        reply:
-          `📸 Đã lưu *${draft.images.length} ảnh* từ điện thoại!\n` +
-          `Bây giờ anh hãy nhập *Tên căn hộ | Tên tòa nhà* để tiếp tục Bước 1 nhé:`,
-        buttons: [[{ text: "❌ Hủy", callback_data: "/cancel" }]]
-      };
-    }
-    const parts = text.split("|").map((s) => s.trim());
-    draft.title = parts[0] || "Căn hộ Kiến trúc Đà Nẵng";
-    draft.building = parts[1] || "KIN Estates Residence";
-    db.setWizardSession(userKey, { step: 2, draft });
-    return {
-      reply:
-        `✅ Đã lưu tên: *${draft.title}* (${draft.building})\n\n` +
-        `🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\n` +
-        `Anh bấm chọn khu vực bên dưới hoặc gõ theo dạng: \`Khu vực | Địa chỉ đường, quận\`\n` +
-        `📌 _Ví dụ:_ \`Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\``,
-      buttons: [
-        [
-          { text: "🌊 An Thượng (Mỹ Khê)", callback_data: "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn" },
-          { text: "🌉 Sông Hàn / Hải Châu", callback_data: "/wiz_area Han Riverfront | Đường Bạch Đằng / Trần Thị Lý" }
-        ],
-        [
-          { text: "🌿 Sơn Trà (Hiyori/Monarchy)", callback_data: "/wiz_area Son Tra | Đường Võ Văn Kiệt, Quận Sơn Trà" },
-          { text: "🏖️ Mặt biển Mỹ Khê", callback_data: "/wiz_area My Khe Beachfront | Đường Võ Nguyên Giáp, Đà Nẵng" }
-        ],
-        [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
-      ]
-    };
-  }
-
-  if (step === 2) {
-    const clean = text.replace(/^\/wiz_area\s*/i, "").trim();
-    const parts = clean.split("|").map((s) => s.trim());
-    draft.areaName = db.normalizeAreaName(parts[0] || "An Thuong");
-    draft.address = parts[1] || parts[0] || `${draft.building}, Đà Nẵng`;
-    db.setWizardSession(userKey, { step: 3, draft });
-    return {
-      reply:
-        `✅ Khu vực: *${draft.areaName}* — Địa chỉ: *${draft.address}*\n\n` +
-        `🪄 *BƯỚC 3 / 5: GIÁ THUÊ, SỐ PHÒNG NGỦ, DIỆN TÍCH & TẦNG*\n` +
-        `Anh nhập cách nhau bởi dấu \`|\`: \`Giá (USD hoặc tr VNĐ) | Số PN | Diện tích m2 | Tầng\`\n\n` +
-        `📌 _Ví dụ:_ \`850 | 2 | 72 | 18\` (hoặc \`18.5tr | 1 | 52 | 15\`)`,
-      buttons: [
-        [
-          { text: "1PN • 50m² • $650", callback_data: "/wiz_spec 650 | 1 | 50 | 15" },
-          { text: "2PN • 75m² • $950", callback_data: "/wiz_spec 950 | 2 | 75 | 20" }
-        ],
-        [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
-      ]
-    };
-  }
-
-  if (step === 3) {
-    const clean = text.replace(/^\/wiz_spec\s*/i, "").trim();
-    const parts = clean.split("|").map((s) => s.trim());
-    draft.price = parts[0] || "800";
-    draft.bedrooms = parseInt(parts[1], 10) || 1;
-    draft.sizeM2 = parseFloat(parts[2]) || 60;
-    draft.floor = parseInt(parts[3], 10) || 12;
-    db.setWizardSession(userKey, { step: 4, draft });
-    return {
-      reply:
-        `✅ Thông số: *Giá ${draft.price} • ${draft.bedrooms}PN • ${draft.sizeM2}m² • Tầng ${draft.floor}*\n\n` +
-        `🪄 *BƯỚC 4 / 5: MÔ TẢ CHI TIẾT, GIÁ ĐIỆN & THÚ CƯNG*\n` +
-        `Anh nhập mô tả chi tiết căn hộ (có thể kèm \`| Giá điện | Chính sách thú cưng\`):\n\n` +
-        `📌 _Ví dụ:_ \`Căn góc ban công thoáng mát, nội thất gỗ sồi mới 100%, bàn làm việc rộng | Giá nhà nước EVN | Cho nuôi mèo\``,
-      buttons: [
-        [
-          {
-            text: "⚡ Dùng mô tả chuẩn kiến trúc + Điện EVN",
-            callback_data:
-              "/wiz_desc Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps | Giá nhà nước EVN | Thương lượng"
-          }
-        ],
-        [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
-      ]
-    };
-  }
-
-  if (step === 4) {
-    const clean = text.replace(/^\/wiz_desc\s*/i, "").trim();
-    const parts = clean.split("|").map((s) => s.trim());
-    draft.architecturalNotes = parts[0] || "Không gian sống hiện đại, tràn ngập ánh sáng tự nhiên.";
-    if (parts[1]) draft.electricityRate = parts[1];
-    if (parts[2]) draft.petPolicy = parts[2];
-    db.setWizardSession(userKey, { step: 5, draft });
-    const count = (draft.images || []).length;
-    return {
-      reply:
-        `✅ Đã lưu mô tả chi tiết.\n\n` +
-        `📸 *BƯỚC 5 / 5: GỬI ẢNH CĂN HỘ TỪ ĐIỆN THOẠI*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• Bây giờ anh hãy bấm biểu tượng **Kẹp giấy (📎)** trên Telegram điện thoại, chọn **1 hoặc nhiều bức ảnh** từ Album điện thoại rồi bấm Gửi vào đây!\n` +
-        `• _(Hiện đã có: *${count} ảnh*)_\n` +
-        `• Sau khi gửi ảnh xong, anh bấm nút **✅ Hoàn tất & Đăng lên Website ngay** bên dưới nhé!`,
-      buttons: [
-        [{ text: `✅ Hoàn tất & Đăng lên Website ngay!`, callback_data: "/wiz_finish" }],
-        [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
-      ]
-    };
-  }
-
-  if (step === 5) {
-    // If the user just uploaded 1 or more photos from their phone, append them and ask if they want to send more or finish!
-    if (incomingPhotos.length > 0 && !text.startsWith("/wiz_finish")) {
-      db.setWizardSession(userKey, { step: 5, draft });
-      const totalImgs = (draft.images || []).length;
-      return {
-        reply:
-          `📸 *ĐÃ NHẬN THÊM ẢNH TỪ ĐIỆN THOẠI (Tổng cộng: ${totalImgs} ảnh)!*\n` +
-          `• Anh có thể gửi thêm ảnh khác, hoặc bấm nút **✅ Đã đủ ảnh — Đăng lên Website ngay!** bên dưới:`,
-        buttons: [
-          [{ text: `✅ Đã đủ ${totalImgs} ảnh — Đăng lên Website ngay!`, callback_data: "/wiz_finish" }],
-          [{ text: "❌ Hủy đăng", callback_data: "/cancel" }]
-        ]
-      };
-    }
-
-    if (text && !text.startsWith("/wiz_finish")) {
-      const urls = text
-        .split(/[\n,|]+/)
-        .map((s) => s.trim())
-        .filter((s) => s.startsWith("http") || s.startsWith("/"));
-      if (urls.length > 0) {
-        draft.images = [...(draft.images || []), ...urls];
-      }
-    }
-
-    const created = await db.createApartment({
-      ...draft,
-      source: "telegram"
-    });
-    // Keep session in photo_upload mode for this apartment in case more photos from a Telegram album arrive milliseconds later!
-    db.setWizardSession(userKey, {
-      mode: "photo_upload",
-      apartmentCode: created.code,
-      replace: false,
-      replacedOnce: true
-    });
-    await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
-
-    return {
-      reply:
-        `🎉 *HOÀN TẤT! CĂN HỘ [${created.code}] ĐÃ LÊN SÓNG WEBSITE!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `• *Tên:* ${created.title.vi}\n` +
-        `• *Tòa nhà:* ${created.building} (${created.areaName})\n` +
-        `• *Địa chỉ:* ${created.address}\n` +
-        `• *Giá thuê:* *$${created.priceUsd}/tháng* (~${(created.priceVnd / 1000000).toFixed(1)}tr VNĐ)\n` +
-        `• *Thông số:* ${created.bedrooms}PN • ${created.sizeM2}m² • Tầng ${created.floor}\n` +
-        `• *Số ảnh đã tải lên:* *${(created.images || []).length} ảnh*\n` +
-        `• *Trạng thái:* *${created.status}* (Đang hiển thị trên Web)`,
-      buttons: getApartmentControlButtons(created),
-      mutated: true
-    };
-  }
-
-  db.setWizardSession(userKey, null);
-  return { reply: "Đã hoàn tất.", buttons: getMainMenuButtons() };
-}
-
 function recordBotReply(res) {
   db.appendBotHistory({
     sender: "bot",
@@ -1497,307 +1050,234 @@ async function sendExcelFilesToTelegramChat(token, chatId) {
 }
 
 async function notifyNewInquiryToTelegram(inquiry) {
-  const typeLabel =
-    inquiry.type === "viewing"
-      ? "📅 KHÁCH ĐẶT LỊCH HẸN XEM CĂN HỘ!"
-      : inquiry.type === "owner_listing"
-      ? "🏡 CHỦ NHÀ GỬI THÔNG TIN ĐĂNG PHÒNG MỚI!"
-      : inquiry.type === "direct_contact"
-      ? "💬 KHÁCH BẤM LIÊN HỆ TRỰC TIẾP TRÊN WEB!"
-      : "📋 KHÁCH ĐIỀN FORM TÌM NHÀ THEO YÊU CẦU!";
-
-  const msg =
-    `🔔 *${typeLabel}*\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `🆔 Mã yêu cầu: *${inquiry.code || inquiry._id}*\n` +
-    `👤 Khách hàng: *${inquiry.clientName}*\n` +
-    `📱 Liên hệ (${inquiry.messenger}): \`${inquiry.contactHandle}\`\n` +
-    `🏠 Căn hộ quan tâm: *${inquiry.apartmentCode}* (${inquiry.apartmentTitle || ""})\n` +
-    `💰 Ngân sách / Giá: *${inquiry.budgetUsd}* | 🛏 ${inquiry.bedrooms}\n` +
-    `⏰ Thời gian hẹn xem / Dọn vào: *${inquiry.viewingTime || inquiry.moveInDate}*\n` +
-    `📝 Ghi chú: _${inquiry.notes || "Không có"}_`;
-
+  if (inquiry.type === "direct_contact") return;
+  const types = {
+    viewing: "Yêu cầu xem căn",
+    reservation: "Yêu cầu đặt phòng",
+    owner_listing: "Chủ nhà gửi căn",
+    shortlist: "Khách cần tư vấn"
+  };
+  const label = types[inquiry.type] || "Khách liên hệ";
   const code = inquiry.code || inquiry._id;
-  const actionButtons =
-    inquiry.type === "owner_listing"
-      ? [
-          [
-            { text: `✅ Duyệt đăng lên Web ngay (${code})`, callback_data: `/approve_owner ${code}` },
-            { text: `📞 Đã liên hệ`, callback_data: `/lead_status ${code} Contacted` }
-          ],
-          ...getMainMenuButtons()
-        ]
-      : [
-          [
-            { text: `📞 Đã liên hệ (${code})`, callback_data: `/lead_status ${code} Contacted` },
-            { text: `📅 Đã chốt giờ xem`, callback_data: `/lead_status ${code} Viewing_Scheduled` }
-          ],
-          [
-            { text: `🔑 Chốt khách thuê căn này`, callback_data: `/lead_to_lease ${code}` },
-            { text: `🏠 Xem căn ${inquiry.apartmentCode}`, callback_data: `/apt ${inquiry.apartmentCode}` }
-          ]
-        ];
-
-  db.appendBotHistory({
-    sender: "bot",
-    user: "KIN Estates Bot (Push Alert)",
-    text: msg,
-    buttons: actionButtons
-  });
-
-  const settings = db.getSettings();
-  const token = activeToken || settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+  const apartment = String(inquiry.apartmentCode || "").trim();
+  const when = inquiry.type === "reservation" ? inquiry.moveInDate : inquiry.viewingTime;
+  const reply = [
+    `🔔 ${label} · ${code}`,
+    String(inquiry.clientName || "").slice(0, 130),
+    apartment && apartment !== "CURATED-SHORTLIST" ? `Căn ${apartment}` : "",
+    when ? `Thời gian: ${String(when).slice(0, 100)}` : ""
+  ].filter(Boolean).join("\n");
+  const buttons = inquiry.type === "owner_listing" ?
+    [[{ text: "Xem chủ nhà gửi căn", callback_data: "/owners" }]] :
+    [[{ text: "Xem yêu cầu", callback_data: `/lead ${code}` }],
+      ...(apartment && apartment !== "CURATED-SHORTLIST" ? [[{ text: "Chi tiết căn", callback_data: `/apt ${apartment}` }]] : [])];
   const chatId = getTelegramAdminChatId();
-
-  if (botInstance && chatId) {
-    try {
-      await botInstance.sendMessage(chatId, msg, {
-        parse_mode: "Markdown",
-        reply_markup: { inline_keyboard: actionButtons }
-      });
-    } catch (err) {
-      console.error("Failed to push Telegram message via botInstance:", err.message);
-    }
-  } else if (token && chatId) {
-    try {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: msg,
-          parse_mode: "Markdown",
-          reply_markup: { inline_keyboard: actionButtons }
-        })
-      });
-    } catch (err) {
-      console.error("Failed to push Telegram message via HTTP API:", err.message);
-    }
+  const token = getTelegramToken();
+  if (!chatId || !token) return;
+  try {
+    await deliverTelegramResult(botInstance || new TelegramBot(token), token, chatId, { reply, buttons, parseMode: null });
+  } catch {
+    console.warn("Could not send Telegram inquiry alert.");
   }
 }
 
-// Handle incoming Telegram Webhook update (for Vercel Serverless or Webhook mode)
-async function handleTelegramWebhookUpdate(update) {
-  if (botInstance) return { ok: true };
+const chatQueue = new Map();
+const albumReplies = new Map();
+let webhookBot;
+let webhookToken;
 
-  const settings = db.getSettings();
-  const token = activeToken || settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+function enqueueChat(chatId, work) {
+  const next = (chatQueue.get(chatId) || Promise.resolve()).catch(() => {}).then(work);
+  chatQueue.set(chatId, next);
+  return next.finally(() => {
+    if (chatQueue.get(chatId) === next) chatQueue.delete(chatId);
+  });
+}
 
-  if (update.message) {
-    const msg = update.message;
-    if (!isTelegramAdminChat(msg.chat)) return { ok: true };
-    const chatId = msg.chat.id;
+function getTelegramToken() {
+  return (process.env.TELEGRAM_BOT_TOKEN || activeToken || db.getSettings().telegramBotToken || "").trim();
+}
 
-    // 1. Check if Admin uploaded an edited Excel (.csv) document directly into the Telegram chat!
-    if (msg.document && msg.document.file_name && /\.(csv|tsv|txt)$/i.test(msg.document.file_name) && token) {
-      try {
-        const fRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${msg.document.file_id}`);
-        const fJson = await fRes.json();
-        if (fJson.ok && fJson.result?.file_path) {
-          const csvRes = await fetch(`https://api.telegram.org/file/bot${token}/${fJson.result.file_path}`);
-          const csvText = await csvRes.text();
-          const isLeaseFile = /lease|hopdong|khachdangthue/i.test(msg.document.file_name);
-          const importResult = isLeaseFile
-            ? await sheetsService.importLeasesFromExcelPayload(csvText)
-            : await sheetsService.importRowsFromSheetPayload(csvText);
+async function preparePhoto(token, msg) {
+  const photo = msg.photo?.at(-1) ||
+    (msg.document?.mime_type?.startsWith("image/") ? msg.document : null);
+  if (!photo) return {};
+  try {
+    const url = await storeTelegramPhoto(token, photo);
+    return { photoUrls: [url] };
+  } catch {
+    return { photoError: "Không tải được ảnh này. Hãy gửi lại dưới dạng Ảnh từ thư viện." };
+  }
+}
 
-          const replyText =
-            `📊 *ĐÃ NHẬP & CẬP NHẬT TỪ FILE EXCEL TRÊN TELEGRAM THÀNH CÔNG!*\n` +
-            `• File nhận được: \`${msg.document.file_name}\`\n` +
-            `• Số mục đã đồng bộ lên Website: *${importResult.createdOrUpdated} mục*\n` +
-            `• Mã đã cập nhật: \`${(importResult.codes || []).join(", ")}\``;
+function telegramOptions(result) {
+  const buttons = result.buttons?.map(row => row.filter(button =>
+    !button.callback_data || Buffer.byteLength(button.callback_data, "utf8") <= 64
+  )).filter(row => row.length);
+  return {
+    ...(result.parseMode === null ? {} : { parse_mode: "Markdown" }),
+    ...(buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {})
+  };
+}
 
-          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: replyText,
-              parse_mode: "Markdown",
-              reply_markup: { inline_keyboard: getMainMenuButtons() }
-            })
-          });
-          return { ok: true };
-        }
-      } catch (err) {
-        console.error("Excel Telegram upload error:", err.message);
+async function deliverTelegramResult(client, token, chatId, result, albumId) {
+  if (result.ignored) return;
+  const mediaId = result.photoPreview?.match(/^\/api\/telegram\/media\/([a-f0-9]{64})$/)?.[1];
+  if (mediaId) {
+    try {
+      const cover = await getStoredTelegramPhoto(mediaId);
+      if (cover) {
+        await client.sendPhoto(chatId, cover.bytes, { caption: "Ảnh bìa xem trước" }, {
+          filename: "cover." + cover.contentType.split("/").at(-1), contentType: cover.contentType
+        });
       }
+    } catch {
+      // A failed cover preview should leave the text review and its controls available.
     }
+  }
+  const options = telegramOptions(result);
+  const album = albumId && albumReplies.get(String(chatId));
+  if (album?.id === albumId) {
+    try {
+      await client.editMessageText(result.reply, { chat_id: chatId, message_id: album.messageId, ...options });
+      return;
+    } catch (error) {
+      if (/message is not modified/i.test(error.message)) return;
+    }
+  }
+  let sent;
+  try {
+    sent = await client.sendMessage(chatId, result.reply, options);
+  } catch (error) {
+    if (!options.parse_mode || !/parse entities/i.test(error.message)) throw error;
+    delete options.parse_mode;
+    sent = await client.sendMessage(chatId, result.reply, options);
+  }
+  if (albumId) {
+    albumReplies.set(String(chatId), { id: albumId, messageId: sent.message_id });
+  } else {
+    albumReplies.delete(String(chatId));
+  }
+  if (result.sendExcelFiles) await sendExcelFilesToTelegramChat(token, chatId);
+}
 
-    // 2. Check if Admin uploaded photos from their phone gallery!
-    const photoUrls = await resolveTelegramPhotoList(token, msg.photo);
+async function importTelegramDocument(client, chatId, document) {
+  try {
+    const link = await client.getFileLink(document.file_id);
+    const response = await fetch(link, { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error("Document download failed");
+    const csv = await response.text();
+    const isLease = /lease|hopdong|khachdangthue/i.test(document.file_name);
+    const imported = isLease ? await sheetsService.importLeasesFromExcelPayload(csv) :
+      await sheetsService.importRowsFromSheetPayload(csv);
+    await client.sendMessage(chatId, `Đã nhập ${imported.createdOrUpdated} mục từ tệp CSV.`, {
+      reply_markup: { inline_keyboard: getMainMenuButtons() }
+    });
+  } catch {
+    await client.sendMessage(chatId, "Không nhập được tệp. Kiểm tra định dạng CSV và thử gửi lại.");
+  }
+}
 
-    const rawText = msg.caption || msg.text || (photoUrls.length > 0 ? "" : "/menu");
+async function handleTelegramMessage(client, token, msg) {
+  if (!isTelegramAdminChat(msg.chat)) return { ok: true };
+  const chatId = msg.chat.id;
+  const preparedPhoto = preparePhoto(token, msg);
+  return enqueueChat(chatId, async () => {
+    if (/\.(csv|tsv|txt)$/i.test(msg.document?.file_name || "")) {
+      await importTelegramDocument(client, chatId, msg.document);
+      return { ok: true };
+    }
+    const media = await preparedPhoto;
+    const sharedLocation = msg.venue ? { ...msg.venue.location, address: msg.venue.address } :
+      (msg.location?.live_period ? null : msg.location);
+    const rawText = msg.caption || msg.text || (media.photoUrls?.length || media.photoError || sharedLocation ? "" : "/menu");
     const result = await processTelegramCommand(rawText, {
       chatId,
       username: msg.from?.username || msg.from?.first_name || "Telegram Admin",
-      photoUrls
+      mediaGroupId: msg.media_group_id,
+      sharedLocation,
+      ...media
     });
-
-    if (token) {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: result.reply,
-          parse_mode: "Markdown",
-          reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
-        })
-      });
-      if (result.sendExcelFiles) {
-        await sendExcelFilesToTelegramChat(token, chatId);
-      }
-    }
+    await deliverTelegramResult(client, token, chatId, result, msg.media_group_id);
     return result;
-  }
+  });
+}
 
-  if (update.callback_query) {
-    const query = update.callback_query;
-    if (!isTelegramAdminChat(query.message?.chat)) return { ok: true };
-    const chatId = query.message.chat.id;
+async function handleTelegramCallback(client, token, query) {
+  if (!isTelegramAdminChat(query.message?.chat)) return { ok: true };
+  const chatId = query.message.chat.id;
+  const acknowledge = client.answerCallbackQuery(query.id).catch(() => {});
+  return enqueueChat(chatId, async () => {
     const result = await processTelegramCommand(query.data, {
-      chatId,
-      username: query.from?.username || "Telegram Admin"
+      chatId, username: query.from?.username || "Telegram Admin"
     });
-    if (token && chatId) {
-      await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ callback_query_id: query.id })
-      });
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: result.reply,
-          parse_mode: "Markdown",
-          reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
-        })
-      });
-      if (result.sendExcelFiles) {
-        await sendExcelFilesToTelegramChat(token, chatId);
-      }
-    }
+    await acknowledge;
+    await deliverTelegramResult(client, token, chatId, result);
     return result;
+  });
+}
+
+async function handleTelegramWebhookUpdate(update) {
+  if (botInstance) return { ok: true };
+  const token = getTelegramToken();
+  if (!token) return { ok: true };
+  if (!webhookBot || webhookToken !== token) {
+    webhookBot = new TelegramBot(token);
+    webhookToken = token;
   }
+  if (update.message) return handleTelegramMessage(webhookBot, token, update.message);
+  if (update.callback_query) return handleTelegramCallback(webhookBot, token, update.callback_query);
   return { ok: true };
 }
 
 function initTelegramBot(customToken) {
-  const settings = db.getSettings();
-  const token = (customToken || process.env.TELEGRAM_BOT_TOKEN || settings.telegramBotToken || "").trim();
-
-  if (!token) {
-    if (db.getBotHistory().length === 0) {
-      processTelegramCommand("/start", { username: "Admin Mobile" });
-    }
-    return { active: false, mode: "Waiting for TELEGRAM_BOT_TOKEN" };
-  }
-
-  activeToken = token;
-  registerTelegramBotCommands(token);
-
+  const token = (process.env.TELEGRAM_BOT_TOKEN || customToken || db.getSettings().telegramBotToken || "").trim();
+  if (!token) return { active: false, mode: "Waiting for TELEGRAM_BOT_TOKEN" };
+  if (!getTelegramAdminChatId()) return { active: false, mode: "Waiting for TELEGRAM_ADMIN_CHAT_ID" };
   if (process.env.VERCEL) {
+    activeToken = token;
+    registerTelegramBotCommands(token);
     return { active: true, mode: "Telegram Webhook Serverless Active" };
   }
-
-  if (botInstance && activeToken === token) {
-    return { active: true, mode: "Live Telegram Polling Connected" };
-  }
+  if (botInstance && activeToken === token) return { active: true, mode: "Live Telegram Polling Connected" };
 
   try {
-    if (botInstance) {
-      botInstance.stopPolling();
-    }
-    botInstance = new TelegramBot(token, { polling: true });
-
-    botInstance.on("message", async (msg) => {
-      if (!isTelegramAdminChat(msg.chat)) return;
-      const chatId = msg.chat.id;
-
-      // Handle Excel .csv file uploaded directly in Telegram chat
-      if (msg.document && msg.document.file_name && /\.(csv|tsv|txt)$/i.test(msg.document.file_name)) {
-        try {
-          const fileLink = await botInstance.getFileLink(msg.document.file_id);
-          const csvRes = await fetch(fileLink);
-          const csvText = await csvRes.text();
-          const isLeaseFile = /lease|hopdong|khachdangthue/i.test(msg.document.file_name);
-          const importResult = isLeaseFile
-            ? await sheetsService.importLeasesFromExcelPayload(csvText)
-            : await sheetsService.importRowsFromSheetPayload(csvText);
-
-          await botInstance.sendMessage(
-            chatId,
-            `📊 *ĐÃ NHẬP & CẬP NHẬT TỪ FILE EXCEL TRÊN TELEGRAM THÀNH CÔNG!*\n` +
-              `• File: \`${msg.document.file_name}\`\n` +
-              `• Đã đồng bộ: *${importResult.createdOrUpdated} mục* (\`${(importResult.codes || []).join(", ")}\`)`,
-            {
-              parse_mode: "Markdown",
-              reply_markup: { inline_keyboard: getMainMenuButtons() }
-            }
-          );
-          return;
-        } catch (err) {
-          console.error("Polling CSV upload error:", err.message);
-        }
+    const previous = botInstance;
+    const client = new TelegramBot(token, { polling: true });
+    botInstance = client;
+    activeToken = token;
+    if (previous) previous.stopPolling().catch(() => {});
+    const logUpdateError = () => console.error("Telegram update could not be completed.");
+    client.on("message", msg => handleTelegramMessage(client, token, msg).catch(logUpdateError));
+    client.on("callback_query", query => handleTelegramCallback(client, token, query).catch(() => {
+      logUpdateError();
+      const chat = query.message?.chat;
+      if (isTelegramAdminChat(chat)) {
+        client.sendMessage(chat.id, "Thao tác chưa được xác nhận. Hãy bấm lại nút hoặc mở bản nháp.").catch(() => {});
       }
-
-      // Handle phone photo uploads (embeds directly + proxy route fallback)
-      const photoUrls = await resolveTelegramPhotoList(token, msg.photo);
-      const rawText = msg.caption || msg.text || (photoUrls.length > 0 ? "" : "/menu");
-      const result = await processTelegramCommand(rawText, {
-        chatId,
-        username: msg.from?.username || msg.from?.first_name || "Telegram Admin",
-        photoUrls
-      });
-      await botInstance.sendMessage(chatId, result.reply, {
-        parse_mode: "Markdown",
-        reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
-      });
-      if (result.sendExcelFiles) {
-        await sendExcelFilesToTelegramChat(token, chatId);
-      }
+    }));
+    client.on("polling_error", error => {
+      console.error("Telegram polling error.", error.response?.statusCode || error.code || "");
     });
-
-    botInstance.on("callback_query", async (query) => {
-      if (!isTelegramAdminChat(query.message?.chat)) return;
-      const chatId = query.message.chat.id;
-      const data = query.data;
-      const result = await processTelegramCommand(data, {
-        chatId,
-        username: query.from?.username || "Telegram Admin"
-      });
-      await botInstance.answerCallbackQuery(query.id);
-      await botInstance.sendMessage(chatId, result.reply, {
-        parse_mode: "Markdown",
-        reply_markup: result.buttons ? { inline_keyboard: result.buttons } : undefined
-      });
-      if (result.sendExcelFiles) {
-        await sendExcelFilesToTelegramChat(token, chatId);
-      }
-    });
-
-    console.log("✓ Live Telegram Bot Polling started successfully!");
+    registerTelegramBotCommands(token);
     return { active: true, mode: "Live Telegram Polling Connected" };
-  } catch (err) {
-    console.error("Telegram Bot initialization error:", err.message);
-    return { active: false, mode: `Error: ${err.message}` };
+  } catch {
+    return { active: false, mode: "Telegram Bot initialization failed" };
   }
 }
 
 function getBotStatus() {
   const hasToken = Boolean(activeToken || process.env.TELEGRAM_BOT_TOKEN || db.getSettings().telegramBotToken);
+  const adminChatId = getTelegramAdminChatId();
   return {
-    connected: Boolean(botInstance || activeToken || hasToken),
+    connected: Boolean(adminChatId && (botInstance || activeToken || (hasToken && process.env.TELEGRAM_WEBHOOK_SECRET))),
     mode: botInstance
       ? "Live Telegram Bot Polling (@BotFather Connected)"
-      : hasToken
+      : hasToken && adminChatId
       ? "Telegram Webhook & Push Active"
       : "Ready for TELEGRAM_BOT_TOKEN",
     hasToken,
-    adminChatId: getTelegramAdminChatId() || "Auto-binds on first /start from @KIN_Estates"
+    adminChatId: adminChatId || null
   };
 }
 

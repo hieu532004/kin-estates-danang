@@ -1,6 +1,68 @@
 {
   "apartments": [
     {
+      "_id": "apt-1795169469678-9kta",
+      "code": "DN-KIN-26362F858607B5",
+      "title": {
+        "vi": "Căn 2PN có ban công",
+        "en": "Căn 2PN có ban công",
+        "zh": "Căn 2PN có ban công",
+        "ru": "Căn 2PN có ban công",
+        "ko": "Căn 2PN có ban công",
+        "ja": "Căn 2PN có ban công"
+      },
+      "building": "The Panoma",
+      "address": "The Panoma, Han Riverfront, Đà Nẵng",
+      "areaName": "Han Riverfront",
+      "district": null,
+      "priceUsd": 726,
+      "priceVnd": 18500000,
+      "bedrooms": 2,
+      "bathrooms": null,
+      "sizeM2": 72,
+      "floor": null,
+      "orientation": null,
+      "minLeaseMonths": null,
+      "depositMonths": null,
+      "electricityRate": null,
+      "waterRate": null,
+      "wifiIncluded": null,
+      "naturalLightScore": null,
+      "remoteWorkSetup": null,
+      "petPolicy": null,
+      "status": "Available",
+      "isVisible": true,
+      "hideWhenRented": false,
+      "featured": true,
+      "landlordName": "",
+      "landlordPhone": "",
+      "adminNote": "",
+      "currentTenant": null,
+      "coordinates": {
+        "lat": 16.0644,
+        "lng": 108.2266
+      },
+      "architecturalNotes": {
+        "vi": "Nội thất đầy đủ",
+        "en": "Nội thất đầy đủ",
+        "zh": "Nội thất đầy đủ",
+        "ru": "Nội thất đầy đủ",
+        "ko": "Nội thất đầy đủ",
+        "ja": "Nội thất đầy đủ"
+      },
+      "tags": [],
+      "images": [
+        "/api/telegram/media/fefd8b2470ee499e29594130b9df33742c27d7d5798b1ffbc57b885c00d19c22",
+        "/api/telegram/media/3f72aa1a80c180c664b072f54c4d6084e09ad1c6d431f8777f4e88a7206780c6",
+        "/api/telegram/media/7a851e914352941a5ccba365bfdd97b88fe24622c1ed49c6d9cc24606756e6b8",
+        "/api/telegram/media/27b567c8ecf9c472f746a18c6db980aea945f165c874604c27975a476642fc21"
+      ],
+      "source": "telegram",
+      "createdAt": "2026-11-20T10:11:09.684Z",
+      "updatedAt": "2026-11-20T10:11:09.684Z",
+      "locationAccuracy": "exact"
+    },
+    {
       "_id": "apt-1795017217145-8tvb",
       "code": "DN-KIN-2247",
       "title": {
@@ -62,7 +124,8 @@
       ],
       "source": "telegram",
       "createdAt": "2026-11-18T15:53:37.145Z",
-      "updatedAt": "2026-11-18T15:53:37.145Z"
+      "updatedAt": "2026-11-18T15:53:37.145Z",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-panoma-1902",
@@ -116,7 +179,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-panoma-2405",
@@ -170,7 +234,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-panoma-2801",
@@ -223,7 +288,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-filmore-2401",
@@ -276,7 +342,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-filmore-1608",
@@ -328,7 +395,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-hiyori-1804",
@@ -380,7 +448,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-hiyori-1202",
@@ -431,7 +500,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-monarchy-1508",
@@ -484,7 +554,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     },
     {
       "_id": "apt-anthuong-1102",
@@ -535,7 +606,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644"
+      "landlordPhone": "0349456644",
+      "locationAccuracy": "exact"
     }
   ],
   "buildings": [
@@ -707,6 +779,26 @@
   ],
   "inquiries": [
     {
+      "_id": "inq-1795169588466",
+      "code": "KH-9470",
+      "type": "viewing",
+      "clientName": "hieu",
+      "messenger": "Zalo / WhatsApp / Telegram",
+      "contactHandle": "hieu",
+      "apartmentCode": "DN-KIN-26362F858607B5",
+      "apartmentTitle": "Căn 2PN có ban công",
+      "budgetUsd": "$726/tháng",
+      "bedrooms": "2 PN",
+      "viewingTime": "This week • 6–12 months lease",
+      "moveInDate": "This week • 6–12 months lease",
+      "leaseDuration": "6-12 tháng",
+      "notes": "Đặt lịch xem căn hộ DN-KIN-26362F858607B5 (This week • 6–12 months lease) — Đã đồng ý chính sách dữ liệu KIN Estates",
+      "ownerPropertyData": null,
+      "status": "New",
+      "adminNotes": "",
+      "createdAt": "2026-11-20T10:13:08.466Z"
+    },
+    {
       "_id": "inq-1795017233981",
       "code": "KH-3758",
       "type": "viewing",
@@ -770,6 +862,22 @@
   ],
   "syncLogs": [
     {
+      "id": "sync-1795169588865",
+      "timestamp": "2026-11-20T10:13:08.865Z",
+      "direction": "outbound",
+      "action": "new_inquiry",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
+      "id": "sync-1795169469693",
+      "timestamp": "2026-11-20T10:11:09.693Z",
+      "direction": "outbound",
+      "action": "create_apartment",
+      "status": "local_ready",
+      "detail": "Đã cập nhật Database & File Excel (.csv) trực tuyến."
+    },
+    {
       "id": "sync-1795166986538",
       "timestamp": "2026-11-20T09:29:46.538Z",
       "direction": "outbound",
@@ -827,252 +935,6 @@
     }
   ],
   "botMessages": [
-    {
-      "id": "msg-1794827398969-0b7l",
-      "timestamp": "2026-11-16T11:09:58.969Z",
-      "sender": "user",
-      "user": "Admin Mobile",
-      "text": "/start"
-    },
-    {
-      "id": "msg-1794827398970-izei",
-      "timestamp": "2026-11-16T11:09:58.970Z",
-      "sender": "bot",
-      "user": "KIN Atelier Bot",
-      "text": "🏛️ *KIN ATELIER — Quản Lý Căn Hộ Đà Nẵng Trên Điện Thoại*\n━━━━━━━━━━━━━━━━━━━━━━\n• Tổng số căn hộ: *10 căn*\n• Yêu cầu xem phòng: *1 khách*\n• Database: _Mongo-JSON Hybrid_\n\n📱 *CÁC LỆNH QUẢN LÝ NHANH TRÊN ĐIỆN THOẠI:*\n1️⃣ `/list` — Xem danh sách & bấm nút Xóa / Đổi trạng thái / Đổi giá\n2️⃣ `/add Tên | Khu vực | Giá USD | Số PN | m2 | Tòa nhà | Mô tả | Link ảnh` — Đăng bài mới siêu tốc\n3️⃣ `/price MÃ_CĂN GIÁ_MỚI` — VD: `/price DN-FIL-2401 1290`\n4️⃣ `/status MÃ_CĂN` — Đổi trạng thái (Available / Rented)\n5️⃣ `/delete MÃ_CĂN` — Xóa bài đăng ngay lập tức\n6️⃣ `/inquiries` — Xem danh sách khách đặt lịch xem căn hộ\n7️⃣ `/sync` — Đồng bộ 2 chiều với Google Sheets",
-      "buttons": [
-        [
-          {
-            "text": "📋 Danh sách căn hộ (/list)",
-            "callback_data": "/list"
-          },
-          {
-            "text": "➕ Đăng căn mới (/add)",
-            "callback_data": "/add"
-          }
-        ],
-        [
-          {
-            "text": "📬 Khách đặt lịch (/inquiries)",
-            "callback_data": "/inquiries"
-          },
-          {
-            "text": "📊 Đồng bộ Google Sheet (/sync)",
-            "callback_data": "/sync"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795017123422-w5lw",
-      "timestamp": "2026-11-18T15:52:03.422Z",
-      "sender": "user",
-      "user": "Admin (KIN Estates)",
-      "text": "/list"
-    },
-    {
-      "id": "msg-1795017123425-72fx",
-      "timestamp": "2026-11-18T15:52:03.425Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "📋 *TẤT CẢ CĂN HỘ (10 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống\n\n10. *[DN-ANT-V01]* Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)\n   📍 Nam Viet A Villa Compound — Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1850/tháng* (~47.1tr) • 3PN • 240m²\n   🏷️ 🟢 Trống",
-      "buttons": [
-        [
-          {
-            "text": "⚙️ DN-PAN-1902",
-            "callback_data": "/apt DN-PAN-1902"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-1902 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-1902"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-1902"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-PAN-2405",
-            "callback_data": "/apt DN-PAN-2405"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-2405 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-2405"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-2405"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-PAN-2801",
-            "callback_data": "/apt DN-PAN-2801"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-2801 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-2801"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-2801"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-FIL-2401",
-            "callback_data": "/apt DN-FIL-2401"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-FIL-2401 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-FIL-2401"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-FIL-2401"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-FIL-1608",
-            "callback_data": "/apt DN-FIL-1608"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-FIL-1608 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-FIL-1608"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-FIL-1608"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-HIY-1804",
-            "callback_data": "/apt DN-HIY-1804"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-HIY-1804 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-HIY-1804"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-HIY-1804"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-HIY-1202",
-            "callback_data": "/apt DN-HIY-1202"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-HIY-1202 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-HIY-1202"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-HIY-1202"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-MON-1508",
-            "callback_data": "/apt DN-MON-1508"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-MON-1508 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-MON-1508"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-MON-1508"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-ANT-1102",
-            "callback_data": "/apt DN-ANT-1102"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-ANT-1102 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-ANT-1102"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-ANT-1102"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-ANT-V01",
-            "callback_data": "/apt DN-ANT-V01"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-ANT-V01 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-ANT-V01"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-ANT-V01"
-          }
-        ],
-        [
-          {
-            "text": "🟢 Lọc: Đang trống",
-            "callback_data": "/empty"
-          },
-          {
-            "text": "🔴 Lọc: Đã thuê/Ẩn",
-            "callback_data": "/rented"
-          },
-          {
-            "text": "➕ Đăng căn mới",
-            "callback_data": "/wizard"
-          }
-        ]
-      ]
-    },
     {
       "id": "msg-1795017133245-h4y7",
       "timestamp": "2026-11-18T15:52:13.245Z",
@@ -3653,21 +3515,910 @@
           }
         ]
       ]
+    },
+    {
+      "id": "msg-1795169320468-ujf6",
+      "timestamp": "2026-11-20T10:08:40.468Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795169320472-40zq",
+      "timestamp": "2026-11-20T10:08:40.473Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *KIN ESTATES*\n10 căn · 10 đang trống · 1 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📝 Bản nháp",
+            "callback_data": "/draft"
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho căn hộ",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Đang trống",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📋 Mẫu nhập nhanh",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Excel",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169336699-ivju",
+      "timestamp": "2026-11-20T10:08:56.699Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/form"
+    },
+    {
+      "id": "msg-1795169336701-wkjb",
+      "timestamp": "2026-11-20T10:08:56.701Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Sao chép mẫu, sửa thông tin và gửi lại. Bạn có thể gửi ảnh từ thư viện trước hoặc sau khi điền.\n\nĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ",
+      "buttons": [
+        [
+          {
+            "text": "Đăng từng bước",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "Mở bản nháp",
+            "callback_data": "/draft"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169392520-w1xx",
+      "timestamp": "2026-11-20T10:09:52.520Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "ĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ"
+    },
+    {
+      "id": "msg-1795169392529-8uds",
+      "timestamp": "2026-11-20T10:09:52.529Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "4/4 · Ảnh và mô tả\nBấm 📎 để gửi cả album. Ảnh đầu tiên sẽ làm ảnh bìa.\nBạn có thể gửi thêm một đoạn mô tả hoặc bấm Xem trước.",
+      "buttons": [
+        [
+          {
+            "text": "Xem trước",
+            "callback_data": "/draft_preview 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169398821-89ac",
+      "timestamp": "2026-11-20T10:09:58.821Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_preview 26362f858607b5"
+    },
+    {
+      "id": "msg-1795169398831-kojp",
+      "timestamp": "2026-11-20T10:09:58.831Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Xem trước · Căn 2PN có ban công\nThe Panoma · Han Riverfront\n18.500.000 ₫/tháng · $726\n2 PN · 72 m²\n0 ảnh · Thêm ít nhất một ảnh để đăng\nNội thất đầy đủ",
+      "buttons": [
+        [
+          {
+            "text": "Lưu căn ở chế độ ẩn",
+            "callback_data": "/draft_hide 26362f858607b5.1"
+          }
+        ],
+        [
+          {
+            "text": "Sửa thông tin",
+            "callback_data": "/draft_edit 26362f858607b5"
+          },
+          {
+            "text": "Chỉnh ảnh",
+            "callback_data": "/draft_resume 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169431859-zfbm",
+      "timestamp": "2026-11-20T10:10:31.859Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_resume 26362f858607b5"
+    },
+    {
+      "id": "msg-1795169431862-bkfg",
+      "timestamp": "2026-11-20T10:10:31.862Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "4/4 · Ảnh và mô tả\nBấm 📎 để gửi cả album. Ảnh đầu tiên sẽ làm ảnh bìa.\nBạn có thể gửi thêm một đoạn mô tả hoặc bấm Xem trước.\nĐã nhận 4/20 ảnh.",
+      "buttons": [
+        [
+          {
+            "text": "Xem trước",
+            "callback_data": "/draft_preview 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Bỏ một ảnh",
+            "callback_data": "/draft_remove 26362f858607b5"
+          },
+          {
+            "text": "Chọn ảnh bìa",
+            "callback_data": "/draft_cover 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169452248-juqx",
+      "timestamp": "2026-11-20T10:10:52.248Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_cover 26362f858607b5"
+    },
+    {
+      "id": "msg-1795169452250-q6nw",
+      "timestamp": "2026-11-20T10:10:52.250Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Chọn ảnh muốn dùng làm ảnh bìa.",
+      "buttons": [
+        [
+          {
+            "text": "Ảnh 1",
+            "callback_data": "/draft_cover 26362f858607b5.5 1"
+          },
+          {
+            "text": "Ảnh 2",
+            "callback_data": "/draft_cover 26362f858607b5.5 2"
+          },
+          {
+            "text": "Ảnh 3",
+            "callback_data": "/draft_cover 26362f858607b5.5 3"
+          },
+          {
+            "text": "Ảnh 4",
+            "callback_data": "/draft_cover 26362f858607b5.5 4"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169455501-p4xp",
+      "timestamp": "2026-11-20T10:10:55.501Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_cover 26362f858607b5.5 1"
+    },
+    {
+      "id": "msg-1795169455505-tmef",
+      "timestamp": "2026-11-20T10:10:55.505Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Đã đưa ảnh được chọn lên đầu.\n\n4/4 · Ảnh và mô tả\nBấm 📎 để gửi cả album. Ảnh đầu tiên sẽ làm ảnh bìa.\nBạn có thể gửi thêm một đoạn mô tả hoặc bấm Xem trước.\nĐã nhận 4/20 ảnh.",
+      "buttons": [
+        [
+          {
+            "text": "Xem trước",
+            "callback_data": "/draft_preview 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Bỏ một ảnh",
+            "callback_data": "/draft_remove 26362f858607b5"
+          },
+          {
+            "text": "Chọn ảnh bìa",
+            "callback_data": "/draft_cover 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169457912-82ax",
+      "timestamp": "2026-11-20T10:10:57.912Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_preview 26362f858607b5"
+    },
+    {
+      "id": "msg-1795169457921-qnmi",
+      "timestamp": "2026-11-20T10:10:57.921Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Xem trước · Căn 2PN có ban công\nThe Panoma · Han Riverfront\n18.500.000 ₫/tháng · $726\n2 PN · 72 m²\n4 ảnh · Ảnh 1 làm ảnh bìa\nNội thất đầy đủ",
+      "buttons": [
+        [
+          {
+            "text": "Đăng lên web",
+            "callback_data": "/draft_publish 26362f858607b5.6"
+          },
+          {
+            "text": "Lưu căn ở chế độ ẩn",
+            "callback_data": "/draft_hide 26362f858607b5.6"
+          }
+        ],
+        [
+          {
+            "text": "Sửa thông tin",
+            "callback_data": "/draft_edit 26362f858607b5"
+          },
+          {
+            "text": "Chỉnh ảnh",
+            "callback_data": "/draft_resume 26362f858607b5"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 26362f858607b5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169469675-2wt4",
+      "timestamp": "2026-11-20T10:11:09.675Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_publish 26362f858607b5.6"
+    },
+    {
+      "id": "msg-1795169469695-qni0",
+      "timestamp": "2026-11-20T10:11:09.695Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Đã đăng căn hộ.\nDN-KIN-26362F858607B5 · Căn 2PN có ban công\n4 ảnh · Đang hiện trên web",
+      "buttons": [
+        [
+          {
+            "text": "Mở căn hộ",
+            "callback_data": "/apt DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "Kho căn hộ",
+            "callback_data": "/list"
+          }
+        ],
+        [
+          {
+            "text": "Thêm ảnh",
+            "callback_data": "/addphoto DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "Thay bộ ảnh",
+            "callback_data": "/setphoto DN-KIN-26362F858607B5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169474207-qb77",
+      "timestamp": "2026-11-20T10:11:14.207Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/apt DN-KIN-26362F858607B5"
+    },
+    {
+      "id": "msg-1795169474209-mp9m",
+      "timestamp": "2026-11-20T10:11:14.209Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *ĐIỀU KHIỂN CĂN HỘ [DN-KIN-26362F858607B5]*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Tên:* Căn 2PN có ban công\n• *Tòa nhà:* The Panoma\n• *Địa chỉ:* The Panoma, Han Riverfront, Đà Nẵng\n• *Khu vực:* Han Riverfront\n• *Giá thuê:* *$726/tháng* (~18.5 triệu VNĐ)\n• *Thông số:* 2 PN • — WC • 72 m² • Tầng —\n• *Số lượng ảnh:* *4 ảnh*\n• *Điện / Nước:* Chưa nhập\n• *Thú cưng:* Chưa nhập\n• *Trạng thái:* *Available* | *Hiển thị Web:* *👁️ Đang hiện*\n🔑 *Khách đang thuê:* _Chưa có (Đang mở đón khách)_\n• *Mô tả:* _Nội thất đầy đủ_",
+      "buttons": [
+        [
+          {
+            "text": "🔴 Đổi sang: Đã thuê",
+            "callback_data": "/status DN-KIN-26362F858607B5 Rented"
+          },
+          {
+            "text": "🙈 Ẩn khỏi Web",
+            "callback_data": "/hide DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "📸 Thêm ảnh",
+            "callback_data": "/addphoto DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🔄 Thay bộ ảnh",
+            "callback_data": "/setphoto DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🖼 Chỉnh thư viện",
+            "callback_data": "/gallery DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "✏️ Sửa thông tin hoặc giá",
+            "callback_data": "/editfields DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🟡 Đã cọc",
+            "callback_data": "/status DN-KIN-26362F858607B5 Reserved"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Gán khách thuê căn này",
+            "callback_data": "/rent_prompt DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🗑️ Xóa DN-KIN-26362F858607B5",
+            "callback_data": "/delete DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "⬅️ Quay lại danh sách (/list)",
+            "callback_data": "/list"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169588469-2yg7",
+      "timestamp": "2026-11-20T10:13:08.469Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot (Push Alert)",
+      "text": "🔔 *📅 KHÁCH ĐẶT LỊCH HẸN XEM CĂN HỘ!*\n━━━━━━━━━━━━━━━━━━━━━━\n🆔 Mã yêu cầu: *KH-9470*\n👤 Khách hàng: *hieu*\n📱 Liên hệ (Zalo / WhatsApp / Telegram): `hieu`\n🏠 Căn hộ quan tâm: *DN-KIN-26362F858607B5* (Căn 2PN có ban công)\n💰 Ngân sách / Giá: *$726/tháng* | 🛏 2 PN\n⏰ Thời gian hẹn xem / Dọn vào: *This week • 6–12 months lease*\n📝 Ghi chú: _Đặt lịch xem căn hộ DN-KIN-26362F858607B5 (This week • 6–12 months lease) — Đã đồng ý chính sách dữ liệu KIN Estates_",
+      "buttons": [
+        [
+          {
+            "text": "📞 Đã liên hệ (KH-9470)",
+            "callback_data": "/lead_status KH-9470 Contacted"
+          },
+          {
+            "text": "📅 Đã chốt giờ xem",
+            "callback_data": "/lead_status KH-9470 Viewing_Scheduled"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Chốt khách thuê căn này",
+            "callback_data": "/lead_to_lease KH-9470"
+          },
+          {
+            "text": "🏠 Xem căn DN-KIN-26362F858607B5",
+            "callback_data": "/apt DN-KIN-26362F858607B5"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169608108-96hb",
+      "timestamp": "2026-11-20T10:13:28.108Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/apt DN-KIN-26362F858607B5"
+    },
+    {
+      "id": "msg-1795169608110-q1xk",
+      "timestamp": "2026-11-20T10:13:28.110Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *ĐIỀU KHIỂN CĂN HỘ [DN-KIN-26362F858607B5]*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Tên:* Căn 2PN có ban công\n• *Tòa nhà:* The Panoma\n• *Địa chỉ:* The Panoma, Han Riverfront, Đà Nẵng\n• *Khu vực:* Han Riverfront\n• *Giá thuê:* *$726/tháng* (~18.5 triệu VNĐ)\n• *Thông số:* 2 PN • — WC • 72 m² • Tầng —\n• *Số lượng ảnh:* *4 ảnh*\n• *Điện / Nước:* Chưa nhập\n• *Thú cưng:* Chưa nhập\n• *Trạng thái:* *Available* | *Hiển thị Web:* *👁️ Đang hiện*\n🔑 *Khách đang thuê:* _Chưa có (Đang mở đón khách)_\n• *Mô tả:* _Nội thất đầy đủ_",
+      "buttons": [
+        [
+          {
+            "text": "🔴 Đổi sang: Đã thuê",
+            "callback_data": "/status DN-KIN-26362F858607B5 Rented"
+          },
+          {
+            "text": "🙈 Ẩn khỏi Web",
+            "callback_data": "/hide DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "📸 Thêm ảnh",
+            "callback_data": "/addphoto DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🔄 Thay bộ ảnh",
+            "callback_data": "/setphoto DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🖼 Chỉnh thư viện",
+            "callback_data": "/gallery DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "✏️ Sửa thông tin hoặc giá",
+            "callback_data": "/editfields DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🟡 Đã cọc",
+            "callback_data": "/status DN-KIN-26362F858607B5 Reserved"
+          }
+        ],
+        [
+          {
+            "text": "🔑 Gán khách thuê căn này",
+            "callback_data": "/rent_prompt DN-KIN-26362F858607B5"
+          },
+          {
+            "text": "🗑️ Xóa DN-KIN-26362F858607B5",
+            "callback_data": "/delete DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "⬅️ Quay lại danh sách (/list)",
+            "callback_data": "/list"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795169629645-i8ib",
+      "timestamp": "2026-11-20T10:13:49.645Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/list"
+    },
+    {
+      "id": "msg-1795169629654-hloj",
+      "timestamp": "2026-11-20T10:13:49.654Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Kho căn hộ · 11 căn (1/2)\n\nDN-KIN-26362F858607B5 · Căn 2PN có ban công\nTrống · 18.500.000 ₫ · 4 ảnh\n\nDN-KIN-2247 · Căn hộ Kiến trúc Đà Nẵng\nTrống · 24.200.000 ₫ · 3 ảnh\n\nDN-PAN-1902 · Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\nTrống · 16.650.000 ₫ · 3 ảnh\n\nDN-PAN-2405 · Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\nTrống · 22.550.000 ₫ · 3 ảnh\n\nDN-PAN-2801 · Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\nTrống · 36.900.000 ₫ · 2 ảnh\n\nDN-FIL-2401 · The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\nTrống · 34.400.000 ₫ · 3 ảnh\n\nDN-FIL-1608 · The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\nTrống · 24.950.000 ₫ · 2 ảnh\n\nDN-HIY-1804 · Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\nTrống · 21.650.000 ₫ · 2 ảnh\n\nChọn một căn để chỉnh. Tìm nhanh bằng /list + mã hoặc tên.",
+      "buttons": [
+        [
+          {
+            "text": "DN-KIN-26362F858607B5 · Căn 2PN có ban công",
+            "callback_data": "/apt DN-KIN-26362F858607B5"
+          }
+        ],
+        [
+          {
+            "text": "DN-KIN-2247 · Căn hộ Kiến trúc Đà Nẵng",
+            "callback_data": "/apt DN-KIN-2247"
+          }
+        ],
+        [
+          {
+            "text": "DN-PAN-1902 · Căn hộ 1 phòng ngủ The Panoma 1 ",
+            "callback_data": "/apt DN-PAN-1902"
+          }
+        ],
+        [
+          {
+            "text": "DN-PAN-2405 · Căn hộ 2 phòng ngủ góc The Panom",
+            "callback_data": "/apt DN-PAN-2405"
+          }
+        ],
+        [
+          {
+            "text": "DN-PAN-2801 · Căn hộ 3 phòng ngủ The Panoma — ",
+            "callback_data": "/apt DN-PAN-2801"
+          }
+        ],
+        [
+          {
+            "text": "DN-FIL-2401 · The Filmore Đà Nẵng — Loft 2PN B",
+            "callback_data": "/apt DN-FIL-2401"
+          }
+        ],
+        [
+          {
+            "text": "DN-FIL-1608 · The Filmore Đà Nẵng — Căn hộ 1 p",
+            "callback_data": "/apt DN-FIL-1608"
+          }
+        ],
+        [
+          {
+            "text": "DN-HIY-1804 · Hiyori Garden Tower — Căn hộ 2PN",
+            "callback_data": "/apt DN-HIY-1804"
+          }
+        ],
+        [
+          {
+            "text": "Trang sau ›",
+            "callback_data": "/list p2"
+          }
+        ],
+        [
+          {
+            "text": "Tất cả",
+            "callback_data": "/list"
+          },
+          {
+            "text": "Đang trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "Đã thuê / Ẩn",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "Menu",
+            "callback_data": "/menu"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795177401228-aanu",
+      "timestamp": "2026-11-20T12:23:21.228Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795177401230-wkjz",
+      "timestamp": "2026-11-20T12:23:21.230Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *KIN ESTATES*\n11 căn · 11 đang trống · 2 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📝 Bản nháp",
+            "callback_data": "/draft"
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho căn hộ",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Đang trống",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📋 Mẫu nhập nhanh",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Excel",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189545163-off4",
+      "timestamp": "2026-11-20T15:45:45.163Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft"
+    },
+    {
+      "id": "msg-1795189545173-2w5l",
+      "timestamp": "2026-11-20T15:45:45.173Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",
+      "buttons": [
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 69ae648bbc1ef9"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189560101-4u3o",
+      "timestamp": "2026-11-20T15:46:00.101Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/form"
+    },
+    {
+      "id": "msg-1795189560104-8zns",
+      "timestamp": "2026-11-20T15:46:00.104Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Sao chép mẫu, sửa thông tin và gửi lại. Bạn có thể gửi ảnh từ thư viện trước hoặc sau khi điền.\n\nĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ",
+      "buttons": [
+        [
+          {
+            "text": "Đăng từng bước",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "Mở bản nháp",
+            "callback_data": "/draft"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189571150-j2hx",
+      "timestamp": "2026-11-20T15:46:11.150Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795189571154-x68m",
+      "timestamp": "2026-11-20T15:46:11.154Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",
+      "buttons": [
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 69ae648bbc1ef9"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189575937-7l23",
+      "timestamp": "2026-11-20T15:46:15.937Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft"
+    },
+    {
+      "id": "msg-1795189575940-2o7q",
+      "timestamp": "2026-11-20T15:46:15.940Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",
+      "buttons": [
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 69ae648bbc1ef9"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189794472-0cdi",
+      "timestamp": "2026-11-20T15:49:54.472Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_cover 69ae648bbc1ef9"
+    },
+    {
+      "id": "msg-1795189794475-ug40",
+      "timestamp": "2026-11-20T15:49:54.475Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Chọn ảnh muốn dùng làm ảnh bìa.",
+      "buttons": [
+        [
+          {
+            "text": "Ảnh 1",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 1"
+          },
+          {
+            "text": "Ảnh 2",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 2"
+          },
+          {
+            "text": "Ảnh 3",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 3"
+          },
+          {
+            "text": "Ảnh 4",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 4"
+          }
+        ],
+        [
+          {
+            "text": "Ảnh 5",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 5"
+          },
+          {
+            "text": "Ảnh 6",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 6"
+          },
+          {
+            "text": "Ảnh 7",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 7"
+          },
+          {
+            "text": "Ảnh 8",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 8"
+          }
+        ],
+        [
+          {
+            "text": "Ảnh 9",
+            "callback_data": "/draft_cover 69ae648bbc1ef9.10 9"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 69ae648bbc1ef9"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795189803593-pup1",
+      "timestamp": "2026-11-20T15:50:03.593Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft_cover 69ae648bbc1ef9.10 6"
+    },
+    {
+      "id": "msg-1795189803599-cjgo",
+      "timestamp": "2026-11-20T15:50:03.599Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Đã đưa ảnh được chọn lên đầu.\n\n1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma\nĐã nhận 9/20 ảnh.",
+      "buttons": [
+        [
+          {
+            "text": "Bỏ một ảnh",
+            "callback_data": "/draft_remove 69ae648bbc1ef9"
+          },
+          {
+            "text": "Chọn ảnh bìa",
+            "callback_data": "/draft_cover 69ae648bbc1ef9"
+          }
+        ],
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 69ae648bbc1ef9"
+          }
+        ]
+      ]
     }
   ],
   "wizardSessions": {
-    "9075026090": {
-      "step": 2,
-      "draft": {
-        "images": [],
-        "title": "The Panoma 2PN Góc View Sông Hàn",
-        "building": "The Panoma (Sun Cosmo)"
+    "9075026090:draft-receipts": [
+      {
+        "action": "/draft_publish",
+        "ref": "26362f858607b5.6",
+        "response": {
+          "reply": "Đã đăng căn hộ.\nDN-KIN-26362F858607B5 · Căn 2PN có ban công\n4 ảnh · Đang hiện trên web",
+          "buttons": [
+            [
+              {
+                "text": "Mở căn hộ",
+                "callback_data": "/apt DN-KIN-26362F858607B5"
+              },
+              {
+                "text": "Kho căn hộ",
+                "callback_data": "/list"
+              }
+            ],
+            [
+              {
+                "text": "Thêm ảnh",
+                "callback_data": "/addphoto DN-KIN-26362F858607B5"
+              },
+              {
+                "text": "Thay bộ ảnh",
+                "callback_data": "/setphoto DN-KIN-26362F858607B5"
+              }
+            ]
+          ],
+          "parseMode": null,
+          "mutated": true
+        }
       }
+    ],
+    "9075026090:closed-albums": [
+      "14361355384214333"
+    ],
+    "9075026090": {
+      "mode": "listing",
+      "id": "69ae648bbc1ef9",
+      "revision": 11,
+      "photos": [
+        "/api/telegram/media/e4849e3ee915b0df565b3db61acb379f704333cf2ea202004f7541fb99fcbc04",
+        "/api/telegram/media/d0e6383f1ddae66a91166d5957d36559c3b69a15200ac490d692df29e4ff4d10",
+        "/api/telegram/media/5412e86654e2835c4d52ef70ec7457dc7ff412b3cddcf490b09a3281e99b4034",
+        "/api/telegram/media/2424e4b8f394eaf23fee6661381b458a15b77c86bc7f2d8772fc25d21dd6ef1b",
+        "/api/telegram/media/a18d5e9fb06a32d0900dae9dc9bbf73095690aed6298ed225cdebdb3945a8c85",
+        "/api/telegram/media/e56df5ee48ff695e5c21d4dba4187404242518e03aef1ed2772a1963c280e53d",
+        "/api/telegram/media/3fbbdb789d754ef6f38a1e1e328f33d8a57f618a9a54bb0acda4b7b25dd52f77",
+        "/api/telegram/media/ffb144213a1238e0497e48d3551a01546e4b90872217ceebbe905b9fd19122c8",
+        "/api/telegram/media/b096f0f8313eaed47c77e6b8683230c1b857ecd61a86650a67f4a32fc257d91d"
+      ],
+      "step": "identity",
+      "details": {},
+      "albumIds": [
+        "14361517824879325"
+      ],
+      "coverSelected": true
     }
   },
   "settings": {
-    "telegramBotToken": "",
-    "telegramAdminChatId": "",
     "googleSheetsWebhookUrl": "",
     "googleSheetsCsvUrl": "",
     "usdToVndRate": 25480,

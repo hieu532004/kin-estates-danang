@@ -21,22 +21,23 @@ export interface Apartment {
   district?: string;
   priceUsd: number;
   priceVnd?: number;
-  bedrooms: number;
-  bathrooms?: number;
-  sizeM2: number;
-  floor?: number;
+  bedrooms: number | null;
+  bathrooms?: number | null;
+  sizeM2: number | null;
+  floor?: number | null;
+  availableFrom?: string | null;
   orientation?: string;
-  minLeaseMonths?: number;
-  depositMonths?: number;
-  electricityRate?: string;
+  minLeaseMonths?: number | null;
+  depositMonths?: number | null;
+  electricityRate?: string | null;
   naturalLightScore?: number;
-  remoteWorkSetup?: string;
+  remoteWorkSetup?: string | null;
   petPolicy?: string;
   status?: string;
   isVisible?: boolean;
-  currentTenant?: any;
   featured?: boolean;
-  coordinates?: { lat: number; lng: number };
+  locationAccuracy?: "exact" | "area";
+  coordinates?: { lat: number; lng: number } | null;
   architecturalNotes?: Record<string, string> | string;
   tags?: string[];
   images?: string[];
@@ -79,6 +80,102 @@ export interface NeighborhoodInfo {
 
 type Lang = "vi" | "en" | "zh" | "ru" | "ko" | "ja";
 type Currency = "USD" | "VND";
+type ApartmentInquiryType = "viewing" | "reservation";
+type ApartmentInquiryState = "idle" | "submitting" | "received" | "unavailable" | "error";
+
+const CATALOGUE_REFRESH_MS = 30_000;
+const CATALOGUE_REQUEST_TIMEOUT_MS = 12_000;
+const CATALOGUE_REFRESH_MIN_GAP_MS = 1_000;
+const DANANG_MAP_CENTER: [number, number] = [16.0545, 108.2345];
+
+const DANANG_ADDRESS_LANDMARKS: Array<[RegExp, [number, number]]> = [
+  [/panoma|sun\s*cosmo|trần\s*thị\s*lý|tran\s*thi\s*ly|nguyễn\s*văn\s*trỗi/i, [16.0508, 108.2355]],
+  [/filmore|bạch\s*đằng|bach\s*dang|bình\s*thuận/i, [16.0614, 108.2238]],
+  [/hiyori|võ\s*văn\s*kiệt|vo\s*van\s*kiet/i, [16.0611, 108.2352]],
+  [/monarchy|sun\s*ponte|trần\s*hưng\s*đạo|tran\s*hung\s*dao/i, [16.0574, 108.2314]],
+  [/azura|indochina|cầu\s*sông\s*hàn/i, [16.0715, 108.2302]],
+  [/nam\s*việt\s*á|nam\s*viet\s*a|bùi\s*tá\s*hán|bui\s*ta\s*han|khuê\s*mỹ/i, [16.0348, 108.2415]],
+  [/võ\s*nguyên\s*giáp|vo\s*nguyen\s*giap|mỹ\s*khê|my\s*khe|trường\s*sa|phạm\s*văn\s*đồng/i, [16.0628, 108.2462]],
+  [/an\s*thượng|an\s*thuong|hoàng\s*kế\s*viêm|châu\s*thị\s*vĩnh\s*tế|nguyễn\s*văn\s*thoại|mỹ\s*an/i, [16.0498, 108.2459]],
+  [/sơn\s*trà|son\s*tra|ngô\s*quyền/i, [16.0609, 108.2345]],
+  [/hải\s*châu|hai\s*chau|sông\s*hàn|han\s*river/i, [16.0625, 108.2248]]
+];
+
+function getExactLocation(apt?: Apartment): [number, number] | undefined {
+  if (!apt) return;
+  const coordinates = apt.coordinates;
+  if (coordinates) {
+    const { lat, lng } = coordinates;
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return [lat, lng];
+    }
+  }
+  const haystack = [apt.address, apt.building, apt.areaName, apt.district].filter(Boolean).join(" ");
+  for (const [pattern, coords] of DANANG_ADDRESS_LANDMARKS) {
+    if (pattern.test(haystack)) return coords;
+  }
+}
+
+function getAddressSearchUrl(apt: Apartment): string | undefined {
+  const locality = apt.areaName?.trim() || apt.district?.trim();
+  const address = apt.address?.trim();
+  const building = apt.building?.trim();
+  const query = address || [building, locality].filter(Boolean).join(", ");
+  if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function canRequestApartment(apt?: Apartment): boolean {
+  return Boolean(apt && apt.isVisible !== false && (!apt.status || apt.status === "Available"));
+}
+
+async function readPublicList<T>(response: Response, field: string): Promise<T[]> {
+  if (!response.ok) throw new Error(`Unable to load ${field} (${response.status})`);
+  const payload = await response.json();
+  const list = payload?.[field];
+  if (payload?.ok === false || !Array.isArray(list)) throw new Error(`Invalid ${field} response`);
+  return list;
+}
+
+type ApartmentPhotoProps = Pick<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "className" | "loading" | "style" | "onClick"> & {
+  alt: string;
+  unavailableText: string;
+  fallbackStyle?: React.CSSProperties;
+};
+
+function ApartmentPhoto({ src, alt, unavailableText, fallbackStyle, ...imageProps }: ApartmentPhotoProps) {
+  const [failedSource, setFailedSource] = useState<string>();
+  const source = src?.trim();
+  if (source && source !== failedSource) {
+    return (
+      <img
+        {...imageProps}
+        key={source}
+        src={source}
+        alt={alt}
+        decoding={imageProps.loading === "lazy" ? "async" : undefined}
+        onError={() => setFailedSource(source)}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={imageProps.className}
+      role={alt ? "img" : undefined}
+      aria-label={alt ? `${alt}. ${unavailableText}` : undefined}
+      aria-hidden={alt ? undefined : true}
+      style={{
+        display: "grid", placeItems: "center", textAlign: "center", boxSizing: "border-box",
+        background: "var(--bg-sand, #E8E3D8)", color: "var(--text-primary, #16191E)",
+        fontSize: "0.75rem", padding: "0.35rem", ...fallbackStyle
+      }}
+    >
+      {unavailableText}
+    </span>
+  );
+}
+
+const fillPhotoSlot: React.CSSProperties = { width: "100%", height: "100%" };
 
 const LANGUAGE_LIST: { code: Lang; short: string; label: string; native: string }[] = [
   { code: "vi", short: "VI", label: "Tiếng Việt", native: "Việt Nam" },
@@ -511,6 +608,7 @@ export const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   const [apartments, setApartments] = useState<Apartment[]>([]);
+  const [catalogueLoaded, setCatalogueLoaded] = useState(false);
   const [buildings, setBuildings] = useState<BuildingInfo[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodInfo[]>([]);
   const [savedCodes, setSavedCodes] = useState<string[]>([]);
@@ -518,14 +616,18 @@ export const App: React.FC = () => {
   // Hero Interactive Showcase State
   const [showcaseMode, setShowcaseMode] = useState<"split" | "photo">("split");
   const [showcaseBldgFilter, setShowcaseBldgFilter] = useState<string>("all");
-  const [activeShowcaseAptIdx, setActiveShowcaseAptIdx] = useState<number>(0);
+  const [showcaseAptCode, setShowcaseAptCode] = useState<string>();
   const [mapPinListOpen, setMapPinListOpen] = useState<boolean>(false);
 
   // Full-Screen Expand Map Dialog & Streamlined Viewing Booking Modal State
   const [expandMapOpen, setExpandMapOpen] = useState<boolean>(false);
-  const [expandMapAptIdx, setExpandMapAptIdx] = useState<number>(0);
-  const [detailDialogApt, setDetailDialogApt] = useState<Apartment | null>(null);
-  const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
+  const [expandMapAptCode, setExpandMapAptCode] = useState<string>();
+  const [inquiryApartmentCode, setInquiryApartmentCode] = useState<string>();
+  const [apartmentInquiryType, setApartmentInquiryType] = useState<ApartmentInquiryType>("viewing");
+  const [apartmentInquiryState, setApartmentInquiryState] = useState<ApartmentInquiryState>("idle");
+  const apartmentInquiryPending = useRef(false);
+  const apartmentInquiryAttempt = useRef<{ body: string; key: string } | null>(null);
+  const [photoSelection, setPhotoSelection] = useState<{ code: string; source: string; index: number }>();
   const [activeGuideModal, setActiveGuideModal] = useState<typeof GUIDES_DATA[0] | null>(null);
   const [policyAgreed, setPolicyAgreed] = useState<boolean>(true);
   const [policyDrawerOpen, setPolicyDrawerOpen] = useState<boolean>(false);
@@ -559,7 +661,6 @@ export const App: React.FC = () => {
   const heroMapRef = useRef<any>(null);
   const expandMapRef = useRef<any>(null);
   const catMapRef = useRef<any>(null);
-  const detailPageMapRef = useRef<any>(null);
 
   useEffect(() => {
     const onOutside = (e: MouseEvent) => {
@@ -586,15 +687,68 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/apartments").then((r) => r.json()),
-      fetch("/api/buildings").then((r) => r.json()),
-      fetch("/api/neighborhoods").then((r) => r.json())
-    ]).then(([aData, bData, nData]) => {
-      setApartments(aData.apartments || []);
-      setBuildings(bData.buildings || []);
-      setNeighborhoods(nData.neighborhoods || []);
-    });
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetch("/api/buildings", { signal })
+      .then((response) => readPublicList<BuildingInfo>(response, "buildings"))
+      .then((list) => { if (!signal.aborted) setBuildings(list); })
+      .catch(() => {});
+    fetch("/api/neighborhoods", { signal })
+      .then((response) => readPublicList<NeighborhoodInfo>(response, "neighborhoods"))
+      .then((list) => { if (!signal.aborted) setNeighborhoods(list); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    let activeRequest: AbortController | null = null;
+    let lastRequestAt = -Infinity;
+    let lastETag: string | null = null;
+
+    const refreshCatalogue = async () => {
+      const now = Date.now();
+      if (document.visibilityState === "hidden" || activeRequest || now - lastRequestAt < CATALOGUE_REFRESH_MIN_GAP_MS) return;
+
+      const controller = new AbortController();
+      activeRequest = controller;
+      lastRequestAt = now;
+      const timeout = window.setTimeout(() => controller.abort(), CATALOGUE_REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch("/api/apartments", { signal: controller.signal, cache: "no-cache" });
+        const etag = response.headers.get("ETag");
+        if (response.ok && etag && etag === lastETag) {
+          await response.body?.cancel();
+          return;
+        }
+        const next = await readPublicList<Apartment>(response, "apartments");
+        if (controller.signal.aborted) return;
+        lastETag = etag;
+        setApartments((previous) => (
+          previous.length === next.length &&
+          previous.every((apt, index) => JSON.stringify(apt) === JSON.stringify(next[index]))
+            ? previous
+            : next
+        ));
+        setCatalogueLoaded(true);
+      } catch {
+        // Keep the last good catalogue available for the next refresh.
+      } finally {
+        window.clearTimeout(timeout);
+        activeRequest = null;
+      }
+    };
+
+    void refreshCatalogue();
+    const interval = window.setInterval(refreshCatalogue, CATALOGUE_REFRESH_MS);
+    window.addEventListener("focus", refreshCatalogue);
+    document.addEventListener("visibilitychange", refreshCatalogue);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshCatalogue);
+      document.removeEventListener("visibilitychange", refreshCatalogue);
+      activeRequest?.abort();
+    };
   }, []);
 
   const navigate = (path: string) => {
@@ -622,6 +776,8 @@ export const App: React.FC = () => {
     if (lang === "ja") return ja || en;
     return en;
   };
+
+  const photoUnavailable = tx("Chưa có ảnh", "Photo unavailable", "暂无照片", "Фото недоступно", "사진 없음", "写真なし");
 
   useEffect(() => {
     setLeadMoveIn(
@@ -651,7 +807,7 @@ export const App: React.FC = () => {
     return map[raw] || raw;
   };
 
-  const trField = (val: string | undefined): string => {
+  const trField = (val: string | null | undefined): string => {
     if (!val || lang === "vi") return val || "";
     const dict: Record<string, string> = {
       // Neighborhood Names & Subtitles
@@ -1172,14 +1328,28 @@ export const App: React.FC = () => {
     );
   }, [apartments, showcaseBldgFilter]);
 
-  const activeShowcaseApt = showcaseUnits[activeShowcaseAptIdx] || showcaseUnits[0] || apartments[0];
+  const activeShowcaseAptIdx = Math.max(0, showcaseUnits.findIndex((apt) => apt.code === showcaseAptCode));
+  const activeShowcaseApt = showcaseUnits[activeShowcaseAptIdx] || apartments[0];
+  const heroMapLocations = React.useMemo(() => {
+    const locations = new Map<string, { point: [number, number]; units: Apartment[] }>();
+    for (const apt of apartments) {
+      const point = getExactLocation(apt);
+      if (!point) continue;
+      const key = JSON.stringify([apt.building, ...point]);
+      const location = locations.get(key);
+      if (location) location.units.push(apt);
+      else locations.set(key, { point, units: [apt] });
+    }
+    return [...locations.values()];
+  }, [apartments]);
+  const heroPinUnits = heroMapLocations.find(({ units }) => units.includes(activeShowcaseApt))?.units ?? [];
 
   const homeCatalogueUnits = React.useMemo(() => {
     if (homeChipFilter === "all") return apartments;
     if (homeChipFilter === "saved") return apartments.filter((a) => savedCodes.includes(a.code));
     if (homeChipFilter === "1" || homeChipFilter === "2" || homeChipFilter === "3") {
       const br = Number(homeChipFilter);
-      return apartments.filter((a) => (br === 3 ? a.bedrooms >= 3 : a.bedrooms === br));
+      return apartments.filter((a) => a.bedrooms != null && (br === 3 ? a.bedrooms >= 3 : a.bedrooms === br));
     }
     return apartments.filter((a) =>
       (a.tags || []).some((t) => t.toLowerCase().includes(homeChipFilter.toLowerCase()))
@@ -1193,7 +1363,7 @@ export const App: React.FC = () => {
     }
     if (bedrooms !== "all") {
       const br = Number(bedrooms);
-      list = list.filter((a) => (br >= 3 ? a.bedrooms >= 3 : a.bedrooms === br));
+      list = list.filter((a) => a.bedrooms != null && (br >= 3 ? a.bedrooms >= 3 : a.bedrooms === br));
     }
     if (maxPrice !== "0" && Number(maxPrice) > 0) {
       list = list.filter((a) => Number(a.priceUsd) <= Number(maxPrice));
@@ -1219,9 +1389,54 @@ export const App: React.FC = () => {
     return list;
   }, [apartments, area, bedrooms, maxPrice, tag, query, sort, lang]);
 
+  const expandMapUnits = route === "/apartments" ? filteredApartments : apartments;
+  const expandMapAptIdx = Math.max(0, expandMapUnits.findIndex((apt) => apt.code === expandMapAptCode));
+  const expandDialogApt = expandMapUnits[expandMapAptIdx];
+  const detailDialogApt = apartments.find((apt) => apt.code === inquiryApartmentCode);
+  const apartmentInquiryUnavailable = apartmentInquiryState === "unavailable" || !canRequestApartment(detailDialogApt);
+  const apartmentInquirySubmitting = apartmentInquiryState === "submitting";
+  const apartmentInquiryReceived = apartmentInquiryState === "received";
+  const apartmentInquiryIsReservation = apartmentInquiryType === "reservation";
+
+  const locationLabel = (apt: Apartment) => {
+    if (getExactLocation(apt)) return tx("Vị trí đã xác minh", "Verified location", "已验证位置", "Подтверждённая точка", "확인된 위치", "確認済みの位置");
+    if (apt.address?.trim()) return tx("Địa chỉ chưa ghim chính xác", "Address without a verified pin", "地址尚未精确标注", "Адрес без подтверждённой точки", "핀 미확인 주소", "ピン未確認の住所");
+    if (getAddressSearchUrl(apt)) return tx("Chỉ có thông tin khu vực", "Area information only", "仅提供区域信息", "Известен только район", "지역 정보만 제공", "エリア情報のみ");
+    return tx("Chưa có thông tin vị trí", "Location unavailable", "暂无位置信息", "Местоположение неизвестно", "위치 정보 없음", "所在地情報なし");
+  };
+
+  const createMapPopup = (apt: Apartment) => {
+    const content = document.createElement("div");
+    content.style.display = "flex";
+    content.style.flexDirection = "column";
+    content.style.gap = "4px";
+    const title = document.createElement("strong");
+    title.textContent = getLocalized(apt.title);
+    const address = document.createElement("div");
+    address.style.fontSize = "0.78rem";
+    address.style.color = "#475569";
+    address.textContent = `📍 ${apt.address?.trim() || apt.building?.trim() || trArea(apt.areaName)}`;
+    content.append(title, address);
+    const gmapUrl = getAddressSearchUrl(apt);
+    if (gmapUrl) {
+      const mapLink = document.createElement("a");
+      mapLink.href = gmapUrl;
+      mapLink.target = "_blank";
+      mapLink.rel = "noreferrer";
+      mapLink.style.fontSize = "0.75rem";
+      mapLink.style.fontWeight = "600";
+      mapLink.style.color = "#9a7b4f";
+      mapLink.textContent = tx("Mở địa chỉ trên Google Maps ↗", "Open address in Google Maps ↗", "在 Google 地图打开地址 ↗", "Открыть адрес в Google Maps ↗", "Google 지도에서 주소 열기 ↗", "Googleマップで住所を開く ↗");
+      content.append(mapLink);
+    }
+    return content;
+  };
+
   // Hero Showcase Map (#hero-showcase-map) — Dynamically Switches Map Tile Language (hl=vi, en, zh-CN, ru, ko, ja)
   useEffect(() => {
     if (route !== "/" || showcaseMode === "photo" || typeof L === "undefined" || apartments.length === 0) {
+      heroMapRef.current?.remove();
+      heroMapRef.current = null;
       return;
     }
     const el = document.getElementById("hero-showcase-map");
@@ -1232,7 +1447,7 @@ export const App: React.FC = () => {
         zoomControl: false,
         attributionControl: false,
         scrollWheelZoom: false
-      }).setView([16.0545, 108.2345], 13);
+      }).setView(DANANG_MAP_CENTER, 13);
       heroMapRef.current.on("click", () => {
         setMapPinListOpen(false);
       });
@@ -1250,20 +1465,10 @@ export const App: React.FC = () => {
       maxZoom: 19
     }).addTo(map);
 
-    const byBldg: Record<string, Apartment[]> = {};
-    apartments.forEach((a) => {
-      const k = a.building || "Residence";
-      if (!byBldg[k]) byBldg[k] = [];
-      byBldg[k].push(a);
-    });
-
-    Object.entries(byBldg).forEach(([bldgName, units]) => {
+    heroMapLocations.forEach(({ point, units }) => {
       const minPrice = Math.min(...units.map((u) => u.priceUsd));
       const first = units[0];
-      const lat = Number(first.coordinates?.lat) || 16.0545;
-      const lng = Number(first.coordinates?.lng) || 108.2345;
-      const isSelectedBldg =
-        activeShowcaseApt && activeShowcaseApt.building === bldgName;
+      const isSelectedBldg = units.includes(activeShowcaseApt);
 
       const icon = L.divIcon({
         className: "homii-pin-wrap",
@@ -1275,52 +1480,33 @@ export const App: React.FC = () => {
         iconAnchor: [48, 18]
       });
 
-      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      const marker = L.marker(point, { icon, title: first.address?.trim() || first.building }).addTo(map);
       marker.on("click", (e: any) => {
         if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        setShowcaseBldgFilter(bldgName);
-        setActiveShowcaseAptIdx(0);
+        setShowcaseBldgFilter(first.building || "all");
+        setShowcaseAptCode(first.code);
         setMapPinListOpen(true);
-        map.flyTo([lat, lng], 14, { duration: 0.55 });
+        map.flyTo(point, 14, { duration: 0.55 });
       });
     });
 
     setTimeout(() => map.invalidateSize(true), 120);
-  }, [route, showcaseMode, apartments, activeShowcaseApt, lang, currency]);
-
-  useEffect(() => {
-    if (route !== "/" && heroMapRef.current) {
-      heroMapRef.current.remove();
-      heroMapRef.current = null;
-    }
-  }, [route]);
+  }, [route, showcaseMode, apartments.length, heroMapLocations, activeShowcaseApt, lang, currency]);
 
   // Expand Map Dialog (#dialog-expand-map) — Dynamically Switches Map Tile Language & Currency
   useEffect(() => {
-    if (!expandMapOpen || typeof L === "undefined" || apartments.length === 0) {
-      if (!expandMapOpen && expandMapRef.current) {
-        expandMapRef.current.remove();
-        expandMapRef.current = null;
-      }
-      return;
-    }
+    if (!expandMapOpen || typeof L === "undefined" || !expandDialogApt) return;
 
-    setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const el = document.getElementById("dialog-expand-map");
       if (!el) return;
-      if (expandMapRef.current) {
-        expandMapRef.current.remove();
-        expandMapRef.current = null;
-      }
-      const targetApt = apartments[expandMapAptIdx] || apartments[0];
-      const centerLat = Number(targetApt?.coordinates?.lat) || 16.0545;
-      const centerLng = Number(targetApt?.coordinates?.lng) || 108.2345;
+      const targetPoint = getExactLocation(expandDialogApt);
 
-      const map = L.map("dialog-expand-map", {
+      const map = L.map(el, {
         zoomControl: true,
         attributionControl: false,
         scrollWheelZoom: true
-      }).setView([centerLat, centerLng], 14);
+      }).setView(targetPoint ?? DANANG_MAP_CENTER, targetPoint ? 16 : 13);
       expandMapRef.current = map;
 
       L.tileLayer(`https://mt1.google.com/vt/lyrs=m&hl=${getGoogleMapHl(lang)}&x={x}&y={y}&z={z}`, {
@@ -1328,10 +1514,12 @@ export const App: React.FC = () => {
         maxZoom: 19
       }).addTo(map);
 
-      apartments.forEach((apt, idx) => {
-        const lat = Number(apt.coordinates?.lat) || 16.0545;
-        const lng = Number(apt.coordinates?.lng) || 108.2345;
-        const isCurrent = idx === expandMapAptIdx;
+      const bounds: [number, number][] = [];
+      expandMapUnits.forEach((apt) => {
+        const point = getExactLocation(apt);
+        if (!point) return;
+        bounds.push(point);
+        const isCurrent = apt.code === expandDialogApt.code;
 
         const icon = L.divIcon({
           className: "homii-pin-wrap",
@@ -1340,16 +1528,23 @@ export const App: React.FC = () => {
           iconAnchor: [42, 15]
         });
 
-        const m = L.marker([lat, lng], { icon }).addTo(map);
-        m.on("click", () => {
-          setExpandMapAptIdx(idx);
-          map.flyTo([lat, lng], 15, { duration: 0.6 });
-        });
+        const marker = L.marker(point, {
+          icon, title: apt.address?.trim() || apt.building, zIndexOffset: isCurrent ? 1000 : 0
+        }).addTo(map);
+        marker.bindPopup(createMapPopup(apt));
+        marker.on("click", () => setExpandMapAptCode(apt.code));
+        if (isCurrent) marker.openPopup();
       });
 
-      setTimeout(() => map.invalidateSize(true), 120);
+      map.invalidateSize(true);
+      if (!targetPoint && bounds.length > 0) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }, 80);
-  }, [expandMapOpen, expandMapAptIdx, apartments, lang, currency]);
+    return () => {
+      window.clearTimeout(timer);
+      expandMapRef.current?.remove();
+      expandMapRef.current = null;
+    };
+  }, [expandMapOpen, expandDialogApt, expandMapUnits, lang, currency]);
 
   // Catalogue Page Map (/apartments) — Dynamically Switches Map Tile Language & Currency
   useEffect(() => {
@@ -1361,7 +1556,7 @@ export const App: React.FC = () => {
       return;
     }
 
-    setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const el = document.getElementById("catalogue-page-map");
       if (!el) return;
       if (!catMapRef.current) {
@@ -1369,7 +1564,7 @@ export const App: React.FC = () => {
           zoomControl: true,
           attributionControl: false,
           scrollWheelZoom: true
-        }).setView([16.0545, 108.2345], 13);
+        }).setView(DANANG_MAP_CENTER, 13);
       }
 
       const map = catMapRef.current;
@@ -1386,26 +1581,36 @@ export const App: React.FC = () => {
 
       const bounds: [number, number][] = [];
       filteredApartments.forEach((apt) => {
-        const lat = Number(apt.coordinates?.lat) || 16.0545;
-        const lng = Number(apt.coordinates?.lng) || 108.2345;
-        bounds.push([lat, lng]);
+        const point = getExactLocation(apt);
+        if (!point) return;
+        bounds.push(point);
         const icon = L.divIcon({
           className: "homii-pin-wrap",
           html: `<div class="homii-map-pin">${formatPinPrice(apt.priceUsd)}</div>`,
           iconSize: [84, 30],
           iconAnchor: [42, 15]
         });
-        const m = L.marker([lat, lng], { icon }).addTo(map);
-        m.on("click", () => {
+        const popup = createMapPopup(apt);
+        const details = document.createElement("a");
+        details.href = `/apartments/${encodeURIComponent(apt.code)}`;
+        details.textContent = tx("Chi tiết căn hộ", "Explore unit", "查看详情", "Подробнее", "상세 보기", "詳細を見る");
+        details.addEventListener("click", (event) => {
+          if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
           openApartmentDetailModal(apt);
         });
+        popup.append(details);
+        L.marker(point, { icon, title: apt.address?.trim() || apt.building }).addTo(map).bindPopup(popup);
       });
 
       map.invalidateSize(true);
-      if (bounds.length > 1) {
+      if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      } else {
+        map.setView(DANANG_MAP_CENTER, 13);
       }
     }, 100);
+    return () => window.clearTimeout(timer);
   }, [route, filteredApartments, lang, currency]);
 
   // Dedicated Single Apartment Detail Page (/apartments/:code)
@@ -1418,19 +1623,61 @@ export const App: React.FC = () => {
         (a) =>
           a.code.toLowerCase() === detailRouteCode.toLowerCase() ||
           a._id === detailRouteCode
-      ) || apartments[0]
+      )
     : null;
+  const detailPhotos = currentDetailApt?.images?.filter((src) => src?.trim()) ?? [];
+  const selectedPhoto = photoSelection?.code === currentDetailApt?.code ? photoSelection : undefined;
+  const activePhotoIdx = selectedPhoto
+    ? detailPhotos[selectedPhoto.index] === selectedPhoto.source
+      ? selectedPhoto.index
+      : Math.max(0, detailPhotos.indexOf(selectedPhoto.source))
+    : 0;
+  const activePhotoSource = detailPhotos[activePhotoIdx];
+
+  const selectPhoto = (index: number) => {
+    if (currentDetailApt && detailPhotos[index]) {
+      setPhotoSelection({ code: currentDetailApt.code, source: detailPhotos[index], index });
+    }
+  };
+
+  useEffect(() => {
+    setFullscreenPhotoOpen(false);
+  }, [detailRouteCode, Boolean(activePhotoSource)]);
 
   const openUnitOnMapDialog = (e: React.MouseEvent, apt: Apartment) => {
     e.stopPropagation();
-    const idx = apartments.findIndex((a) => a.code === apt.code);
-    setExpandMapAptIdx(idx >= 0 ? idx : 0);
+    setExpandMapAptCode(apt.code);
     setExpandMapOpen(true);
+  };
+
+  const openMapOverview = () => {
+    setExpandMapAptCode(undefined);
+    setExpandMapOpen(true);
+  };
+
+  const renderLocationAction = (apt: Apartment, className: string, style?: React.CSSProperties) => {
+    if (getExactLocation(apt)) {
+      return (
+        <button type="button" className={className} style={style} onClick={(e) => openUnitOnMapDialog(e, apt)}>
+          <IconMapPin size={14} />
+          <span>{tx("Xem vị trí", "View location", "查看位置", "На карте", "위치 보기", "所在地を見る")}</span>
+        </button>
+      );
+    }
+    const href = getAddressSearchUrl(apt);
+    return href ? (
+      <a className={className} style={style} href={href} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+        <IconMapPin size={14} />
+        <span>{apt.address?.trim()
+          ? tx("Tìm địa chỉ", "Search address", "搜索地址", "Найти адрес", "주소 검색", "住所を検索")
+          : tx("Tìm khu vực", "Search area", "搜索区域", "Найти район", "지역 검색", "エリアを検索")}</span>
+      </a>
+    ) : <span className="apt-location-status">{locationLabel(apt)}</span>;
   };
 
   // Navigating to Dedicated Single Apartment Detail Page (/apartments/:code)
   const openApartmentDetailModal = (apt: Apartment) => {
-    setActivePhotoIdx(0);
+    setPhotoSelection(undefined);
     setBookingFeedback("");
     setExpandMapOpen(false);
     navigate(`/apartments/${apt.code}`);
@@ -1438,48 +1685,79 @@ export const App: React.FC = () => {
 
   // Opening Streamlined Viewing Booking Dialog (Screenshot 2)
   const openBookingModal = (apt: Apartment) => {
-    setBookingFeedback("");
+    apartmentInquiryAttempt.current = null;
+    setApartmentInquiryType("viewing");
+    setApartmentInquiryState("idle");
     setPolicyAgreed(true);
     setPolicyDrawerOpen(false);
-    setDetailDialogApt(apt);
+    setInquiryApartmentCode(apt.code);
+  };
+
+  const closeBookingModal = () => {
+    if (!apartmentInquiryPending.current) setInquiryApartmentCode(undefined);
   };
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>, customApt?: Apartment) => {
     e.preventDefault();
-    if (customApt && !policyAgreed) return;
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    if (customApt && (!policyAgreed || apartmentInquiryUnavailable || apartmentInquiryPending.current || apartmentInquiryState === "received")) return;
+    const fd = new FormData(form);
     const contactVal = String(fd.get("contactHandle") || "").trim();
+    const nameVal = String(fd.get("clientName") || "").trim();
     const whenVal = String(fd.get("moveInDate") || "").trim();
+    const notesVal = String(fd.get("notes") || "").trim();
+    const isReservation = customApt && apartmentInquiryType === "reservation";
+    if (customApt && (!contactVal || (isReservation && !nameVal))) {
+      setApartmentInquiryState("error");
+      return;
+    }
     const payload = {
-      type: customApt ? "viewing" : "shortlist",
+      type: customApt ? apartmentInquiryType : "shortlist",
       apartmentCode: customApt ? customApt.code : "CURATED-SHORTLIST",
       apartmentTitle: customApt ? getLocalized(customApt.title) : "Gợi ý căn hộ theo nhu cầu",
-      clientName: fd.get("clientName") || contactVal || "Khách đặt lịch xem nhà",
+      clientName: nameVal || contactVal || "Khách tìm căn hộ",
       messenger: fd.get("messenger") || (customApt ? "Zalo / WhatsApp / Telegram" : leadMessenger),
       contactHandle: contactVal,
       budgetUsd: customApt ? `$${customApt.priceUsd}/tháng` : fd.get("budgetUsd") || `$${leadBudget}/tháng`,
-      bedrooms: customApt ? `${customApt.bedrooms} PN` : fd.get("bedrooms") || leadBedrooms,
-      moveInDate: whenVal || leadMoveIn,
-      notes: fd.get("notes") || (customApt ? `Đặt lịch xem căn hộ ${customApt.code} (${whenVal || "Sớm nhất"}) — Đã đồng ý chính sách dữ liệu KIN Estates` : "")
+      bedrooms: customApt?.bedrooms != null ? `${customApt.bedrooms} PN` : fd.get("bedrooms") || leadBedrooms,
+      moveInDate: customApt ? (isReservation ? whenVal : "") : whenVal || leadMoveIn,
+      ...(customApt && !isReservation && whenVal ? { requestedViewingTime: whenVal } : {}),
+      notes: notesVal
     };
-    const res = await fetch("/api/inquiries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setBookingFeedback(
-        tx(
-          "✓ Đã nhận lịch hẹn! Chuyên viên KIN Estates sẽ liên hệ qua Zalo / WhatsApp / Telegram của bạn ngay.",
-          "✓ Viewing request confirmed! A KIN Estates specialist will message you shortly.",
-          "✓ 预约已确认！KIN Estates 顾问将立即通过您的社交账号联系您。",
-          "✓ Заявка принята! Специалист KIN Estates скоро свяжется с вами.",
-          "✓ 투어 예약 완료! KIN Estates 담당자가 곧 연락드리겠습니다.",
-          "✓ 内覧予約を受け付けました！担当者よりすぐにご連絡いたします。"
-        )
-      );
-      e.currentTarget.reset();
+    const body = JSON.stringify(payload);
+    let key: string | undefined;
+    if (customApt) {
+      if (apartmentInquiryAttempt.current?.body !== body) {
+        const requestKey = globalThis.crypto?.randomUUID?.() ??
+          `inq-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        apartmentInquiryAttempt.current = { body, key: requestKey };
+      }
+      key = apartmentInquiryAttempt.current.key;
+      apartmentInquiryPending.current = true;
+      setApartmentInquiryState("submitting");
+    }
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(key ? { "Idempotency-Key": key } : {}) },
+        body
+      });
+      if (customApt && [404, 409, 410].includes(res.status)) {
+        setApartmentInquiryState("unavailable");
+        return;
+      }
+      if (!res.ok || (await res.json())?.ok !== true) throw new Error("Inquiry failed");
+      if (customApt) {
+        setApartmentInquiryState("received");
+      } else {
+        form.reset();
+        setBookingFeedback(tx("Đã nhận yêu cầu tìm căn hộ. KIN Estates sẽ liên hệ với bạn.", "Shortlist request received. KIN Estates will contact you.", "已收到选房请求。KIN Estates 将与您联系。", "Заявка на подбор получена. KIN Estates свяжется с вами.", "매물 추천 요청이 접수되었습니다. KIN Estates에서 연락드리겠습니다.", "物件紹介のご依頼を受け付けました。KIN Estates からご連絡します。"));
+      }
+    } catch {
+      if (customApt) setApartmentInquiryState("error");
+      else setBookingFeedback(tx("Chưa gửi được yêu cầu. Vui lòng thử lại.", "Could not send your request. Please try again.", "无法发送请求，请重试。", "Не удалось отправить заявку. Попробуйте ещё раз.", "요청을 보내지 못했습니다. 다시 시도해 주세요.", "送信できませんでした。もう一度お試しください。"));
+    } finally {
+      if (customApt) apartmentInquiryPending.current = false;
     }
   };
 
@@ -1495,7 +1773,7 @@ export const App: React.FC = () => {
         apartmentCode: apt ? apt.code : "TRANG-CHU",
         apartmentTitle: apt ? getLocalized(apt.title) : "Liên hệ trực tiếp KIN Estates",
         budgetUsd: apt ? `$${apt.priceUsd}/tháng` : "Tư vấn trực tiếp",
-        bedrooms: apt ? `${apt.bedrooms} PN` : "Tùy chọn",
+        bedrooms: apt?.bedrooms != null ? `${apt.bedrooms} PN` : "Tùy chọn",
         viewingTime: "Vừa bấm liên hệ trên Website",
         notes: apt
           ? `Khách hàng đang xem căn hộ [${apt.code}] (${apt.building}) và bấm nút nhắn tin qua ${messenger}.`
@@ -1507,7 +1785,6 @@ export const App: React.FC = () => {
   const renderApartmentCard = (apt: Apartment) => {
     const title = getLocalized(apt.title);
     const notes = getLocalized(apt.architecturalNotes);
-    const cover = (apt.images && apt.images[0]) || "";
     const isSaved = savedCodes.includes(apt.code);
     const isRented = apt.status === "Rented";
     const isReserved = apt.status === "Reserved";
@@ -1516,7 +1793,10 @@ export const App: React.FC = () => {
       <article key={apt.code} className="apt-modern-card">
         <div>
           <div className="apt-modern-card__media" onClick={() => openApartmentDetailModal(apt)}>
-            <img src={cover} alt={title} loading="lazy" />
+            <ApartmentPhoto
+              src={apt.images?.[0]} alt={title} loading="lazy"
+              unavailableText={photoUnavailable} fallbackStyle={fillPhotoSlot}
+            />
             <div className="apt-modern-card__top-badges">
               <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
                 {isRented ? (
@@ -1566,19 +1846,19 @@ export const App: React.FC = () => {
 
             <div className="apt-modern-card__specs">
               <div>
-                <strong>{apt.bedrooms} {tx("PN", "BR", "室", "сп.", "침실", "LDK")}</strong>
+                <strong>{apt.bedrooms ?? "—"}</strong>
                 <span>{tx("Phòng ngủ", "Bedrooms", "卧室", "Спальни", "침실", "寝室")}</span>
               </div>
               <div>
-                <strong>{apt.sizeM2} m²</strong>
+                <strong>{apt.sizeM2 != null ? `${apt.sizeM2} m²` : "—"}</strong>
                 <span>{tx("Diện tích", "Size", "面积", "Площадь", "면적", "広さ")}</span>
               </div>
               <div>
-                <strong>{tx("Tầng", "Fl", "层", "Эт.", "층", "階")} {apt.floor || 12}</strong>
+                <strong>{apt.floor ?? "—"}</strong>
                 <span>{tx("Độ cao", "Floor", "楼层", "Этаж", "층수", "階数")}</span>
               </div>
               <div>
-                <strong>{apt.minLeaseMonths || 3}{tx("T+", "mo+", "个月+", "мес+", "개월+", "ヶ月+")}</strong>
+                <strong>{apt.minLeaseMonths != null ? apt.minLeaseMonths + tx("T+", "mo+", "个月+", "мес+", "개월+", "ヶ月+") : "—"}</strong>
                 <span>{tx("Hợp đồng", "Lease", "租期", "Срок", "계약", "契約")}</span>
               </div>
             </div>
@@ -1586,15 +1866,7 @@ export const App: React.FC = () => {
         </div>
 
         <div className="apt-modern-card__footer">
-          <button
-            type="button"
-            className="btn-luxe btn-luxe--outline"
-            style={{ padding: "0.42rem 0.85rem", fontSize: "0.76rem" }}
-            onClick={(e) => openUnitOnMapDialog(e, apt)}
-          >
-            <IconMapPin size={14} />
-            <span>{tx("Xem trên bản đồ", "View on map", "在地图上查看", "На карте", "지도에서 보기", "地図で見る")}</span>
-          </button>
+          {renderLocationAction(apt, "btn-luxe btn-luxe--outline", { padding: "0.42rem 0.85rem", fontSize: "0.76rem" })}
 
           <button
             type="button"
@@ -1623,7 +1895,6 @@ export const App: React.FC = () => {
   const activeDistrict = neighborhoods[activeDistrictIdx] || neighborhoods[0];
   const compLeft = neighborhoods[Number(compareLeftIdx)] || neighborhoods[0];
   const compRight = neighborhoods[Number(compareRightIdx)] || neighborhoods[3] || neighborhoods[1];
-  const expandDialogApt = apartments[expandMapAptIdx] || apartments[0];
 
   return (
     <div className="astryx-app-shell">
@@ -1911,9 +2182,11 @@ export const App: React.FC = () => {
                   <div className={`showcase-main ${showcaseMode === "photo" ? "mode-photo-only" : ""}`}>
                     {/* Left / Top Half: Photo Carousel + Explore CTA */}
                     <div className="showcase-photo-side">
-                      <img
-                        src={(activeShowcaseApt.images && activeShowcaseApt.images[0]) || ""}
+                      <ApartmentPhoto
+                        src={activeShowcaseApt.images?.[0]}
                         alt={getLocalized(activeShowcaseApt.title)}
+                        unavailableText={photoUnavailable}
+                        fallbackStyle={{ position: "absolute", inset: 0 }}
                       />
 
                       <div className="showcase-top-bar">
@@ -1943,11 +2216,7 @@ export const App: React.FC = () => {
                         type="button"
                         className="showcase-arrow-btn prev"
                         aria-label="Previous apartment"
-                        onClick={() =>
-                          setActiveShowcaseAptIdx((prev) =>
-                            prev === 0 ? showcaseUnits.length - 1 : prev - 1
-                          )
-                        }
+                        onClick={() => setShowcaseAptCode(showcaseUnits.at(activeShowcaseAptIdx - 1)?.code)}
                       >
                         ‹
                       </button>
@@ -1955,11 +2224,7 @@ export const App: React.FC = () => {
                         type="button"
                         className="showcase-arrow-btn next"
                         aria-label="Next apartment"
-                        onClick={() =>
-                          setActiveShowcaseAptIdx((prev) =>
-                            (prev + 1) % showcaseUnits.length
-                          )
-                        }
+                        onClick={() => setShowcaseAptCode((showcaseUnits[activeShowcaseAptIdx + 1] || showcaseUnits[0])?.code)}
                       >
                         ›
                       </button>
@@ -2005,10 +2270,12 @@ export const App: React.FC = () => {
                             onClick={() => openApartmentDetailModal(activeShowcaseApt)}
                             title={tx("Nhấn để xem chi tiết căn hộ", "Click to view apartment details", "点击查看公寓详情", "Нажмите для деталей", "클릭하여 상세 보기", "クリックして詳細を表示")}
                           >
-                            <img
+                            <ApartmentPhoto
                               className="map-preview-thumb"
-                              src={(activeShowcaseApt.images && activeShowcaseApt.images[0]) || ""}
+                              src={activeShowcaseApt.images?.[0]}
                               alt={getLocalized(activeShowcaseApt.title)}
+                              unavailableText={photoUnavailable}
+                              loading="lazy"
                             />
                             <div className="map-preview-info">
                               <div className="map-preview-title">
@@ -2024,13 +2291,11 @@ export const App: React.FC = () => {
                           </div>
 
                           {/* Conditional Popover: Only appears when user clicks a Price Pin on the Map! */}
-                          {mapPinListOpen && (
+                          {mapPinListOpen && heroPinUnits.length > 0 && (
                             <div className="map-nearby-prices-popover" onClick={(e) => e.stopPropagation()}>
                               <div className="map-nearby-header">
                                 <span>
-                                  {showcaseBldgFilter === "all"
-                                    ? activeShowcaseApt.building
-                                    : showcaseBldgFilter} · {showcaseUnits.length} {tx("phòng gần đây", "units here", "套附近房源", "вариантов", "개 호실", "件の部屋")}
+                                  {activeShowcaseApt.address?.trim() || activeShowcaseApt.building} · {heroPinUnits.length} {tx("căn", "units", "套房源", "вариантов", "개 호실", "件の部屋")}
                                 </span>
                                 <button
                                   type="button"
@@ -2041,13 +2306,13 @@ export const App: React.FC = () => {
                                 </button>
                               </div>
                               <div className="map-nearby-list">
-                                {showcaseUnits.map((u, idx) => (
+                                {heroPinUnits.map((u) => (
                                   <button
                                     key={u.code}
                                     type="button"
-                                    className={`map-nearby-item ${idx === activeShowcaseAptIdx ? "active" : ""}`}
+                                    className={`map-nearby-item ${u.code === activeShowcaseApt.code ? "active" : ""}`}
                                     onClick={() => {
-                                      setActiveShowcaseAptIdx(idx);
+                                      setShowcaseAptCode(u.code);
                                       setMapPinListOpen(false);
                                     }}
                                   >
@@ -2096,7 +2361,7 @@ export const App: React.FC = () => {
                                   style={{ borderRadius: "10px", boxShadow: "0 4px 14px rgba(22,25,30,0.14)", border: "1px solid rgba(22,25,30,0.08)" }}
                                   title={tx("Mở rộng bản đồ", "Expand map", "展开大地图", "Развернуть карту", "지도 크게 보기", "地図を拡大")}
                                   onClick={() => {
-                                    setExpandMapAptIdx(activeShowcaseAptIdx);
+                                    setExpandMapAptCode(activeShowcaseApt.code);
                                     setExpandMapOpen(true);
                                   }}
                                 >
@@ -2109,9 +2374,9 @@ export const App: React.FC = () => {
                                   title={tx("Tất cả toà nhà", "All buildings", "显示所有大楼", "Все здания", "모든 건물", "すべての建物")}
                                   onClick={() => {
                                     setShowcaseBldgFilter("all");
-                                    setActiveShowcaseAptIdx(0);
+                                    setShowcaseAptCode(undefined);
                                     setMapPinListOpen(false);
-                                    heroMapRef.current?.flyTo([16.0545, 108.2345], 13, { duration: 0.65 });
+                                    heroMapRef.current?.flyTo(DANANG_MAP_CENTER, 13, { duration: 0.65 });
                                   }}
                                 >
                                   ◎
@@ -2123,7 +2388,7 @@ export const App: React.FC = () => {
                               type="button"
                               className="map-float-action"
                               onClick={() => {
-                                setExpandMapAptIdx(activeShowcaseAptIdx);
+                                setExpandMapAptCode(activeShowcaseApt.code);
                                 setExpandMapOpen(true);
                               }}
                             >
@@ -2834,7 +3099,7 @@ export const App: React.FC = () => {
                     type="button"
                     className="btn-luxe btn-luxe--navy"
                     style={{ padding: "0.45rem 0.95rem", fontSize: "0.78rem" }}
-                    onClick={() => setExpandMapOpen(true)}
+                    onClick={openMapOverview}
                   >
                     <IconMap size={14} /> {tx("Mở bản đồ lớn", "Expand Map", "展开大地图", "Большая карта", "지도 크게 보기", "大きな地図で見る")} ({filteredApartments.length})
                   </button>
@@ -2857,7 +3122,19 @@ export const App: React.FC = () => {
       {/* ====================================================================
           PAGE 2B: CHI TIẾT TỪNG CĂN HỘ (/apartments/:code) — STREAMLINED PRODUCT PAGE
           ==================================================================== */}
-      {Boolean(detailRouteCode && currentDetailApt) && currentDetailApt && (
+      {catalogueLoaded && detailRouteCode && !currentDetailApt && (
+        <main className="page-route">
+          <div className="page-container">
+            <h1 className="section-heading-serif">
+              {tx("Căn hộ này hiện không hiển thị", "This apartment is currently unavailable", "此房源暂不可查看", "Эта квартира сейчас недоступна", "현재 이 매물을 볼 수 없습니다", "現在この物件は表示できません")}
+            </h1>
+            <button type="button" className="apt-detail-back-btn" onClick={() => navigate("/apartments")}>
+              <span>← {tx("Tất cả căn hộ", "All Apartments", "所有公寓", "Все квартиры", "전체 아파트", "すべての物件")}</span>
+            </button>
+          </div>
+        </main>
+      )}
+      {detailRouteCode && currentDetailApt && (
         <main className="page-route">
           <div className="page-container">
             <div className="apt-detail-streamlined-wrap">
@@ -2891,39 +3168,40 @@ export const App: React.FC = () => {
 
               {/* 1. APARTMENT PHOTO GALLERY + THUMBNAILS (With Bottom-Left Counter & Bottom-Right Fullscreen Button) */}
               <div className="apt-detail-gallery-stage">
-                <img
-                  src={(currentDetailApt.images && currentDetailApt.images[activePhotoIdx]) || (currentDetailApt.images && currentDetailApt.images[0]) || ""}
+                <ApartmentPhoto
+                  src={activePhotoSource}
                   alt={getLocalized(currentDetailApt.title)}
+                  unavailableText={photoUnavailable}
+                  fallbackStyle={fillPhotoSlot}
                   onClick={() => setFullscreenPhotoOpen(true)}
                   style={{ cursor: "zoom-in" }}
                 />
 
-                {/* Bottom-Left Photo Counter ("1 / 3") */}
-                <div className="apt-gallery-bottom-counter">
-                  {activePhotoIdx + 1} / {(currentDetailApt.images || []).length || 1}
-                </div>
+                {activePhotoSource && (
+                  <>
+                    <div className="apt-gallery-bottom-counter">{activePhotoIdx + 1} / {detailPhotos.length}</div>
+                    <button
+                      type="button"
+                      className="apt-gallery-fullscreen-btn"
+                      onClick={() => setFullscreenPhotoOpen(true)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                      </svg>
+                      <span>{tx("Toàn màn hình", "Fullscreen", "全屏查看", "На весь экран", "전체 화면", "全画面表示")}</span>
+                    </button>
+                  </>
+                )}
 
-                {/* Bottom-Right Fullscreen Pill Button ("⛶ Toàn màn hình") */}
-                <button
-                  type="button"
-                  className="apt-gallery-fullscreen-btn"
-                  onClick={() => setFullscreenPhotoOpen(true)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 3 21 3 21 9" />
-                    <polyline points="9 21 3 21 3 15" />
-                    <line x1="21" y1="3" x2="14" y2="10" />
-                    <line x1="3" y1="21" x2="10" y2="14" />
-                  </svg>
-                  <span>{tx("Toàn màn hình", "Fullscreen", "全屏查看", "На весь экран", "전체 화면", "全画面表示")}</span>
-                </button>
-
-                {(currentDetailApt.images || []).length > 1 && (
+                {detailPhotos.length > 1 && (
                   <>
                     <button
                       type="button"
                       className="kin-dialog-gallery-nav prev"
-                      onClick={() => setActivePhotoIdx((p) => (p === 0 ? (currentDetailApt.images || []).length - 1 : p - 1))}
+                      onClick={() => selectPhoto(activePhotoIdx === 0 ? detailPhotos.length - 1 : activePhotoIdx - 1)}
                       aria-label="Previous image"
                     >
                       ‹
@@ -2931,7 +3209,7 @@ export const App: React.FC = () => {
                     <button
                       type="button"
                       className="kin-dialog-gallery-nav next"
-                      onClick={() => setActivePhotoIdx((p) => (p + 1) % (currentDetailApt.images || []).length)}
+                      onClick={() => selectPhoto((activePhotoIdx + 1) % detailPhotos.length)}
                       aria-label="Next image"
                     >
                       ›
@@ -2941,18 +3219,25 @@ export const App: React.FC = () => {
               </div>
 
               {/* Horizontal Thumbnail Strip */}
-              <div className="apt-detail-thumbs-row">
-                {(currentDetailApt.images || []).map((img, i) => (
-                  <button
-                    key={img + i}
-                    type="button"
-                    className={`apt-detail-thumb-item ${activePhotoIdx === i ? "active" : ""}`}
-                    onClick={() => setActivePhotoIdx(i)}
-                  >
-                    <img src={img} alt="" />
-                  </button>
-                ))}
-              </div>
+              {detailPhotos.length > 0 && (
+                <div className="apt-detail-thumbs-row">
+                  {detailPhotos.map((img, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`apt-detail-thumb-item ${activePhotoIdx === i ? "active" : ""}`}
+                      aria-label={`${tx("Xem ảnh", "View photo", "查看照片", "Смотреть фото", "사진 보기", "写真を見る")} ${i + 1}`}
+                      aria-pressed={activePhotoIdx === i}
+                      onClick={() => selectPhoto(i)}
+                    >
+                      <ApartmentPhoto
+                        src={img} alt="" loading="lazy"
+                        unavailableText={photoUnavailable} fallbackStyle={fillPhotoSlot}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* 2. CONTACT & BOOKING CARD IMMEDIATELY BELOW APARTMENT PHOTOS ("BƯỚC TIẾP THEO CỦA BẠN") */}
               <aside className="apt-next-step-card">
@@ -2987,7 +3272,7 @@ export const App: React.FC = () => {
                   className="apt-next-step-cta"
                   onClick={() => openBookingModal(currentDetailApt)}
                 >
-                  <span>{tx("Hẹn xem căn hộ", "Schedule a viewing", "预约看房", "Записаться на просмотр", "아파트 투어 예약", "内覧を予約する")}</span>
+                  <span>{tx("Hẹn xem hoặc đặt phòng", "Request a viewing or booking", "预约看房或申请预订", "Запросить просмотр или бронь", "투어 또는 예약 요청", "内覧・入居予約のリクエスト")}</span>
                   <span className="apt-next-step-cta-arrow">→</span>
                 </button>
 
@@ -3053,7 +3338,7 @@ export const App: React.FC = () => {
 
               {/* 3. STREAMLINED APARTMENT DETAILS IMMEDIATELY BELOW CONTACT CARD (No Bottom Map) */}
               <div className="apt-detail-quick-strip">
-                <span className="apt-detail-quick-item">
+                {currentDetailApt.bedrooms != null && <span className="apt-detail-quick-item">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M2 4v16" />
                     <path d="M2 8h18a2 2 0 0 1 2 2v10" />
@@ -3061,21 +3346,21 @@ export const App: React.FC = () => {
                     <path d="M6 8v9" />
                   </svg>
                   <span>{currentDetailApt.bedrooms} {tx("phòng ngủ", "bedroom(s)", "卧室", "спальни", "침실", "ベッドルーム")}</span>
-                </span>
+                </span>}
 
-                <span className="apt-detail-quick-item">
+                {currentDetailApt.sizeM2 != null && <span className="apt-detail-quick-item">
                   <span>{currentDetailApt.sizeM2} m²</span>
-                </span>
+                </span>}
 
-                <button
-                  type="button"
-                  className="apt-detail-map-jump-btn"
-                  onClick={(e) => openUnitOnMapDialog(e, currentDetailApt)}
-                >
-                  <IconMapPin size={17} />
-                  <span>{tx("Trên bản đồ", "On the map", "在地图上查看", "На карте", "지도에서 보기", "地図で見る")}</span>
-                  <span>↗</span>
-                </button>
+              </div>
+
+              <div className="apt-location-details">
+                <div>
+                  {currentDetailApt.address?.trim() && <strong>{currentDetailApt.address.trim()}</strong>}
+                  <span className="apt-location-status">{locationLabel(currentDetailApt)}</span>
+                </div>
+                {(getExactLocation(currentDetailApt) || getAddressSearchUrl(currentDetailApt)) &&
+                  renderLocationAction(currentDetailApt, "apt-detail-map-jump-btn")}
               </div>
 
               <div>
@@ -3102,18 +3387,25 @@ export const App: React.FC = () => {
                 </p>
 
                 <div className="apt-compact-info-pills">
-                  <span className="apt-compact-info-pill">
-                    {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor || 15}
-                  </span>
-                  <span className="apt-compact-info-pill">
+                  {currentDetailApt.availableFrom && <span className="apt-compact-info-pill">
+                    {tx("Có thể vào từ", "Available from", "可入住日期", "Доступно с", "입주 가능일", "入居可能日")}{" "}
+                    {new Date(currentDetailApt.availableFrom + "T00:00:00Z").toLocaleDateString(lang, { timeZone: "UTC" })}
+                  </span>}
+                  {currentDetailApt.floor != null && <span className="apt-compact-info-pill">
+                    {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor}
+                  </span>}
+                  {currentDetailApt.electricityRate && <span className="apt-compact-info-pill">
                     {trField(currentDetailApt.electricityRate)}
-                  </span>
-                  <span className="apt-compact-info-pill">
+                  </span>}
+                  {currentDetailApt.remoteWorkSetup && <span className="apt-compact-info-pill">
                     {trField(currentDetailApt.remoteWorkSetup)}
-                  </span>
-                  <span className="apt-compact-info-pill">
-                    {tx("Từ", "Min", "起租", "От", "최소", "最低")} {currentDetailApt.minLeaseMonths || 3} {tx("tháng", "months", "个月", "мес", "개월", "ヶ月")} · {tx("Cọc", "Deposit", "押金", "Депозит", "보증금", "敷金")} {currentDetailApt.depositMonths || 1} {tx("tháng", "mo", "个月", "мес", "개월", "ヶ月")}
-                  </span>
+                  </span>}
+                  {currentDetailApt.minLeaseMonths != null && <span className="apt-compact-info-pill">
+                    {tx("Từ", "Min", "起租", "От", "최소", "最低")} {currentDetailApt.minLeaseMonths} {tx("tháng", "months", "个月", "мес", "개월", "ヶ月")}
+                  </span>}
+                  {currentDetailApt.depositMonths != null && <span className="apt-compact-info-pill">
+                    {tx("Cọc", "Deposit", "押金", "Депозит", "보증금", "敷金")} {currentDetailApt.depositMonths} {tx("tháng", "mo", "个月", "мес", "개월", "ヶ月")}
+                  </span>}
                   {(currentDetailApt.tags || []).map((tTag) => (
                     <span key={tTag} className="apt-compact-info-pill">
                       {trTag(tTag)}
@@ -3124,7 +3416,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Fullscreen Lightbox when clicking "⛶ Toàn màn hình" */}
-            {fullscreenPhotoOpen && (
+            {fullscreenPhotoOpen && activePhotoSource && (
               <div className="homii-dialog-backdrop" onClick={() => setFullscreenPhotoOpen(false)}>
                 <div style={{ position: "relative", maxWidth: "92vw", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
                   <button
@@ -3139,9 +3431,11 @@ export const App: React.FC = () => {
                       <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
-                  <img
-                    src={(currentDetailApt.images && currentDetailApt.images[activePhotoIdx]) || (currentDetailApt.images && currentDetailApt.images[0]) || ""}
+                  <ApartmentPhoto
+                    src={activePhotoSource}
                     alt={getLocalized(currentDetailApt.title)}
+                    unavailableText={photoUnavailable}
+                    fallbackStyle={{ width: "min(72vw, 560px)", aspectRatio: "16 / 10", borderRadius: "20px" }}
                     style={{ maxWidth: "92vw", maxHeight: "88vh", borderRadius: "20px", objectFit: "contain", display: "block", boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}
                   />
                 </div>
@@ -3196,7 +3490,7 @@ export const App: React.FC = () => {
                     if (detailPageOtherFilter === "same-area") return a.areaName === currentDetailApt.areaName;
                     if (detailPageOtherFilter === "1") return a.bedrooms === 1;
                     if (detailPageOtherFilter === "2") return a.bedrooms === 2;
-                    if (detailPageOtherFilter === "3") return a.bedrooms >= 3;
+                    if (detailPageOtherFilter === "3") return (a.bedrooms ?? -1) >= 3;
                     return true;
                   })
                   .map(renderApartmentCard)}
@@ -3654,7 +3948,7 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 className="btn-luxe btn-luxe--outline"
-                onClick={() => setExpandMapOpen(true)}
+                onClick={openMapOverview}
               >
                 <IconMap size={14} />
                 <span>{tx("Xem vị trí trên bản đồ", "View Buildings on Map", "在地图上查看大楼", "На карте Дананга", "지도에서 빌딩 위치 보기", "地図で建物の位置を見る")}</span>
@@ -3793,7 +4087,7 @@ export const App: React.FC = () => {
                           const matchIdx = apartments.findIndex((a) =>
                             a.building.toLowerCase().includes(b.name.split(" ")[1]?.toLowerCase() || b.name.split(" ")[0].toLowerCase())
                           );
-                          setExpandMapAptIdx(matchIdx >= 0 ? matchIdx : 0);
+                          setExpandMapAptCode(apartments[matchIdx]?.code);
                           setExpandMapOpen(true);
                         }}
                       >
@@ -4110,17 +4404,17 @@ export const App: React.FC = () => {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FFFFFF", padding: "0.55rem 0.9rem", borderRadius: "14px", border: "1px solid rgba(22,25,30,0.08)", marginBottom: "1rem", boxShadow: "0 4px 12px rgba(22,25,30,0.04)" }}>
                     <button
                       type="button"
-                      onClick={() => setExpandMapAptIdx((p) => (p === 0 ? apartments.length - 1 : p - 1))}
+                      onClick={() => setExpandMapAptCode(expandMapUnits.at(expandMapAptIdx - 1)?.code)}
                       style={{ background: "#F5F1E8", border: "none", padding: "0.32rem 0.75rem", borderRadius: "999px", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer", color: "#16191E" }}
                     >
                       ‹ {tx("Trước", "Prev", "上一套", "Пред.", "이전", "前へ")}
                     </button>
                     <strong style={{ fontSize: "0.82rem", fontFamily: "var(--font-mono)", color: "#8A683E" }}>
-                      {String(expandMapAptIdx + 1).padStart(2, "0")} / {String(apartments.length).padStart(2, "0")}
+                      {String(expandMapAptIdx + 1).padStart(2, "0")} / {String(expandMapUnits.length).padStart(2, "0")}
                     </strong>
                     <button
                       type="button"
-                      onClick={() => setExpandMapAptIdx((p) => (p + 1) % apartments.length)}
+                      onClick={() => setExpandMapAptCode((expandMapUnits[expandMapAptIdx + 1] || expandMapUnits[0])?.code)}
                       style={{ background: "#F5F1E8", border: "none", padding: "0.32rem 0.75rem", borderRadius: "999px", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer", color: "#16191E" }}
                     >
                       {tx("Tiếp", "Next", "下一套", "След.", "다음", "次へ")} ›
@@ -4128,9 +4422,11 @@ export const App: React.FC = () => {
                   </div>
 
                   <div style={{ borderRadius: "18px", overflow: "hidden", aspectRatio: "16/10", marginBottom: "1rem", boxShadow: "0 12px 28px rgba(22,25,30,0.12)" }}>
-                    <img
-                      src={(expandDialogApt.images && expandDialogApt.images[0]) || ""}
+                    <ApartmentPhoto
+                      src={expandDialogApt.images?.[0]}
                       alt={getLocalized(expandDialogApt.title)}
+                      unavailableText={photoUnavailable}
+                      fallbackStyle={fillPhotoSlot}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                   </div>
@@ -4141,8 +4437,16 @@ export const App: React.FC = () => {
                   <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.45rem", lineHeight: 1.25, marginBottom: "0.55rem" }}>
                     {getLocalized(expandDialogApt.title)}
                   </h3>
+                  <div className="apt-location-details">
+                    <div>
+                      {expandDialogApt.address?.trim() && <strong>{expandDialogApt.address.trim()}</strong>}
+                      <span className="apt-location-status">{locationLabel(expandDialogApt)}</span>
+                    </div>
+                    {!getExactLocation(expandDialogApt) && getAddressSearchUrl(expandDialogApt) &&
+                      renderLocationAction(expandDialogApt, "apt-detail-map-jump-btn")}
+                  </div>
                   <div style={{ fontSize: "0.86rem", color: "var(--text-secondary)", marginBottom: "0.9rem" }}>
-                    {expandDialogApt.bedrooms} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {expandDialogApt.sizeM2} m² · {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {expandDialogApt.floor || 15} · {trField(expandDialogApt.electricityRate)}
+                    {expandDialogApt.bedrooms ?? "—"} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {expandDialogApt.sizeM2 ?? "—"} m² · {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {expandDialogApt.floor ?? "—"} {expandDialogApt.electricityRate && `· ${trField(expandDialogApt.electricityRate)}`}
                   </div>
                   <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.9rem", fontWeight: 800, color: "var(--bg-navy)", marginBottom: "1rem" }}>
                     {formatPrice(expandDialogApt)}
@@ -4171,14 +4475,15 @@ export const App: React.FC = () => {
       {/* ====================================================================
           DIALOG 2: STREAMLINED VIEWING BOOKING DIALOG (Screenshot 2 — .kin-booking-modal)
           ==================================================================== */}
-      {detailDialogApt && (
-        <div className="homii-dialog-backdrop" onClick={() => setDetailDialogApt(null)}>
-          <div className="kin-booking-modal" onClick={(e) => e.stopPropagation()}>
+      {inquiryApartmentCode && (
+        <div className="homii-dialog-backdrop" onClick={closeBookingModal}>
+          <div className="kin-booking-modal" role="dialog" aria-modal="true" aria-labelledby="kin-inquiry-title" onClick={(e) => e.stopPropagation()}>
             {/* Top-Right Circular Close Button with Warm Bronze Ring */}
             <button
               type="button"
               className="kin-booking-close-circle"
-              onClick={() => setDetailDialogApt(null)}
+              onClick={closeBookingModal}
+              disabled={apartmentInquirySubmitting}
               aria-label="Close booking dialog"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -4188,38 +4493,17 @@ export const App: React.FC = () => {
             </button>
 
             <div className="kin-booking-modal__scroll">
-              <div className="kin-booking-eyebrow">
-                {tx("XEM CĂN HỘ", "BOOK A VIEWING", "预约看房", "ПРОСМОТР КВАРТИРЫ", "아파트 투어", "内覧予約")}
-              </div>
-
-              <h2 className="kin-booking-title">
-                {tx(
-                  "Cùng hẹn lịch xem nhà.",
-                  "Let's schedule your viewing.",
-                  "一起预约看房时间。",
-                  "Давайте назначим просмотр.",
-                  "집 보러 오실 시간을 예약하세요.",
-                  "内覧の日時を決めましょう。"
-                )}
+              <h2 className="kin-booking-title" id="kin-inquiry-title">
+                {tx("Liên hệ về căn hộ", "Apartment enquiry", "咨询房源", "Запрос по квартире", "아파트 문의", "物件についてのお問い合わせ")}
               </h2>
 
-              <p className="kin-booking-subtitle">
-                {tx(
-                  "Để lại thông tin liên hệ, chúng tôi sẽ hẹn giờ xem nhà.",
-                  "Leave your contact details and we will arrange a convenient viewing time.",
-                  "留下您的联系方式，我们将为您安排合适的看房时间。",
-                  "Оставьте ваш контакт, и мы согласуем удобное время показа.",
-                  "연락처를 남겨주시면 편하신 시간으로 투어를 잡아드립니다.",
-                  "ご連絡先を残していただければ、ご都合の良い内覧時間を手配いたします。"
-                )}
-              </p>
-
               {/* Compact Apartment Summary Box (Matching Screenshot 2) */}
-              <div className="kin-booking-apt-summary">
-                <img
+              {detailDialogApt && <div className="kin-booking-apt-summary">
+                <ApartmentPhoto
                   className="kin-booking-apt-thumb"
-                  src={(detailDialogApt.images && detailDialogApt.images[0]) || ""}
+                  src={detailDialogApt.images?.[0]}
                   alt={getLocalized(detailDialogApt.title)}
+                  unavailableText={photoUnavailable}
                 />
                 <div className="kin-booking-apt-info">
                   <div className="kin-booking-apt-name">
@@ -4232,102 +4516,148 @@ export const App: React.FC = () => {
                     {formatPrice(detailDialogApt)}
                   </div>
                 </div>
-              </div>
+              </div>}
 
               {/* Streamlined Booking Form with Required Policy Consent Checkbox */}
-              <form onSubmit={(e) => handleLeadSubmit(e, detailDialogApt)}>
-                <div>
-                  <label className="kin-booking-field-label">
-                    <span>{tx("Zalo, WhatsApp, Telegram hoặc WeChat", "Zalo, WhatsApp, Telegram or WeChat", "Zalo、WhatsApp、Telegram 或 微信", "Zalo, WhatsApp, Telegram или WeChat", "Zalo, WhatsApp, Telegram 또는 WeChat", "Zalo、WhatsApp、Telegram または WeChat")}</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="contactHandle"
-                    className="kin-booking-input"
-                    required
-                    placeholder={tx("@username hoặc số điện thoại", "@username or phone number", "@用户名 或 手机号码", "@username или номер телефона", "@아이디 또는 전화번호", "@ユーザー名または電話番号")}
-                  />
-                </div>
-
-                {/* Policy Agreement Checkbox */}
-                <label className="kin-policy-checkbox-row">
-                  <input
-                    type="checkbox"
-                    className="kin-policy-checkbox-input"
-                    checked={policyAgreed}
-                    onChange={(e) => setPolicyAgreed(e.target.checked)}
-                    required
-                  />
-                  <span className="kin-policy-checkbox-text">
-                    {tx("Tôi đồng ý xử lý thông tin để tìm nhà (", "I agree to data processing to find a home (", "我同意处理个人信息以匹配房源（", "Я согласен на обработку данных для подбора жилья (", "집 찾기를 위한 개인정보 처리에 동의합니다 (", "お部屋探しのための情報処理に同意します（")}
-                    <button
-                      type="button"
-                      className="kin-policy-link-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPolicyDrawerOpen((p) => !p);
-                      }}
-                    >
-                      {tx("chính sách dữ liệu", "data policy", "数据隐私政策", "политика данных", "개인정보 정책", "データポリシー")}
-                    </button>
-                    {tx(")", ")", "）", ")", ")", "）")}
-                  </span>
-                </label>
-
-                {policyDrawerOpen && (
-                  <div className="kin-policy-drawer">
-                    <strong>KIN Estates Privacy & Data Policy:</strong>{" "}
-                    {tx(
-                      "Thông tin liên hệ của bạn chỉ được sử dụng duy nhất bởi đội ngũ tư vấn KIN Estates tại Đà Nẵng để xác nhận lịch xem căn hộ và hỗ trợ hợp đồng thuê. Chúng tôi cam kết bảo mật tuyệt đối và không chia sẻ cho bất kỳ bên thứ ba nào.",
-                      "Your contact handle is used exclusively by the KIN Estates Da Nang advisory team to coordinate your apartment viewing and lease handover. Never shared with third parties.",
-                      "您的联系信息仅供 KIN Estates 岘港顾问团队用于安排看房与租约交接，绝不向任何第三方透露。",
-                      "Ваши контакты используются исключительно командой KIN Estates в Дананге для организации просмотра и никогда не передаются третьим лицам.",
-                      "고객님의 연락처는 KIN Estates 다낭 전담팀이 투어 일정을 조율하는 목적으로만 사용하며 제3자에게 절대 공유되지 않습니다.",
-                      "お客様の連絡先はKIN Estatesダナン担当チームが内覧手配のみに使用し、第三者に提供することは一切ありません。"
-                    )}
+              {detailDialogApt && !apartmentInquiryReceived && <form onSubmit={(e) => handleLeadSubmit(e, detailDialogApt)} aria-busy={apartmentInquirySubmitting}>
+                <fieldset className="kin-inquiry-fields" disabled={apartmentInquirySubmitting || apartmentInquiryUnavailable}>
+                  <div className="kin-inquiry-types" role="radiogroup" aria-label={tx("Loại yêu cầu", "Request type", "申请类型", "Тип запроса", "요청 유형", "リクエストの種類")}>
+                    <label>
+                      <input type="radio" name="requestType" value="viewing" checked={!apartmentInquiryIsReservation} onChange={() => {
+                        setApartmentInquiryType("viewing");
+                        setApartmentInquiryState("idle");
+                      }} />
+                      <span>{tx("Hẹn xem", "Book a viewing", "预约看房", "Просмотр", "투어 신청", "内覧予約")}</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="requestType" value="reservation" checked={apartmentInquiryIsReservation} onChange={() => {
+                        setApartmentInquiryType("reservation");
+                        setApartmentInquiryState("idle");
+                      }} />
+                      <span>{tx("Đặt phòng", "Request booking", "申请预订", "Запросить бронь", "예약 요청", "入居予約")}</span>
+                    </label>
                   </div>
-                )}
-
-                <div>
-                  <label className="kin-booking-field-label">
-                    <span>{tx("Bạn muốn xem nhà khi nào?", "When would you like to view?", "您希望什么时候看房？", "Когда вы хотите посмотреть?", "언제 집을 보고 싶으신가요?", "いつ内覧をご希望ですか？")}</span>
-                    <span className="kin-booking-optional-tag">{tx("không bắt buộc", "optional", "选填", "необязательно", "선택사항", "任意")}</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="moveInDate"
-                    className="kin-booking-input"
-                    placeholder={tx("Ví dụ: ngày mai sau 15:00", "e.g. tomorrow after 15:00", "例如：明天下午 15:00 后", "Например: завтра после 15:00", "예: 내일 오후 3시 이후", "例：明日の15:00以降")}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="kin-booking-submit-btn"
-                  disabled={!policyAgreed}
-                >
-                  <span>{tx("Hẹn xem căn hộ", "Schedule Viewing", "确认预约看房", "Записаться на просмотр", "투어 예약하기", "内覧を予約する")}</span>
-                  <span>→</span>
-                </button>
-
-                {bookingFeedback && (
-                  <div style={{ marginTop: "0.85rem", padding: "0.75rem 0.95rem", borderRadius: "12px", background: "rgba(31, 122, 92, 0.1)", color: "var(--accent-emerald)", fontSize: "0.84rem", fontWeight: 700, textAlign: "center" }}>
-                    {bookingFeedback}
-                  </div>
-                )}
-
-                <div className="kin-booking-footer-note">
-                  {tx(
-                    "Chúng tôi chỉ dùng thông tin để tìm nhà và liên hệ với bạn.",
-                    "We only use your information to find apartments and contact you.",
-                    "我们仅将您的信息用于匹配房源并与您联系。",
-                    "Мы используем данные только для подбора жилья и связи с вами.",
-                    "입력하신 정보는 매물 안내 및 연락 목적으로만 사용됩니다.",
-                    "ご入力情報は物件のご案内とご連絡のみに使用いたします。"
+                  {apartmentInquiryIsReservation && (
+                    <div className="kin-inquiry-field">
+                      <label className="kin-booking-field-label" htmlFor="kin-inquiry-name">
+                        {tx("Họ và tên", "Full name", "姓名", "Имя и фамилия", "이름", "氏名")}
+                      </label>
+                      <input id="kin-inquiry-name" className="kin-booking-input" name="clientName" autoComplete="name" required maxLength={120} />
+                    </div>
                   )}
-                </div>
-              </form>
+                  <div>
+                    <label className="kin-booking-field-label" htmlFor="kin-inquiry-contact">
+                      <span>{tx("Zalo, WhatsApp, Telegram hoặc WeChat", "Zalo, WhatsApp, Telegram or WeChat", "Zalo、WhatsApp、Telegram 或 微信", "Zalo, WhatsApp, Telegram или WeChat", "Zalo, WhatsApp, Telegram 또는 WeChat", "Zalo、WhatsApp、Telegram または WeChat")}</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="kin-inquiry-contact"
+                      name="contactHandle"
+                      className="kin-booking-input"
+                      required
+                      maxLength={150}
+                      placeholder={tx("@username hoặc số điện thoại", "@username or phone number", "@用户名 或 手机号码", "@username или номер телефона", "@아이디 또는 전화번호", "@ユーザー名または電話番号")}
+                    />
+                  </div>
+
+                  {/* Policy Agreement Checkbox */}
+                  <label className="kin-policy-checkbox-row">
+                    <input
+                      type="checkbox"
+                      className="kin-policy-checkbox-input"
+                      checked={policyAgreed}
+                      onChange={(e) => setPolicyAgreed(e.target.checked)}
+                      required
+                    />
+                    <span className="kin-policy-checkbox-text">
+                      {tx("Tôi đồng ý xử lý thông tin để tìm nhà (", "I agree to data processing to find a home (", "我同意处理个人信息以匹配房源（", "Я согласен на обработку данных для подбора жилья (", "집 찾기를 위한 개인정보 처리에 동의합니다 (", "お部屋探しのための情報処理に同意します（")}
+                      <button
+                        type="button"
+                        className="kin-policy-link-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPolicyDrawerOpen((p) => !p);
+                        }}
+                      >
+                        {tx("chính sách dữ liệu", "data policy", "数据隐私政策", "политика данных", "개인정보 정책", "データポリシー")}
+                      </button>
+                      {tx(")", ")", "）", ")", ")", "）")}
+                    </span>
+                  </label>
+
+                  {policyDrawerOpen && (
+                    <div className="kin-policy-drawer">
+                      <strong>KIN Estates Privacy & Data Policy:</strong>{" "}
+                      {tx(
+                        "Thông tin liên hệ của bạn chỉ được sử dụng duy nhất bởi đội ngũ tư vấn KIN Estates tại Đà Nẵng để xác nhận lịch xem căn hộ và hỗ trợ hợp đồng thuê. Chúng tôi cam kết bảo mật tuyệt đối và không chia sẻ cho bất kỳ bên thứ ba nào.",
+                        "Your contact handle is used exclusively by the KIN Estates Da Nang advisory team to coordinate your apartment viewing and lease handover. Never shared with third parties.",
+                        "您的联系信息仅供 KIN Estates 岘港顾问团队用于安排看房与租约交接，绝不向任何第三方透露。",
+                        "Ваши контакты используются исключительно командой KIN Estates в Дананге для организации просмотра и никогда не передаются третьим лицам.",
+                        "고객님의 연락처는 KIN Estates 다낭 전담팀이 투어 일정을 조율하는 목적으로만 사용하며 제3자에게 절대 공유되지 않습니다.",
+                        "お客様の連絡先はKIN Estatesダナン担当チームが内覧手配のみに使用し、第三者に提供することは一切ありません。"
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="kin-booking-field-label" htmlFor="kin-inquiry-date">
+                      <span>{apartmentInquiryIsReservation
+                        ? tx("Ngày nhận phòng dự kiến", "Preferred move-in date", "预计入住日期", "Желаемая дата заезда", "희망 입주일", "入居希望日")
+                        : tx("Bạn muốn xem nhà khi nào?", "When would you like to view?", "您希望什么时候看房？", "Когда вы хотите посмотреть?", "언제 집을 보고 싶으신가요?", "いつ内覧をご希望ですか？")}</span>
+                      <span className="kin-booking-optional-tag">{tx("không bắt buộc", "optional", "选填", "необязательно", "선택사항", "任意")}</span>
+                    </label>
+                    <input
+                      key={apartmentInquiryType}
+                      type={apartmentInquiryIsReservation ? "date" : "text"}
+                      id="kin-inquiry-date"
+                      name="moveInDate"
+                      className="kin-booking-input"
+                      maxLength={120}
+                      placeholder={apartmentInquiryIsReservation ? undefined : tx("Ví dụ: ngày mai sau 15:00", "e.g. tomorrow after 15:00", "例如：明天下午 15:00 后", "Например: завтра после 15:00", "예: 내일 오후 3시 이후", "例：明日の15:00以降")}
+                    />
+                  </div>
+
+                  {apartmentInquiryIsReservation && (
+                    <div className="kin-inquiry-field kin-inquiry-field--later">
+                      <label className="kin-booking-field-label" htmlFor="kin-inquiry-notes">
+                        <span>{tx("Ghi chú", "Notes", "备注", "Примечания", "메모", "備考")}</span>
+                        <span className="kin-booking-optional-tag">{tx("không bắt buộc", "optional", "选填", "необязательно", "선택사항", "任意")}</span>
+                      </label>
+                      <textarea id="kin-inquiry-notes" className="kin-booking-input" name="notes" rows={2} maxLength={1000} />
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="kin-booking-submit-btn"
+                    disabled={!policyAgreed}
+                  >
+                    <span>{apartmentInquirySubmitting
+                      ? tx("Đang gửi…", "Sending…", "正在发送…", "Отправка…", "전송 중…", "送信中…")
+                      : apartmentInquiryIsReservation
+                        ? tx("Gửi yêu cầu đặt phòng", "Send booking request", "发送预订申请", "Отправить запрос на бронь", "예약 요청 보내기", "入居予約をリクエスト")
+                        : tx("Gửi yêu cầu xem căn", "Send viewing request", "发送看房请求", "Отправить запрос на просмотр", "투어 요청 보내기", "内覧をリクエスト")}</span>
+                    <span>→</span>
+                  </button>
+
+                </fieldset>
+              </form>}
+
+              {apartmentInquiryReceived && (
+                <p className="kin-inquiry-feedback" role="status">
+                  {apartmentInquiryIsReservation
+                    ? tx("Yêu cầu đặt phòng đang chờ xác nhận. KIN Estates sẽ liên hệ để kiểm tra tình trạng căn và ngày nhận phòng.", "Booking request pending confirmation. KIN Estates will contact you about availability and your move-in date.", "预订申请待确认。KIN Estates 将联系您核实房源和入住日期。", "Запрос на бронь ожидает подтверждения. KIN Estates свяжется с вами по поводу наличия и даты заезда.", "예약 요청이 확인 대기 중입니다. KIN Estates에서 예약 가능 여부와 입주일에 대해 연락드립니다.", "入居予約は確認待ちです。空室状況と入居日についてKIN Estatesよりご連絡します。")
+                    : tx("Đã nhận yêu cầu xem căn. KIN Estates sẽ liên hệ để hẹn giờ.", "Viewing request received. KIN Estates will contact you to arrange a time.", "已收到看房请求。KIN Estates 将联系您安排时间。", "Запрос на просмотр получен. KIN Estates свяжется с вами, чтобы согласовать время.", "투어 요청을 접수했습니다. KIN Estates에서 일정 조율을 위해 연락드립니다.", "内覧リクエストを受け付けました。日程調整のためKIN Estatesよりご連絡します。")}
+                </p>
+              )}
+              {!apartmentInquiryReceived && (apartmentInquiryUnavailable || apartmentInquiryState === "error") && (
+                <p className="kin-inquiry-feedback kin-inquiry-feedback--error" role="alert">
+                  {apartmentInquiryUnavailable
+                    ? tx("Căn này hiện không nhận yêu cầu. Bạn có thể chọn căn khác.", "This apartment is currently unavailable for requests. You can choose another.", "此房源暂不接受申请，您可选择其他房源。", "По этой квартире сейчас не принимаются заявки. Вы можете выбрать другую.", "현재 이 매물은 요청을 받지 않습니다. 다른 매물을 선택할 수 있습니다.", "この物件は現在リクエストを受け付けていません。他の物件をお選びいただけます。")
+                    : tx("Chưa gửi được yêu cầu. Vui lòng kiểm tra thông tin và thử lại.", "Request could not be sent. Check your details and try again.", "无法发送请求，请检查资料后重试。", "Не удалось отправить запрос. Проверьте данные и попробуйте снова.", "요청을 보내지 못했습니다. 정보를 확인하고 다시 시도해 주세요.", "リクエストを送信できませんでした。入力内容をご確認の上、再度お試しください。")}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -4429,7 +4759,7 @@ export const App: React.FC = () => {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", fontSize: "0.88rem", color: "rgba(255,255,255,0.82)" }}>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/apartments")}>{tx("Tất cả căn hộ Đà Nẵng", "All Da Nang Apartments", "所有岘港公寓", "Все квартиры Дананга", "다낭 전체 아파트", "ダナン全物件一覧")}</span>
-              <span style={{ cursor: "pointer" }} onClick={() => setExpandMapOpen(true)}>{tx("Bản đồ căn hộ Đà Nẵng", "Interactive Residence Map", "岘港房源地图", "Интерактивная карта", "다낭 아파트 지도", "インタラクティブ地図")}</span>
+              <span style={{ cursor: "pointer" }} onClick={openMapOverview}>{tx("Bản đồ căn hộ Đà Nẵng", "Interactive Residence Map", "岘港房源地图", "Интерактивная карта", "다낭 아파트 지도", "インタラクティブ地図")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/areas")}>{tx("Các khu vực Đà Nẵng", "Da Nang Neighborhoods", "岘港核心区域", "Районы Дананга", "다낭 주요 지역", "ダナン主要エリア")}</span>
             </div>
           </div>
