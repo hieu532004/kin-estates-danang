@@ -1,133 +1,6 @@
 {
   "apartments": [
     {
-      "_id": "apt-1795169469678-9kta",
-      "code": "DN-KIN-26362F858607B5",
-      "title": {
-        "vi": "Căn 2PN có ban công",
-        "en": "Căn 2PN có ban công",
-        "zh": "Căn 2PN có ban công",
-        "ru": "Căn 2PN có ban công",
-        "ko": "Căn 2PN có ban công",
-        "ja": "Căn 2PN có ban công"
-      },
-      "building": "The Panoma",
-      "address": "The Panoma, Han Riverfront, Đà Nẵng",
-      "areaName": "Han Riverfront",
-      "district": null,
-      "priceUsd": 726,
-      "priceVnd": 18500000,
-      "bedrooms": 2,
-      "bathrooms": null,
-      "sizeM2": 72,
-      "floor": null,
-      "orientation": null,
-      "minLeaseMonths": null,
-      "depositMonths": null,
-      "electricityRate": null,
-      "waterRate": null,
-      "wifiIncluded": null,
-      "naturalLightScore": null,
-      "remoteWorkSetup": null,
-      "petPolicy": null,
-      "status": "Available",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "featured": true,
-      "landlordName": "",
-      "landlordPhone": "",
-      "adminNote": "",
-      "currentTenant": null,
-      "coordinates": {
-        "lat": 16.0644,
-        "lng": 108.2266
-      },
-      "architecturalNotes": {
-        "vi": "Nội thất đầy đủ",
-        "en": "Nội thất đầy đủ",
-        "zh": "Nội thất đầy đủ",
-        "ru": "Nội thất đầy đủ",
-        "ko": "Nội thất đầy đủ",
-        "ja": "Nội thất đầy đủ"
-      },
-      "tags": [],
-      "images": [
-        "/api/telegram/media/fefd8b2470ee499e29594130b9df33742c27d7d5798b1ffbc57b885c00d19c22",
-        "/api/telegram/media/3f72aa1a80c180c664b072f54c4d6084e09ad1c6d431f8777f4e88a7206780c6",
-        "/api/telegram/media/7a851e914352941a5ccba365bfdd97b88fe24622c1ed49c6d9cc24606756e6b8",
-        "/api/telegram/media/27b567c8ecf9c472f746a18c6db980aea945f165c874604c27975a476642fc21"
-      ],
-      "source": "telegram",
-      "createdAt": "2026-11-20T10:11:09.684Z",
-      "updatedAt": "2026-11-20T10:11:09.684Z",
-      "locationAccuracy": "exact"
-    },
-    {
-      "_id": "apt-1795017217145-8tvb",
-      "code": "DN-KIN-2247",
-      "title": {
-        "vi": "Căn hộ Kiến trúc Đà Nẵng",
-        "en": "Căn hộ Kiến trúc Đà Nẵng",
-        "zh": "Căn hộ Kiến trúc Đà Nẵng",
-        "ru": "Căn hộ Kiến trúc Đà Nẵng",
-        "ko": "Căn hộ Kiến trúc Đà Nẵng",
-        "ja": "Căn hộ Kiến trúc Đà Nẵng"
-      },
-      "building": "KIN Estates Residence",
-      "address": "Khu phố An Thượng, Ngũ Hành Sơn",
-      "areaName": "An Thuong",
-      "district": "Sơn Trà / Ngũ Hành Sơn",
-      "priceUsd": 950,
-      "priceVnd": 24200000,
-      "bedrooms": 2,
-      "bathrooms": 2,
-      "sizeM2": 75,
-      "floor": 20,
-      "orientation": "Đông Nam / Đón gió biển",
-      "minLeaseMonths": 3,
-      "depositMonths": 1,
-      "electricityRate": "Giá nhà nước EVN",
-      "waterRate": "Giá nhà nước",
-      "wifiIncluded": true,
-      "naturalLightScore": 9.5,
-      "remoteWorkSetup": "Bàn làm việc riêng + Cáp quang 300Mbps",
-      "petPolicy": "Thương lượng",
-      "status": "Available",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "featured": true,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "adminNote": "",
-      "currentTenant": null,
-      "coordinates": {
-        "lat": 16.0513,
-        "lng": 108.2453
-      },
-      "architecturalNotes": {
-        "vi": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "en": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "zh": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "ru": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "ko": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "ja": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps"
-      },
-      "tags": [
-        "Natural Light",
-        "Remote-Work Desk",
-        "State-Rate Electricity"
-      ],
-      "images": [
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85",
-        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80"
-      ],
-      "source": "telegram",
-      "createdAt": "2026-11-18T15:53:37.145Z",
-      "updatedAt": "2026-11-18T15:53:37.145Z",
-      "locationAccuracy": "exact"
-    },
-    {
       "_id": "apt-panoma-1902",
       "code": "DN-PAN-1902",
       "title": {
@@ -153,6 +26,7 @@
       "petPolicy": "Thương lượng với chủ nhà",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0488,
         "lng": 108.2342
@@ -175,12 +49,8 @@
         "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-10T08:00:00.000Z",
-      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "58 Trần Thị Lý, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-panoma-2405",
@@ -208,6 +78,7 @@
       "petPolicy": "Cho nuôi mèo sạch sẽ",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0491,
         "lng": 108.2346
@@ -230,12 +101,8 @@
         "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-11T08:00:00.000Z",
-      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "58 Trần Thị Lý, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-panoma-2801",
@@ -263,6 +130,7 @@
       "petPolicy": "Cho nuôi thú cưng nhỏ",
       "status": "Available",
       "featured": false,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0485,
         "lng": 108.2339
@@ -284,12 +152,8 @@
         "https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-11T10:00:00.000Z",
-      "address": "Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "58 Trần Thị Lý, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-filmore-2401",
@@ -317,6 +181,7 @@
       "petPolicy": "Thương lượng",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0583,
         "lng": 108.2242
@@ -338,12 +203,8 @@
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-12T08:00:00.000Z",
-      "address": "Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "Lô B1-1-8 Bạch Đằng, Phường Bình Thuận, Quận Hải Châu, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-filmore-1608",
@@ -371,6 +232,7 @@
       "petPolicy": "Không nuôi thú cưng",
       "status": "Available",
       "featured": false,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0586,
         "lng": 108.2245
@@ -391,12 +253,8 @@
         "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-12T11:00:00.000Z",
-      "address": "Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "Lô B1-1-8 Bạch Đằng, Phường Bình Thuận, Quận Hải Châu, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-hiyori-1804",
@@ -424,6 +282,7 @@
       "petPolicy": "Không nuôi thú cưng (Quy định tòa nhà)",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0615,
         "lng": 108.2348
@@ -444,12 +303,8 @@
         "https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-13T08:00:00.000Z",
-      "address": "Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "Lô A2 Võ Văn Kiệt, Phường An Hải Đông, Quận Sơn Trà, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-hiyori-1202",
@@ -477,6 +332,7 @@
       "petPolicy": "Không nuôi thú cưng",
       "status": "Available",
       "featured": false,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0618,
         "lng": 108.2351
@@ -496,12 +352,8 @@
         "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-13T10:00:00.000Z",
-      "address": "Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "Lô A2 Võ Văn Kiệt, Phường An Hải Đông, Quận Sơn Trà, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-monarchy-1508",
@@ -529,6 +381,7 @@
       "petPolicy": "Cho nuôi thú cưng (Pet-Friendly)",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0548,
         "lng": 108.2315
@@ -550,12 +403,8 @@
         "https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-14T08:00:00.000Z",
-      "address": "Sơn Trà, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "535 Trần Hưng Đạo, Phường An Hải Tây, Quận Sơn Trà, Đà Nẵng",
+      "isVisible": true
     },
     {
       "_id": "apt-anthuong-1102",
@@ -583,6 +432,7 @@
       "petPolicy": "Cho nuôi chó mèo (Pet-Friendly)",
       "status": "Available",
       "featured": true,
+      "locationAccuracy": "exact",
       "coordinates": {
         "lat": 16.0492,
         "lng": 108.2456
@@ -602,12 +452,59 @@
         "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80"
       ],
       "createdAt": "2026-11-14T11:00:00.000Z",
-      "address": "Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng",
-      "isVisible": true,
-      "hideWhenRented": false,
-      "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "locationAccuracy": "exact"
+      "address": "26 An Thượng 2, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng",
+      "isVisible": true
+    },
+    {
+      "_id": "apt-anthuong-villa01",
+      "code": "DN-ANT-V01",
+      "title": {
+        "vi": "Biệt thự sân vườn hồ bơi riêng Nam Việt Á — Ngũ Hành Sơn (3PN)",
+        "en": "Nam Viet A Private Pool Architectural Villa — 3BR Sanctuary",
+        "ru": "Вилла с собственным бассейном и 3 спальнями в Нгуханьшон"
+      },
+      "building": "Nam Viet A Villa Compound",
+      "areaName": "Ngũ Hành Sơn",
+      "district": "Ngũ Hành Sơn",
+      "priceUsd": 1850,
+      "priceVnd": 47100000,
+      "bedrooms": 3,
+      "bathrooms": 4,
+      "sizeM2": 240,
+      "floor": 2,
+      "orientation": "Đông Nam / Sân vườn nhiệt đới & Hồ bơi riêng",
+      "minLeaseMonths": 6,
+      "depositMonths": 2,
+      "electricityRate": "Giá nhà nước (EVN)",
+      "naturalLightScore": 9.9,
+      "remoteWorkSetup": "Phòng làm việc riêng nhìn ra hồ bơi",
+      "petPolicy": "Thoải mái nuôi thú cưng",
+      "status": "Available",
+      "featured": true,
+      "locationAccuracy": "exact",
+      "coordinates": {
+        "lat": 16.0365,
+        "lng": 108.2418
+      },
+      "architecturalNotes": {
+        "vi": "Biệt thự kiến trúc nhiệt đới hiện đại có hồ bơi muối khoáng riêng, gara ô tô, khu vườn yên tĩnh gần sông Hàn và trường quốc tế.",
+        "en": "Modern tropical architectural villa with private saltwater pool, enclosed garage, and lush courtyard near international schools.",
+        "ru": "Современная тропическая вилла с частным бассейном, садом и гаражом."
+      },
+      "tags": [
+        "Biệt thự",
+        "Thú cưng",
+        "Bàn làm việc",
+        "Hồ bơi vô cực",
+        "Điện EVN"
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=85",
+        "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "createdAt": "2026-11-15T09:00:00.000Z",
+      "address": "Đà Nẵng",
+      "isVisible": true
     }
   ],
   "buildings": [
@@ -4358,66 +4255,7 @@
       ]
     }
   ],
-  "wizardSessions": {
-    "9075026090:draft-receipts": [
-      {
-        "action": "/draft_publish",
-        "ref": "26362f858607b5.6",
-        "response": {
-          "reply": "Đã đăng căn hộ.\nDN-KIN-26362F858607B5 · Căn 2PN có ban công\n4 ảnh · Đang hiện trên web",
-          "buttons": [
-            [
-              {
-                "text": "Mở căn hộ",
-                "callback_data": "/apt DN-KIN-26362F858607B5"
-              },
-              {
-                "text": "Kho căn hộ",
-                "callback_data": "/list"
-              }
-            ],
-            [
-              {
-                "text": "Thêm ảnh",
-                "callback_data": "/addphoto DN-KIN-26362F858607B5"
-              },
-              {
-                "text": "Thay bộ ảnh",
-                "callback_data": "/setphoto DN-KIN-26362F858607B5"
-              }
-            ]
-          ],
-          "parseMode": null,
-          "mutated": true
-        }
-      }
-    ],
-    "9075026090:closed-albums": [
-      "14361355384214333"
-    ],
-    "9075026090": {
-      "mode": "listing",
-      "id": "69ae648bbc1ef9",
-      "revision": 11,
-      "photos": [
-        "/api/telegram/media/e4849e3ee915b0df565b3db61acb379f704333cf2ea202004f7541fb99fcbc04",
-        "/api/telegram/media/d0e6383f1ddae66a91166d5957d36559c3b69a15200ac490d692df29e4ff4d10",
-        "/api/telegram/media/5412e86654e2835c4d52ef70ec7457dc7ff412b3cddcf490b09a3281e99b4034",
-        "/api/telegram/media/2424e4b8f394eaf23fee6661381b458a15b77c86bc7f2d8772fc25d21dd6ef1b",
-        "/api/telegram/media/a18d5e9fb06a32d0900dae9dc9bbf73095690aed6298ed225cdebdb3945a8c85",
-        "/api/telegram/media/e56df5ee48ff695e5c21d4dba4187404242518e03aef1ed2772a1963c280e53d",
-        "/api/telegram/media/3fbbdb789d754ef6f38a1e1e328f33d8a57f618a9a54bb0acda4b7b25dd52f77",
-        "/api/telegram/media/ffb144213a1238e0497e48d3551a01546e4b90872217ceebbe905b9fd19122c8",
-        "/api/telegram/media/b096f0f8313eaed47c77e6b8683230c1b857ecd61a86650a67f4a32fc257d91d"
-      ],
-      "step": "identity",
-      "details": {},
-      "albumIds": [
-        "14361517824879325"
-      ],
-      "coverSelected": true
-    }
-  },
+  "wizardSessions": {},
   "settings": {
     "googleSheetsWebhookUrl": "",
     "googleSheetsCsvUrl": "",
