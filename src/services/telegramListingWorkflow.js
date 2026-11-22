@@ -472,7 +472,7 @@ async function handleListingWorkflow({ text, photos, userKey, parseListing, quic
     next.photos = withPhotos(session.photos, parsed?.images);
     return persist(next, updated => {
       if (invalidPin) return screen(updated, pinHint);
-      return (session.step === "details" || pinLine) && updated.step === "photos" ? preview(updated) :
+      return (session.step === "details" || pinLine || (template && updated.photos.length > 0)) && updated.step === "photos" ? preview(updated) :
         screen(updated, details.price === null ? "Giá chưa hợp lệ. Ví dụ: 18,5tr hoặc 850 USD." : "");
     });
   }

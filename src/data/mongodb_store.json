@@ -5,11 +5,11 @@
       "code": "DN-KIN-26362F858607B5",
       "title": {
         "vi": "Căn 2PN có ban công",
-        "en": "2 bedroom apartment with balcony",
-        "zh": "带阳台的两卧室公寓",
-        "ru": "2-комнатная квартира с балконом",
-        "ko": "발코니가 있는 침실 2개 아파트",
-        "ja": "バルコニー付きの2ベッドルームアパートメント"
+        "en": "Căn 2PN có ban công",
+        "zh": "Căn 2PN có ban công",
+        "ru": "Căn 2PN có ban công",
+        "ko": "Căn 2PN có ban công",
+        "ja": "Căn 2PN có ban công"
       },
       "building": "The Panoma",
       "address": "The Panoma, Han Riverfront, Đà Nẵng",
@@ -44,11 +44,11 @@
       },
       "architecturalNotes": {
         "vi": "Nội thất đầy đủ",
-        "en": "Fully furnished",
-        "zh": "家具齐全",
-        "ru": "Полностью меблирована",
-        "ko": "가구 완비",
-        "ja": "家具完備"
+        "en": "Nội thất đầy đủ",
+        "zh": "Nội thất đầy đủ",
+        "ru": "Nội thất đầy đủ",
+        "ko": "Nội thất đầy đủ",
+        "ja": "Nội thất đầy đủ"
       },
       "tags": [],
       "images": [
@@ -59,35 +59,18 @@
       ],
       "source": "telegram",
       "createdAt": "2026-11-20T10:11:09.684Z",
-      "updatedAt": "2026-11-20T10:11:09.684Z",
-      "translations": {
-        "en": {
-          "address": "The Panoma, Han Riverfront, Da Nang"
-        },
-        "zh": {
-          "address": "帕诺玛酒店, 汉江滨, 岘港"
-        },
-        "ru": {
-          "address": "The Panoma, набережная реки Хан, Дананг"
-        },
-        "ko": {
-          "address": "더 파노라마, 한 리버프런트, 다낭"
-        },
-        "ja": {
-          "address": "ザ パノマ、ハン リバーフロント、ダナン"
-        }
-      }
+      "updatedAt": "2026-11-20T10:11:09.684Z"
     },
     {
       "_id": "apt-1795017217145-8tvb",
       "code": "DN-KIN-2247",
       "title": {
         "vi": "Căn hộ Kiến trúc Đà Nẵng",
-        "en": "Da Nang Architecture Apartment",
-        "zh": "岘港建筑公寓",
-        "ru": "Архитектурная квартира в Дананге",
-        "ko": "다낭 건축 아파트",
-        "ja": "ダナン アーキテクチャー アパートメント"
+        "en": "Căn hộ Kiến trúc Đà Nẵng",
+        "zh": "Căn hộ Kiến trúc Đà Nẵng",
+        "ru": "Căn hộ Kiến trúc Đà Nẵng",
+        "ko": "Căn hộ Kiến trúc Đà Nẵng",
+        "ja": "Căn hộ Kiến trúc Đà Nẵng"
       },
       "building": "KIN Estates Residence",
       "address": "Khu phố An Thượng, Ngũ Hành Sơn",
@@ -122,11 +105,11 @@
       },
       "architecturalNotes": {
         "vi": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
-        "en": "Modern architectural design, soundproof Low-E glass, large desk + 300Mbps Wi-Fi",
-        "zh": "现代建筑设计、隔音Low-E玻璃、大办公桌+300Mbps Wi-Fi",
-        "ru": "Современный архитектурный дизайн, звуконепроницаемое стекло Low-E, большой письменный стол + Wi-Fi 300 Мбит/с.",
-        "ko": "현대적인 건축 디자인, 방음 Low-E 유리, 대형 책상 + 300Mbps Wi-Fi",
-        "ja": "モダンな建築デザイン、防音Low-Eガラス、大型デスク+300Mbps Wi-Fi"
+        "en": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "zh": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ru": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ko": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps",
+        "ja": "Thiết kế chuẩn kiến trúc hiện đại, kính Low-E cách âm, bàn làm việc rộng + Wi-Fi 300Mbps"
       },
       "tags": [
         "Natural Light",
@@ -140,74 +123,7 @@
       ],
       "source": "telegram",
       "createdAt": "2026-11-18T15:53:37.145Z",
-      "updatedAt": "2026-11-18T15:53:37.145Z",
-      "translations": {
-        "en": {
-          "orientation": "Southeast / Sea breeze",
-          "electricityRate": "EVN state price",
-          "waterRate": "State Utility Rate",
-          "petPolicy": "Negotiate",
-          "remoteWorkSetup": "Dedicated Work Desk + 300Mbps Fiber",
-          "address": "An Thuong Quarter, Ngu Hanh Son",
-          "tags": [
-            "Natural Light",
-            "Remote-Work Desk",
-            "State-Rate Electricity"
-          ]
-        },
-        "zh": {
-          "orientation": "东南/海风",
-          "electricityRate": "EVN国家价格",
-          "waterRate": "国家标准水电价",
-          "petPolicy": "谈判",
-          "remoteWorkSetup": "独立办公桌 + 300Mbps 光纤网络",
-          "address": "五行山安上区",
-          "tags": [
-            "自然光",
-            "远程办公桌",
-            "国家级电力"
-          ]
-        },
-        "ru": {
-          "orientation": "Юго-восток / Морской бриз",
-          "electricityRate": "государственная цена EVN",
-          "waterRate": "Государственный тариф",
-          "petPolicy": "Переговоры",
-          "remoteWorkSetup": "Рабочий стол + оптоволокно 300 Мбит/с",
-          "address": "Квартал Ан Туонг, Нгу Хан Сон",
-          "tags": [
-            "Естественный свет",
-            "Стол для удаленной работы",
-            "Электроэнергия по государственному тарифу"
-          ]
-        },
-        "ko": {
-          "orientation": "남동쪽 / 바닷바람",
-          "electricityRate": "EVN 주 가격",
-          "waterRate": "국가 표준 요금",
-          "petPolicy": "협상하다",
-          "remoteWorkSetup": "전용 업무 데스크 + 300Mbps 광랜",
-          "address": "안 트엉 쿼터(An Thuong Quarter), 응우한손(Ngu Hanh Son)",
-          "tags": [
-            "자연광",
-            "원격 근무 데스크",
-            "국영 전기"
-          ]
-        },
-        "ja": {
-          "orientation": "南東・海風",
-          "electricityRate": "EVN州価格",
-          "waterRate": "公共標準料金",
-          "petPolicy": "交渉する",
-          "remoteWorkSetup": "専用ワークデスク＋光回線300Mbps",
-          "address": "アン・トゥオン・クォーター、グ・ハン・ソン",
-          "tags": [
-            "自然光",
-            "リモートワークデスク",
-            "州料金の電力"
-          ]
-        }
-      }
+      "updatedAt": "2026-11-18T15:53:37.145Z"
     },
     {
       "_id": "apt-panoma-1902",
@@ -215,10 +131,7 @@
       "title": {
         "vi": "Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý",
         "en": "The Panoma 1 — 1BR Han River & Bridge View Residence",
-        "ru": "The Panoma 1 — Апартаменты с 1 спальней и видом на реку Хан",
-        "zh": "一卧室公寓 The Panoma 1 — 汉江和 Tran Thi Ly 大桥景观",
-        "ko": "1베드룸 아파트 더 파노마 1 - 한강 및 쩐티리 다리 전망",
-        "ja": "1 ベッドルーム アパートメント ザ パノマ 1 — ハン川とチャン ティ リー橋の眺め"
+        "ru": "The Panoma 1 — Апартаменты с 1 спальней и видом на реку Хан"
       },
       "building": "The Panoma (Sun Cosmo)",
       "areaName": "Ngũ Hành Sơn",
@@ -245,10 +158,7 @@
       "architecturalNotes": {
         "vi": "Thiết kế lấy cảm hứng từ nan chiếu Cẩm Nê truyền thống kết hợp mặt kính Low-E kịch trần. Tầm nhìn trực diện sông Hàn lộng gió, cách biển Mỹ Khê chỉ 5 phút di chuyển.",
         "en": "Inspired by traditional Cam Ne mat weaving with full-height Low-E acoustic glass overlooking the Han River. 5 minutes to My Khe Beach.",
-        "ru": "Панорамное остекление Low-E во всю высоту с прямым видом на реку Хан.",
-        "zh": "该设计的灵感来自于传统的 Cam Ne 垫与天花板 Low-E 玻璃的结合。直接欣赏多风的汉江，距美溪海滩仅 5 分钟路程。",
-        "ko": "디자인은 천장 높이의 Low-E 유리와 결합된 전통적인 Cam Ne 매트에서 영감을 받았습니다. 미케해변에서 단 5분 거리에 바람부는 한강이 바로 보입니다.",
-        "ja": "このデザインは、天井レベルの Low-E ガラスと組み合わせた伝統的な Cam Ne マットからインスピレーションを得ています。ミーケービーチからわずか5分の距離にあり、風の強いハン川を直接眺めることができます。"
+        "ru": "Панорамное остекление Low-E во всю высоту с прямым видом на реку Хан."
       },
       "tags": [
         "View sông Hàn",
@@ -267,79 +177,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "West-North / Han River View",
-          "electricityRate": "State EVN Rate (~2,800 VND/kWh)",
-          "petPolicy": "Negotiable with landlord",
-          "remoteWorkSetup": "Window-side Work Desk + 300Mbps Fiber",
-          "address": "Tran Thi Ly Street, Ngu Hanh Son District, Da Nang",
-          "tags": [
-            "Han River View",
-            "Near Beach",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "西北/汉江景观",
-          "electricityRate": "国家电网标准电价 (~2,800越南盾/度)",
-          "petPolicy": "可与房东协商",
-          "remoteWorkSetup": "落地窗景办公桌 + 300Mbps 光纤",
-          "address": "岘港市五行山区陈氏黎街",
-          "tags": [
-            "韩江景观",
-            "靠近海滩",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Запад-Север / вид на реку Хан",
-          "electricityRate": "Гос. тариф EVN (~2,800 донг/кВт·ч)",
-          "petPolicy": "По согласованию с владельцем",
-          "remoteWorkSetup": "Рабочий стол у окна + оптоволокно 300 Мбит/с",
-          "address": "Улица Чан Тхи Ли, район Нгу Хань Сон, Дананг",
-          "tags": [
-            "Вид на реку Хан",
-            "Рядом с пляжем",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "서북 / 한강뷰",
-          "electricityRate": "국가 전력 표준 요금 (EVN ~2,800동/kWh)",
-          "petPolicy": "집주인과 협의 가능",
-          "remoteWorkSetup": "통창 뷰 업무 데스크 + 300Mbps 광랜",
-          "address": "다낭 Ngu Hanh Son District Tran Thi Ly 거리",
-          "tags": [
-            "한강 뷰",
-            "해변 근처",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "西北/漢江ビュー",
-          "electricityRate": "国営EVN標準料金（約2,800VND/kWh）",
-          "petPolicy": "オーナーと応相談",
-          "remoteWorkSetup": "窓際ワークデスク＋光回線300Mbps",
-          "address": "Tran Thi Ly Street、Ngu Hanh Son District、ダナン",
-          "tags": [
-            "ハン川ビュー",
-            "ビーチ近く",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-panoma-2405",
@@ -347,10 +185,7 @@
       "title": {
         "vi": "Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông",
         "en": "The Panoma 2 — Corner 2BR Dual Ocean & River Panorama",
-        "ru": "The Panoma 2 — Угловая квартира с 2 спальнями и видом на океан",
-        "zh": "两卧室转角公寓 The Panoma 2 — 2 个开放式侧面，可欣赏海景和河景",
-        "ko": "2베드룸 코너 아파트 The Panoma 2 - 바다 및 강 전망이 보이는 개방형 2면",
-        "ja": "2 ベッドルーム コーナー アパートメント The Panoma 2 — 2 面オープン、シー & リバービュー"
+        "ru": "The Panoma 2 — Угловая квартира с 2 спальнями и видом на океан"
       },
       "building": "The Panoma (Sun Cosmo)",
       "areaName": "Ngũ Hành Sơn",
@@ -377,10 +212,7 @@
       "architecturalNotes": {
         "vi": "Căn góc tầng cao 24 đón nắng sớm biển Mỹ Khê, phòng khách rộng kết nối ban công dài. Nội thất gỗ sồi tự nhiên và thiết bị bếp Bosch đồng bộ.",
         "en": "High-floor corner unit capturing morning ocean light, wrap-around balcony, white oak joinery, and integrated Bosch kitchen.",
-        "ru": "Угловая квартира на 24 этаже с утренним солнцем, дубовой мебелью и техникой Bosch.",
-        "zh": "位于24楼的转角公寓迎来了美溪海滩的早晨阳光，大客厅连接着长长的阳台。天然橡木家具和同步博世厨房设备。",
-        "ko": "24층 코너 아파트는 미케 해변의 아침 햇살을 맞이하며 넓은 거실과 긴 발코니가 연결되어 있습니다. 천연 참나무 가구와 동기화된 보쉬 주방 장비.",
-        "ja": "24階の角部屋にはミーケービーチの朝日が降り注ぎ、広いリビングルームは長いバルコニーにつながっています。天然オーク材の家具とボッシュのシンクロキッチン機器。"
+        "ru": "Угловая квартира на 24 этаже с утренним солнцем, дубовой мебелью и техникой Bosch."
       },
       "tags": [
         "Gần biển",
@@ -399,79 +231,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "Southeast / View of My Khe beach",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "Keep cats clean",
-          "remoteWorkSetup": "Additional office + Ergonomic chair",
-          "address": "Tran Thi Ly Street, Ngu Hanh Son District, Da Nang",
-          "tags": [
-            "Near Beach",
-            "Han River View",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "东南/美溪海滩景观",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "保持猫的清洁",
-          "remoteWorkSetup": "额外办公室 + 人体工学椅",
-          "address": "岘港市五行山区陈氏黎街",
-          "tags": [
-            "靠近海滩",
-            "韩江景观",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Юго-восток / Вид на пляж Микхе",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Держите кошек в чистоте",
-          "remoteWorkSetup": "Дополнительный кабинет + Эргономичное кресло",
-          "address": "Улица Чан Тхи Ли, район Нгу Хань Сон, Дананг",
-          "tags": [
-            "Рядом с пляжем",
-            "Вид на реку Хан",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "남동쪽 / 미케해변 전경",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "고양이를 깨끗하게 유지하세요",
-          "remoteWorkSetup": "추가 사무실 + 인체공학적 의자",
-          "address": "다낭 Ngu Hanh Son District Tran Thi Ly 거리",
-          "tags": [
-            "해변 근처",
-            "한강 뷰",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "南東 / ミーケービーチの眺め",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "猫を清潔に保つ",
-          "remoteWorkSetup": "追加のオフィス + 人間工学に基づいた椅子",
-          "address": "Tran Thi Ly Street、Ngu Hanh Son District、ダナン",
-          "tags": [
-            "ビーチ近く",
-            "ハン川ビュー",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-panoma-2801",
@@ -479,10 +239,7 @@
       "title": {
         "vi": "Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế",
         "en": "The Panoma — 3BR Executive Family Sky Residence",
-        "ru": "The Panoma — Семейная резиденция с 3 спальнями",
-        "zh": "帕诺玛三居室——国际标准家庭空间",
-        "ko": "파노마 3베드룸 아파트 - 국제 표준 가족 공간",
-        "ja": "パノマ 3 ベッドルーム アパートメント — 国際標準のファミリー スペース"
+        "ru": "The Panoma — Семейная резиденция с 3 спальнями"
       },
       "building": "The Panoma (Sun Cosmo)",
       "areaName": "Ngũ Hành Sơn",
@@ -509,10 +266,7 @@
       "architecturalNotes": {
         "vi": "Diện tích 102m² hiếm có với 3 phòng ngủ đều có cửa sổ lớn đón sáng tự nhiên, phòng giặt sấy riêng biệt và đảo bếp đá thạch anh.",
         "en": "Rare 102m² 3-bedroom layout where every bedroom enjoys full daylight glazing, dedicated laundry utility room, and quartz kitchen island.",
-        "ru": "Просторная планировка 102 м² с 3 спальнями, прачечной и кварцевым островом.",
-        "zh": "罕见的 102 平方米面积，设有 3 间卧室，均配有自然采光的大窗户、独立洗衣房和石英厨房岛。",
-        "ko": "자연 채광이 들어오는 대형 창문이 있는 침실 3개, 별도의 세탁실 및 석영 주방 아일랜드가 있는 희귀한 102m² 공간입니다.",
-        "ja": "希少な102㎡のエリアには、自然光が入る大きな窓付きのベッドルーム3室、独立したランドリールーム、石英製のアイランドキッチンが備わっています。"
+        "ru": "Просторная планировка 102 м² с 3 спальнями, прачечной и кварцевым островом."
       },
       "tags": [
         "Gần biển",
@@ -530,79 +284,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "Northeast / Panorama of City & Sea",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "For small pets",
-          "remoteWorkSetup": "Double desk + 2 layers of soundproofing",
-          "address": "Tran Thi Ly Street, Ngu Hanh Son District, Da Nang",
-          "tags": [
-            "Near Beach",
-            "Han River View",
-            "Work Desk",
-            "Pets",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "东北/城市与海洋全景",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "对于小宠物",
-          "remoteWorkSetup": "双人办公桌+2层隔音",
-          "address": "岘港市五行山区陈氏黎街",
-          "tags": [
-            "靠近海滩",
-            "韩江景观",
-            "独立办公桌",
-            "宠物",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Северо-восток / Панорама города и моря",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Для маленьких домашних животных",
-          "remoteWorkSetup": "Двойной письменный стол + 2 слоя звукоизоляции",
-          "address": "Улица Чан Тхи Ли, район Нгу Хань Сон, Дананг",
-          "tags": [
-            "Рядом с пляжем",
-            "Вид на реку Хан",
-            "Рабочий стол",
-            "Домашние животные",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "북동쪽 / 도시와 바다의 파노라마",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "소형 애완동물용",
-          "remoteWorkSetup": "더블 책상 + 방음 2겹",
-          "address": "다낭 Ngu Hanh Son District Tran Thi Ly 거리",
-          "tags": [
-            "해변 근처",
-            "한강 뷰",
-            "업무용 데스크",
-            "애완동물",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "北東 / 街と海のパノラマ",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "小型ペット用",
-          "remoteWorkSetup": "ダブルデスク+2層防音",
-          "address": "Tran Thi Ly Street、Ngu Hanh Son District、ダナン",
-          "tags": [
-            "ビーチ近く",
-            "ハン川ビュー",
-            "ワークデスク",
-            "ペット",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-filmore-2401",
@@ -610,10 +292,7 @@
       "title": {
         "vi": "The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng",
         "en": "The Filmore Da Nang — Cantilevered 2BR Han River & Dragon Bridge Loft",
-        "ru": "The Filmore — Архитектурный лофт с 2 спальнями и видом на реку Хан",
-        "zh": "The Filmore Da Nang — 阁楼 2 卧室阳台俯瞰汉江和龙桥",
-        "ko": "The Filmore Da Nang — 한강과 용교가 내려다보이는 로프트 2베드룸 발코니",
-        "ja": "ザ フィルモア ダナン — ハン川とドラゴン ブリッジを見下ろすロフト 2 ベッドルーム バルコニー"
+        "ru": "The Filmore — Архитектурный лофт с 2 спальнями и видом на реку Хан"
       },
       "building": "The Filmore Da Nang",
       "areaName": "Hải Châu",
@@ -640,10 +319,7 @@
       "architecturalNotes": {
         "vi": "Tòa tháp căn hộ hạng sang bậc nhất bờ Tây sông Hàn. Ban công vươn không cột che chắn, hồ bơi nước ấm vô cực tầng thượng, phòng sauna tia hồng ngoại.",
         "en": "Boutique luxury landmark on the West bank of the Han River featuring cantilevered balconies, rooftop heated infinity pool, and infrared sauna.",
-        "ru": "Элитный комплекс на берегу реки Хан с консольным балконом и теплым бассейном на крыше.",
-        "zh": "汉江西岸最豪华的公寓楼。阳台无保护柱，屋顶无边温水泳池，红外线桑拿房。",
-        "ko": "한강 서안에 위치한 가장 럭셔리한 아파트 타워입니다. 보호되지 않은 기둥이 있는 발코니, 옥상 인피니티 온수 수영장, 적외선 사우나실.",
-        "ja": "漢江西岸にある最も高級なタワーマンション。保護されていない柱のあるバルコニー、屋上のインフィニティ温水プール、赤外線サウナルーム。"
+        "ru": "Элитный комплекс на берегу реки Хан с консольным балконом и теплым бассейном на крыше."
       },
       "tags": [
         "View sông Hàn",
@@ -661,74 +337,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "East direction / Directly facing Han River",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "Negotiate",
-          "remoteWorkSetup": "Solid ash wood table + Wi-Fi 6",
-          "address": "Bach Dang Street, Hai Chau District, Da Nang",
-          "tags": [
-            "Han River View",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "东向/正对汉江",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "谈判",
-          "remoteWorkSetup": "实心白蜡木桌子 + Wi-Fi 6",
-          "address": "岘港市海洲区 Bach Dang 街",
-          "tags": [
-            "韩江景观",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Восточное направление / Прямо напротив реки Хан.",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Переговоры",
-          "remoteWorkSetup": "Стол из массива ясеня + Wi-Fi 6",
-          "address": "Улица Бах Данг, район Хай Чау, Дананг",
-          "tags": [
-            "Вид на реку Хан",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "동쪽 방향 / 한강 방향",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "협상하다",
-          "remoteWorkSetup": "물푸레나무 원목 테이블 + Wi-Fi 6",
-          "address": "다낭 하이차우구 박당 거리",
-          "tags": [
-            "한강 뷰",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "東方向 / 漢江真向かい",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "交渉する",
-          "remoteWorkSetup": "アッシュ無垢材テーブル+Wi-Fi 6",
-          "address": "Bach Dang Street、ハイチャウ地区、ダナン",
-          "tags": [
-            "ハン川ビュー",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-filmore-1608",
@@ -736,10 +345,7 @@
       "title": {
         "vi": "The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia",
         "en": "The Filmore Da Nang — 1BR Bespoke Executive River Suite",
-        "ru": "The Filmore — Люкс с 1 спальней для руководителей",
-        "zh": "The Filmore Da Nang — 为专业人士定制的豪华一卧室公寓",
-        "ko": "The Filmore Da Nang — 전문가를 위한 맞춤형 럭셔리 1베드룸 아파트",
-        "ja": "The Filmore Da Nang — プロフェッショナル向けのオーダーメイドの高級 1 ベッドルーム アパートメント"
+        "ru": "The Filmore — Люкс с 1 спальней для руководителей"
       },
       "building": "The Filmore Da Nang",
       "areaName": "Hải Châu",
@@ -766,10 +372,7 @@
       "architecturalNotes": {
         "vi": "Phù hợp hoàn hảo cho chuyên gia độc thân hoặc cặp đôi làm việc tại trung tâm Hải Châu, đi bộ ra phố đi bộ Bạch Đằng chỉ 30 bước chân.",
         "en": "Tailored for solo executives or couples working in central Hai Chau, steps away from the Bach Dang riverfront promenade.",
-        "ru": "Идеально для специалистов в центре Хайтяу, в двух шагах от набережной Батьданг.",
-        "zh": "非常适合在海洲中心工作的单身专业人士或情侣，距离 Bach Dang 步行街仅 30 步之遥。",
-        "ko": "Bach Dang 도보 거리에서 단 30걸음 거리에 있는 Hai Chau 센터에서 일하는 독신 직장인이나 커플에게 완벽하게 적합합니다.",
-        "ja": "ハイチャウ中心部で働く単身赴任者やカップルに最適で、バクダンウォーキングストリートまでわずか30歩です。"
+        "ru": "Идеально для специалистов в центре Хайтяу, в двух шагах от набережной Батьданг."
       },
       "tags": [
         "View sông Hàn",
@@ -786,74 +389,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "Southeast / Han River",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "Do not keep pets",
-          "remoteWorkSetup": "Quiet working corner + 3-layer soundproof glass",
-          "address": "Bach Dang Street, Hai Chau District, Da Nang",
-          "tags": [
-            "Han River View",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "东南/汉江",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "请勿饲养宠物",
-          "remoteWorkSetup": "安静的工作角落+三层隔音玻璃",
-          "address": "岘港市海洲区 Bach Dang 街",
-          "tags": [
-            "韩江景观",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Юго-восток / река Хан",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Не держите домашних животных",
-          "remoteWorkSetup": "Тихий рабочий уголок + 3-х слойное звукоизоляционное стекло",
-          "address": "Улица Бах Данг, район Хай Чау, Дананг",
-          "tags": [
-            "Вид на реку Хан",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "남동쪽 / 한강",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "애완동물을 키우지 마세요.",
-          "remoteWorkSetup": "조용한 작업 공간 + 3중 방음유리",
-          "address": "다낭 하이차우구 박당 거리",
-          "tags": [
-            "한강 뷰",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "東南/漢江",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "ペットを飼わないでください",
-          "remoteWorkSetup": "静かなワーキングコーナー+3層防音ガラス",
-          "address": "Bach Dang Street、ハイチャウ地区、ダナン",
-          "tags": [
-            "ハン川ビュー",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-hiyori-1804",
@@ -861,10 +397,7 @@
       "title": {
         "vi": "Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản",
         "en": "Hiyori Garden Tower — Minimalist Japanese Wabi-Sabi 2BR Sanctuary",
-        "ru": "Hiyori Garden Tower — Японский минимализм Ваби-Саби с 2 спальнями",
-        "zh": "日和花园塔 — 日式侘寂风格两卧室公寓",
-        "ko": "히요리 가든 타워 - 일본식 와비사비 스타일 2베드룸 아파트",
-        "ja": "日和ガーデンタワー — 日本のわびさびスタイルの2ベッドルームアパートメント"
+        "ru": "Hiyori Garden Tower — Японский минимализм Ваби-Саби с 2 спальнями"
       },
       "building": "Hiyori Garden Tower",
       "areaName": "Sơn Trà",
@@ -891,10 +424,7 @@
       "architecturalNotes": {
         "vi": "Tòa nhà tiêu chuẩn Nhật Bản quản lý cực kỳ sạch sẽ và an ninh trên trục đường Võ Văn Kiệt. Đi bộ thẳng ra biển Mỹ Khê khoảng 10 phút.",
         "en": "Japanese-managed residential tower on Vo Van Kiet Boulevard offering immaculate maintenance, 24/7 bilingual reception, and a 10-minute walk to My Khe Beach.",
-        "ru": "Дом под японским управлением на бульваре Во Ван Киет, 10 минут пешком до пляжа Ми Кхе.",
-        "zh": "位于 Vo Van Kiet 街的极其干净和安全的日本标准管理建筑。直走约10分钟即可到达美溪海滩。",
-        "ko": "Vo Van Kiet 거리에 있는 매우 깨끗하고 안전한 일본 표준 관리 건물입니다. 미케 해변까지 약 10분 정도 직진하세요.",
-        "ja": "Vo Van Kiet通りにある非常に清潔で安心な日本基準の管理棟。ミーケービーチまではまっすぐ歩いて10分ほどです。"
+        "ru": "Дом под японским управлением на бульваре Во Ван Киет, 10 минут пешком до пляжа Ми Кхе."
       },
       "tags": [
         "Gần biển",
@@ -911,74 +441,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "Northeast / Sea view & Son Tra",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "No pets (Building regulations)",
-          "remoteWorkSetup": "White oak desk + Private FPT network",
-          "address": "Vo Van Kiet Street, Son Tra District, Da Nang",
-          "tags": [
-            "Near Beach",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "东北/海景和山茶郡",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "禁止携带宠物（建筑法规）",
-          "remoteWorkSetup": "白橡木办公桌+私人FPT网络",
-          "address": "岘港市山茶区武文杰街",
-          "tags": [
-            "靠近海滩",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Северо-восток / вид на море и Сон Тра",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Без домашних животных (Строительные правила)",
-          "remoteWorkSetup": "Стол из белого дуба + частная сеть FPT",
-          "address": "Улица Во Ван Киет, район Сон Тра, Дананг",
-          "tags": [
-            "Рядом с пляжем",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "북동쪽/바다 전망 및 손트라(Son Tra)",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "애완동물 금지(건축 규정)",
-          "remoteWorkSetup": "화이트 오크 책상 + 전용 FPT 네트워크",
-          "address": "Vo Van Kiet Street, Son Tra District, 다낭",
-          "tags": [
-            "해변 근처",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "北東部 / 海の景色とソンチャ",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "ペット禁止（建築基準法）",
-          "remoteWorkSetup": "ホワイトオークデスク + プライベート FPT ネットワーク",
-          "address": "Vo Van Kiet Street, Son Tra District, ダナン",
-          "tags": [
-            "ビーチ近く",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-hiyori-1202",
@@ -986,10 +449,7 @@
       "title": {
         "vi": "Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng",
         "en": "Hiyori Garden Tower — Mid-Floor 2BR Dragon Bridge View",
-        "ru": "Hiyori Garden Tower — Квартира с 2 спальнями и видом на Мост Дракона",
-        "zh": "日和花园塔 — 中层两卧室公寓，享有龙桥景观",
-        "ko": "히요리 가든 타워 - 중층 2베드룸 아파트, 용 다리 전망",
-        "ja": "日和ガーデンタワー — 中層階 2ベッドルーム アパートメント ドラゴンブリッジビュー"
+        "ru": "Hiyori Garden Tower — Квартира с 2 спальнями и видом на Мост Дракона"
       },
       "building": "Hiyori Garden Tower",
       "areaName": "Sơn Trà",
@@ -1016,10 +476,7 @@
       "architecturalNotes": {
         "vi": "Mức giá cực tốt tại Hiyori, đầy đủ máy giặt sấy, bồn tắm nằm, rèm cản nắng 2 lớp và ban công ngắm trọn Cầu Rồng.",
         "en": "Best-value 2-bedroom unit in Hiyori complete with washer-dryer, bathtub, blackout curtains, and direct Dragon Bridge views.",
-        "ru": "Лучшее предложение в Hiyori с ванной, сушильной машиной и видом на Мост Дракона.",
-        "zh": "日和的价格非常优惠，配备全套洗衣机和烘干机、浴缸、2 层防晒窗帘和可欣赏龙桥全景的阳台。",
-        "ko": "Hiyori의 매우 좋은 가격, 세탁기와 건조기, 욕조, 2겹의 햇빛 차단 커튼, Dragon Bridge가 한눈에 보이는 발코니.",
-        "ja": "日和では、洗濯機と乾燥機、バスタブ、2層の日よけカーテン、ドラゴンブリッジが一望できるバルコニーが付いており、とてもお得です。"
+        "ru": "Лучшее предложение в Hiyori с ванной, сушильной машиной и видом на Мост Дракона."
       },
       "tags": [
         "Gần biển",
@@ -1035,69 +492,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "West direction / Watch Dragon Bridge spitting fire",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "Do not keep pets",
-          "remoteWorkSetup": "Desk in the spare bedroom",
-          "address": "Vo Van Kiet Street, Son Tra District, Da Nang",
-          "tags": [
-            "Near Beach",
-            "Work Desk",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "西方向/看龙桥喷火",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "请勿饲养宠物",
-          "remoteWorkSetup": "空余卧室里的书桌",
-          "address": "岘港市山茶区武文杰街",
-          "tags": [
-            "靠近海滩",
-            "独立办公桌",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Западное направление / Посмотрите, как Мост Дракона извергает огонь",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Не держите домашних животных",
-          "remoteWorkSetup": "Рабочий стол в дополнительной спальне",
-          "address": "Улица Во Ван Киет, район Сон Тра, Дананг",
-          "tags": [
-            "Рядом с пляжем",
-            "Рабочий стол",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "서쪽 방향 / 용교에서 불이 나는 것을 지켜보세요",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "애완동물을 키우지 마세요.",
-          "remoteWorkSetup": "여분의 침실에 있는 책상",
-          "address": "Vo Van Kiet Street, Son Tra District, 다낭",
-          "tags": [
-            "해변 근처",
-            "업무용 데스크",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "西方向 / 火を噴くドラゴンブリッジを見る",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "ペットを飼わないでください",
-          "remoteWorkSetup": "予備の寝室の机",
-          "address": "Vo Van Kiet Street, Son Tra District, ダナン",
-          "tags": [
-            "ビーチ近く",
-            "ワークデスク",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-monarchy-1508",
@@ -1105,10 +500,7 @@
       "title": {
         "vi": "The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn",
         "en": "The Monarchy Block B — 2BR Riverfront Garden Residence",
-        "ru": "The Monarchy Block B — Резиденция с 2 спальнями у реки Хан",
-        "zh": "The Monarchy B座 — 汉江两居室花园公寓",
-        "ko": "더 모나키 블록 B — 한강을 따라 위치한 침실 2개 정원 아파트",
-        "ja": "ザ モナーキー ブロック B — 漢江沿いの 2 ベッドルーム ガーデン アパートメント"
+        "ru": "The Monarchy Block B — Резиденция с 2 спальнями у реки Хан"
       },
       "building": "The Monarchy Da Nang",
       "areaName": "Sơn Trà",
@@ -1135,10 +527,7 @@
       "architecturalNotes": {
         "vi": "Khu phức hợp sôi động với hồ bơi lớn, siêu thị, quán cà phê và hiệu thuốc ngay tầng trệt. Cho phép thuê linh hoạt từ 3 tháng và thân thiện với thú cưng.",
         "en": "Vibrant expat community complex with resort pool, ground-floor cafés, and supermarkets. Flexible 3+ month leases and pet-friendly.",
-        "ru": "Популярный среди экспатов комплекс с бассейном, кафе и возможностью проживания с животными.",
-        "zh": "充满活力的建筑群，一楼设有大型游泳池、超市、咖啡馆和药房。灵活的租赁期限为 3 个月起，并且允许携带宠物。",
-        "ko": "1층에 대형 수영장, 슈퍼마켓, 카페, 약국이 있는 활기 넘치는 단지입니다. 3개월부터 유연한 임대가 가능하며 애완동물 친화적입니다.",
-        "ja": "大きなプール、スーパーマーケット、カフェ、薬局が 1 階にある活気のある複合施設。 3ヶ月からレンタル可能、ペット可。"
+        "ru": "Популярный среди экспатов комплекс с бассейном, кафе и возможностью проживания с животными."
       },
       "tags": [
         "View sông Hàn",
@@ -1156,79 +545,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "West direction / Han River sunset",
-          "electricityRate": "State EVN Rate",
-          "petPolicy": "Pet-Friendly",
-          "remoteWorkSetup": "Desk next to window + Wi-Fi Mesh",
-          "address": "Son Tra, Da Nang",
-          "tags": [
-            "Han River View",
-            "Pets",
-            "Work Desk",
-            "Infinity Pool",
-            "State EVN Rate"
-          ]
-        },
-        "zh": {
-          "orientation": "西方向/汉江日落",
-          "electricityRate": "国家电网电价 (EVN)",
-          "petPolicy": "宠物友好",
-          "remoteWorkSetup": "靠窗的桌子 + Wi-Fi Mesh",
-          "address": "山茶郡, 岘港",
-          "tags": [
-            "韩江景观",
-            "宠物",
-            "独立办公桌",
-            "无边泳池",
-            "国家电网电价"
-          ]
-        },
-        "ru": {
-          "orientation": "Западное направление / закат реки Хан",
-          "electricityRate": "Гос. тариф EVN",
-          "petPolicy": "Возможно размещение с домашними животными",
-          "remoteWorkSetup": "Рабочий стол у окна + Wi-Fi Mesh",
-          "address": "Сон Тра, Дананг",
-          "tags": [
-            "Вид на реку Хан",
-            "Домашние животные",
-            "Рабочий стол",
-            "Инфинити-бассейн",
-            "Гос. тариф EVN"
-          ]
-        },
-        "ko": {
-          "orientation": "서쪽 방향 / 한강 일몰",
-          "electricityRate": "국가 전력 요금 (EVN)",
-          "petPolicy": "애완동물 친화적인",
-          "remoteWorkSetup": "창가 옆 책상 + Wi-Fi 메시",
-          "address": "손트라, 다낭",
-          "tags": [
-            "한강 뷰",
-            "애완동물",
-            "업무용 데스크",
-            "인피니티 풀",
-            "국가 전력 요금"
-          ]
-        },
-        "ja": {
-          "orientation": "西方向 / 漢江の夕日",
-          "electricityRate": "国営EVN電気料金",
-          "petPolicy": "ペット可",
-          "remoteWorkSetup": "窓際のデスク + Wi-Fi メッシュ",
-          "address": "ソン トラ、ダナン",
-          "tags": [
-            "ハン川ビュー",
-            "ペット",
-            "ワークデスク",
-            "インフィニティプール",
-            "国営EVN電気料金"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     },
     {
       "_id": "apt-anthuong-1102",
@@ -1236,10 +553,7 @@
       "title": {
         "vi": "An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)",
         "en": "An Thuong Atelier — Brutalist Concrete & Teak Studio (350m to My Khe Beach)",
-        "ru": "An Thuong Atelier — Дизайнерская студия в 350 м от пляжа Ми Кхе",
-        "zh": "An Thuong Atelier — 混凝土、乡村和柚木建筑工作室（距离大海 350m）",
-        "ko": "An Thuong Atelier — 콘크리트, 소박한 & 티크 목재 건축 스튜디오(바다에서 350m)",
-        "ja": "An Thuong Atelier — コンクリート、素朴、チーク材の建築スタジオ (海から 350 m)"
+        "ru": "An Thuong Atelier — Дизайнерская студия в 350 м от пляжа Ми Кхе"
       },
       "building": "An Thuong Boutique Lofts",
       "areaName": "An Thượng",
@@ -1266,10 +580,7 @@
       "architecturalNotes": {
         "vi": "Nằm trong hẻm yên tĩnh khu phố Tây An Thượng, đi bộ 4 phút ra bãi tắm Mỹ Khê và 50m tới các quán cà phê specialty, không gian coworking.",
         "en": "Tucked in a quiet cul-de-sac of An Thuong expat quarter, 4-minute walk to My Khe Beach and steps from specialty coffee roasteries.",
-        "ru": "Тихий переулок в районе Ан Тхыонг, 4 минуты пешком до пляжа Ми Кхе и лучших кофеен.",
-        "zh": "位于 Tay An Thuong 街区的一条安静小巷中，步行 4 分钟即可到达美溪海滩，距离特色咖啡馆和联合办公空间 50m。",
-        "ko": "Tay An Thuong 지역의 조용한 골목에 위치하고 있으며 미케 해변까지 도보로 4분, 전문 카페와 공동 작업 공간까지 50m 거리에 있습니다.",
-        "ja": "タイアントゥオン地区の静かな路地に位置し、ミーケービーチまで徒歩4分、専門カフェやコワーキングスペースまで50mです。"
+        "ru": "Тихий переулок в районе Ан Тхыонг, 4 минуты пешком до пляжа Ми Кхе и лучших кофеен."
       },
       "tags": [
         "Gần biển",
@@ -1285,69 +596,7 @@
       "isVisible": true,
       "hideWhenRented": false,
       "landlordName": "Chủ nhà đối tác KIN Estates",
-      "landlordPhone": "0349456644",
-      "translations": {
-        "en": {
-          "orientation": "Southeast / Sea breeze",
-          "electricityRate": "3,800 VND/kWh (Free water & housekeeping once a week)",
-          "petPolicy": "Pet-Friendly",
-          "remoteWorkSetup": "1.6m wide architect desk + separate monitor stand",
-          "address": "An Thuong 2 Quarter, Ngu Hanh Son District, Da Nang",
-          "tags": [
-            "Near Beach",
-            "Work Desk",
-            "Pets"
-          ]
-        },
-        "zh": {
-          "orientation": "东南/海风",
-          "electricityRate": "3,800 越南盾/千瓦时（每周一次免费水和家政服务）",
-          "petPolicy": "宠物友好",
-          "remoteWorkSetup": "1.6m宽建筑师办公桌+独立显示器支架",
-          "address": "An Thuong 2 Quarter, Ngu Hanh Son 区, 岘港",
-          "tags": [
-            "靠近海滩",
-            "独立办公桌",
-            "宠物"
-          ]
-        },
-        "ru": {
-          "orientation": "Юго-восток / Морской бриз",
-          "electricityRate": "3800 донгов/кВтч (бесплатная вода и уборка раз в неделю)",
-          "petPolicy": "Возможно размещение с домашними животными",
-          "remoteWorkSetup": "Рабочий стол шириной 1,6 м + отдельная подставка для монитора",
-          "address": "Квартал Ан Туонг 2, район Нгу Хан Сон, Дананг",
-          "tags": [
-            "Рядом с пляжем",
-            "Рабочий стол",
-            "Домашние животные"
-          ]
-        },
-        "ko": {
-          "orientation": "남동쪽 / 바닷바람",
-          "electricityRate": "3,800 VND/kWh (주 1회 무료 물 및 하우스키핑)",
-          "petPolicy": "애완동물 친화적인",
-          "remoteWorkSetup": "1.6m 폭의 건축가 책상 + 별도의 모니터 스탠드",
-          "address": "An Thuong 2 Quarter, Ngu Hanh Son District, 다낭",
-          "tags": [
-            "해변 근처",
-            "업무용 데스크",
-            "애완동물"
-          ]
-        },
-        "ja": {
-          "orientation": "南東・海風",
-          "electricityRate": "3,800 VND/kWh (無料の水と週 1 回のハウスキーピング)",
-          "petPolicy": "ペット可",
-          "remoteWorkSetup": "幅1.6mのアーキテクトデスク+セパレートモニタースタンド",
-          "address": "ダナン、グーハンソン地区、アン トゥオン 2 四半期",
-          "tags": [
-            "ビーチ近く",
-            "ワークデスク",
-            "ペット"
-          ]
-        }
-      }
+      "landlordPhone": "0349456644"
     }
   ],
   "buildings": [
@@ -1675,318 +924,6 @@
     }
   ],
   "botMessages": [
-    {
-      "id": "msg-1795017171120-opeg",
-      "timestamp": "2026-11-18T15:52:51.120Z",
-      "sender": "user",
-      "user": "Admin (KIN Estates)",
-      "text": "/excel"
-    },
-    {
-      "id": "msg-1795017171123-ph4v",
-      "timestamp": "2026-11-18T15:52:51.123Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "📊 *LIÊN KẾT & QUẢN LÝ QUA EXCEL / GOOGLE SHEETS 2 CHIỀU*\n━━━━━━━━━━━━━━━━━━━━━━\nHệ thống hỗ trợ xuất & nhập trực tiếp bằng **Microsoft Excel (UTF-8 chuẩn tiếng Việt)** cho cả 3 bảng:\n\n1️⃣ *Bảng Excel Kho Căn Hộ:* `/api/excel/apartments.csv`\n   _(Mở bằng Excel -> Sửa giá, đổi cột Status thành Available/Rented/Hidden, sửa địa chỉ hoặc thêm dòng căn hộ mới -> Upload lại trên trang `/admin` để cập nhật hàng loạt!)_\n2️⃣ *Bảng Excel Khách Đặt Lịch & Điền Form:* `/api/excel/inquiries.csv`\n3️⃣ *Bảng Excel Hợp Đồng Khách Đang Thuê:* `/api/excel/leases.csv`\n\n✅ *Trạng thái đồng bộ:* Database & Excel CSV Feed đã cập nhật tức thì.",
-      "buttons": [
-        [
-          {
-            "text": "🏠 Kho Căn hộ (/list)",
-            "callback_data": "/list"
-          },
-          {
-            "text": "➕ Đăng từng bước (/wizard)",
-            "callback_data": "/wizard"
-          }
-        ],
-        [
-          {
-            "text": "📝 Mẫu đăng nhanh (/form)",
-            "callback_data": "/form"
-          },
-          {
-            "text": "🟢 Căn đang trống (/empty)",
-            "callback_data": "/empty"
-          }
-        ],
-        [
-          {
-            "text": "📅 Khách & Lịch hẹn (/leads)",
-            "callback_data": "/leads"
-          },
-          {
-            "text": "🔑 Khách đang thuê (/tenants)",
-            "callback_data": "/tenants"
-          }
-        ],
-        [
-          {
-            "text": "🏡 Phòng ký gửi (/owners)",
-            "callback_data": "/owners"
-          },
-          {
-            "text": "📊 File Excel & Sync (/excel)",
-            "callback_data": "/excel"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795017187629-7dng",
-      "timestamp": "2026-11-18T15:53:07.629Z",
-      "sender": "user",
-      "user": "Admin (KIN Estates)",
-      "text": "/list"
-    },
-    {
-      "id": "msg-1795017187630-cdiu",
-      "timestamp": "2026-11-18T15:53:07.630Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "📋 *TẤT CẢ CĂN HỘ (9 căn):*\n_(Bấm vào mã căn hoặc nút bên dưới để đổi trạng thái / ẩn hiện / xóa ngay)_\n\n1. *[DN-PAN-1902]* Căn hộ 1 phòng ngủ The Panoma 1 — View sông Hàn & Cầu Trần Thị Lý\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$654/tháng* (~16.6tr) • 1PN • 50m²\n   🏷️ 🟢 Trống\n\n2. *[DN-PAN-2405]* Căn hộ 2 phòng ngủ góc The Panoma 2 — 2 mặt thoáng View Biển & Sông\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$885/tháng* (~22.6tr) • 2PN • 74m²\n   🏷️ 🟢 Trống\n\n3. *[DN-PAN-2801]* Căn hộ 3 phòng ngủ The Panoma — Không gian gia đình chuẩn quốc tế\n   📍 The Panoma (Sun Cosmo) — Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$1450/tháng* (~36.9tr) • 3PN • 102m²\n   🏷️ 🟢 Trống\n\n4. *[DN-FIL-2401]* The Filmore Đà Nẵng — Loft 2PN Ban Công Vươn Sông Hàn & Cầu Rồng\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$1350/tháng* (~34.4tr) • 2PN • 82m²\n   🏷️ 🟢 Trống\n\n5. *[DN-FIL-1608]* The Filmore Đà Nẵng — Căn hộ 1 phòng ngủ Bespoke Luxury cho Chuyên gia\n   📍 The Filmore Da Nang — Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n   💰 *$980/tháng* (~24.9tr) • 1PN • 52m²\n   🏷️ 🟢 Trống\n\n6. *[DN-HIY-1804]* Hiyori Garden Tower — Căn hộ 2PN Phong Cách Wabi-Sabi Nhật Bản\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$850/tháng* (~21.6tr) • 2PN • 68m²\n   🏷️ 🟢 Trống\n\n7. *[DN-HIY-1202]* Hiyori Garden Tower — Căn hộ 2PN Tầng Trung View Cầu Rồng\n   📍 Hiyori Garden Tower — Đường Võ Văn Kiệt, Quận Sơn Trà, Đà Nẵng\n   💰 *$769/tháng* (~19.6tr) • 2PN • 65m²\n   🏷️ 🟢 Trống\n\n8. *[DN-MON-1508]* The Monarchy Block B — Căn hộ 2PN Sân Vườn Ven Sông Hàn\n   📍 The Monarchy Da Nang — Sơn Trà, Đà Nẵng\n   💰 *$731/tháng* (~18.6tr) • 2PN • 78m²\n   🏷️ 🟢 Trống\n\n9. *[DN-ANT-1102]* An Thượng Atelier — Studio Kiến Trúc Bê Tông Mộc & Gỗ Teak (Cách Biển 350m)\n   📍 An Thuong Boutique Lofts — Khu phố An Thượng 2, Quận Ngũ Hành Sơn, Đà Nẵng\n   💰 *$577/tháng* (~14.7tr) • 1PN • 48m²\n   🏷️ 🟢 Trống",
-      "buttons": [
-        [
-          {
-            "text": "⚙️ DN-PAN-1902",
-            "callback_data": "/apt DN-PAN-1902"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-1902 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-1902"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-1902"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-PAN-2405",
-            "callback_data": "/apt DN-PAN-2405"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-2405 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-2405"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-2405"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-PAN-2801",
-            "callback_data": "/apt DN-PAN-2801"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-PAN-2801 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-PAN-2801"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-PAN-2801"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-FIL-2401",
-            "callback_data": "/apt DN-FIL-2401"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-FIL-2401 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-FIL-2401"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-FIL-2401"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-FIL-1608",
-            "callback_data": "/apt DN-FIL-1608"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-FIL-1608 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-FIL-1608"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-FIL-1608"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-HIY-1804",
-            "callback_data": "/apt DN-HIY-1804"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-HIY-1804 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-HIY-1804"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-HIY-1804"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-HIY-1202",
-            "callback_data": "/apt DN-HIY-1202"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-HIY-1202 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-HIY-1202"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-HIY-1202"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-MON-1508",
-            "callback_data": "/apt DN-MON-1508"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-MON-1508 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-MON-1508"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-MON-1508"
-          }
-        ],
-        [
-          {
-            "text": "⚙️ DN-ANT-1102",
-            "callback_data": "/apt DN-ANT-1102"
-          },
-          {
-            "text": "🔴 Đặt Đã thuê",
-            "callback_data": "/status DN-ANT-1102 Rented"
-          },
-          {
-            "text": "🙈 Ẩn",
-            "callback_data": "/hide DN-ANT-1102"
-          },
-          {
-            "text": "🗑️ Xóa",
-            "callback_data": "/delete DN-ANT-1102"
-          }
-        ],
-        [
-          {
-            "text": "🟢 Lọc: Đang trống",
-            "callback_data": "/empty"
-          },
-          {
-            "text": "🔴 Lọc: Đã thuê/Ẩn",
-            "callback_data": "/rented"
-          },
-          {
-            "text": "➕ Đăng căn mới",
-            "callback_data": "/wizard"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795017190950-gf2i",
-      "timestamp": "2026-11-18T15:53:10.950Z",
-      "sender": "user",
-      "user": "Admin (KIN Estates)",
-      "text": "/wizard"
-    },
-    {
-      "id": "msg-1795017190952-m2b3",
-      "timestamp": "2026-11-18T15:53:10.952Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
-      "buttons": [
-        [
-          {
-            "text": "❌ Hủy đăng từng bước",
-            "callback_data": "/cancel"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795017208659-h0y2",
-      "timestamp": "2026-11-18T15:53:28.659Z",
-      "sender": "user",
-      "user": "Admin (KIN Estates)",
-      "text": "[Gửi 1 ảnh căn hộ]"
-    },
-    {
-      "id": "msg-1795017208662-4u1o",
-      "timestamp": "2026-11-18T15:53:28.662Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "✅ Đã lưu tên: *Căn hộ Kiến trúc Đà Nẵng* (KIN Estates Residence)\n\n🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\nAnh chọn khu vực bên dưới hoặc gõ theo dạng: `Khu vực | Địa chỉ đường, quận`\n📌 _Ví dụ:_ `Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng`",
-      "buttons": [
-        [
-          {
-            "text": "🌊 An Thượng (Mỹ Khê)",
-            "callback_data": "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn"
-          },
-          {
-            "text": "🌉 Sông Hàn / Hải Châu",
-            "callback_data": "/wiz_area Han Riverfront | Đường Bạch Đằng / Trần Thị Lý"
-          }
-        ],
-        [
-          {
-            "text": "🌿 Sơn Trà (Hiyori/Monarchy)",
-            "callback_data": "/wiz_area Son Tra | Đường Võ Văn Kiệt, Quận Sơn Trà"
-          },
-          {
-            "text": "🏖️ Mặt biển Mỹ Khê",
-            "callback_data": "/wiz_area My Khe Beachfront | Đường Võ Nguyên Giáp, Đà Nẵng"
-          }
-        ],
-        [
-          {
-            "text": "❌ Hủy đăng",
-            "callback_data": "/cancel"
-          }
-        ]
-      ]
-    },
     {
       "id": "msg-1795017212049-7vpv",
       "timestamp": "2026-11-18T15:53:32.049Z",
@@ -4245,6 +3182,132 @@
     {
       "id": "msg-1795332692284-b9jd",
       "timestamp": "2026-11-22T07:31:32.284Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",
+      "buttons": [
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 12e1a38dfb4f25"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795335098718-z68j",
+      "timestamp": "2026-11-22T08:11:38.718Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795335098720-1gzg",
+      "timestamp": "2026-11-22T08:11:38.720Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *KIN ESTATES*\n11 căn · 11 đang trống · 2 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
+      "buttons": [
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📝 Bản nháp",
+            "callback_data": "/draft"
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho căn hộ",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Đang trống",
+            "callback_data": "/empty"
+          }
+        ],
+        [
+          {
+            "text": "📅 Khách & Lịch hẹn (/leads)",
+            "callback_data": "/leads"
+          },
+          {
+            "text": "🔑 Khách đang thuê (/tenants)",
+            "callback_data": "/tenants"
+          }
+        ],
+        [
+          {
+            "text": "📋 Mẫu nhập nhanh",
+            "callback_data": "/form"
+          },
+          {
+            "text": "📊 Excel",
+            "callback_data": "/excel"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795335100802-i6n2",
+      "timestamp": "2026-11-22T08:11:40.802Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/wizard"
+    },
+    {
+      "id": "msg-1795335100803-ufxw",
+      "timestamp": "2026-11-22T08:11:40.803Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",
+      "buttons": [
+        [
+          {
+            "text": "Hủy thao tác",
+            "callback_data": "/draft_cancel 12e1a38dfb4f25"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795335105627-8d9l",
+      "timestamp": "2026-11-22T08:11:45.627Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/form"
+    },
+    {
+      "id": "msg-1795335105631-t4wp",
+      "timestamp": "2026-11-22T08:11:45.631Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "Sao chép mẫu, sửa thông tin và gửi lại. Bạn có thể gửi ảnh từ thư viện trước hoặc sau khi điền.\n\nĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ",
+      "buttons": [
+        [
+          {
+            "text": "Đăng từng bước",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "Mở bản nháp",
+            "callback_data": "/draft"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795335168072-eftm",
+      "timestamp": "2026-11-22T08:12:48.072Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/draft"
+    },
+    {
+      "id": "msg-1795335168073-ce62",
+      "timestamp": "2026-11-22T08:12:48.073Z",
       "sender": "bot",
       "user": "KIN Estates Bot",
       "text": "1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma",

@@ -327,8 +327,9 @@ async function processTelegramCommand(rawText, meta = {}) {
     const res = {
       reply:
         "📋 *MẪU ĐĂNG CĂN HỘ ĐẦY ĐỦ & ĐƠN GIẢN (CHẠM KHUNG ĐỂ COPY):*\n" +
-        "• Anh chỉ cần viết *Tiếng Việt* — khi đăng lên Web hệ thống tự động dịch đồng bộ sang cả *6 ngôn ngữ (Việt / Anh / Trung / Nga / Hàn / Nhật)*!\n" +
-        "• Gửi xong bấm 📎 chọn album ảnh từ điện thoại (dòng Ghim bản đồ có thể dán tọa độ, link Google Maps hoặc bấm 📎 → Vị trí):\n\n" +
+        "• Chỉ cần viết *Tiếng Việt* — lên Web tự động dịch đồng bộ cả *6 ngôn ngữ (Việt / Anh / Trung / Nga / Hàn / Nhật)*!\n" +
+        "• *Đăng ảnh linh hoạt:* Gửi ảnh/album từ điện thoại **trước**, **sau**, hoặc chọn ảnh rồi dán mẫu vào **Chú thích (Caption)** gửi 1 lần đều được!\n" +
+        "• *Ghim bản đồ:* Dán tọa độ, link Google Maps hoặc bấm **📎 → Vị trí**:\n\n" +
         "\x60\x60\x60\nĐĂNG CĂN HỘ\n" +
         "Tên: The Panoma 2 — Căn góc 2PN View Sông Hàn\n" +
         "Tòa nhà: The Panoma (Sun Cosmo)\n" +
@@ -405,11 +406,40 @@ async function processTelegramCommand(rawText, meta = {}) {
       ...(page > 1 ? [pageButton("‹ Trang trước", page - 1)] : []),
       ...(page < pages ? [pageButton("Trang sau ›", page + 1)] : [])
     ].filter(item => Buffer.byteLength(item.callback_data) <= 64);
+    const roomPhotoCards = entries.map(apt => {
+      const counts = contactSummary.get(apt.code.toUpperCase()) || { people: 0, bookings: 0 };
+      const title = String(apt.title?.vi || apt.title?.en || apt.title || apt.code);
+      const marker = apt.isVisible === false ? "⚪" : statuses[apt.status] || "⚪";
+      const detail = `/apt ${apt.code}`;
+      const fromList = `${detail} ${listBack}`;
+      const detailCb = listBack !== "/list" && Buffer.byteLength(fromList) <= 64 ? fromList : detail;
+      const specLine = [
+        apt.priceVnd ? `${Number(apt.priceVnd).toLocaleString("vi-VN")} ₫/th` : "",
+        apt.bedrooms != null ? `${apt.bedrooms} PN` : "",
+        apt.sizeM2 != null ? `${apt.sizeM2} m²` : ""
+      ].filter(Boolean).join(" · ");
+      const caption = [
+        `${marker} ${title}`,
+        `🏷️ ${apt.code}${specLine ? ` · ${specLine}` : ""}`,
+        apt.address ? `📍 ${apt.address}` : "",
+        `👥 ${counts.people} khách liên hệ${counts.bookings ? ` · ${counts.bookings} giữ chỗ` : ""} · 📸 ${(apt.images || []).length} ảnh`
+      ].filter(Boolean).join("\n");
+      return {
+        photo: apt.images?.[0] || "",
+        caption,
+        buttons: [[
+          { text: "⚙️ Chi tiết", callback_data: detailCb },
+          { text: `👥 Khách (${counts.people})`, callback_data: `/apt_contacts ${apt.code}` },
+          { text: "📸 Ảnh", callback_data: `/addphoto ${apt.code}` }
+        ]]
+      };
+    });
     const res = {
       reply: [`${labels[filter]} · ${apartments.length} căn${pages > 1 ? ` (${page}/${pages})` : ""}`,
         ...(keyword ? [`Tìm: ${keyword.slice(0, 120)}`] : []),
-        entries.length ? "Chọn căn để xem chi tiết, khách liên hệ và đặt phòng.\nTìm nhanh bằng /list rồi nhập mã hoặc tên trong cùng dòng." : "Không có căn phù hợp."].join("\n\n"),
+        entries.length ? "Chọn căn bên dưới (hoặc bấm trực tiếp dưới ảnh từng căn ở trên) để xem chi tiết, khách liên hệ và đặt phòng.\nTìm nhanh bằng /list rồi nhập mã hoặc tên." : "Không có căn phù hợp."].join("\n\n"),
       parseMode: null,
+      roomPhotoCards,
       buttons: [
         ...rows, ...(pager.length ? [pager] : []),
         [{ text: "Tất cả", callback_data: "/list" }, { text: "Đang trống", callback_data: "/empty" },
@@ -452,6 +482,8 @@ async function processTelegramCommand(rawText, meta = {}) {
     const res = {
       reply,
       parseMode: null,
+      photoPreview: apt.images?.[0] || undefined,
+      photoPreviewCaption: `🖼️ ${apt.code} · ${apt.title?.vi || apt.title?.en || apt.code}`,
       buttons: getApartmentControlButtons(apt, counts.people, listBack)
     };
     recordBotReply(res);
@@ -1171,19 +1203,63 @@ function telegramOptions(result) {
   };
 }
 
+async function sendTelegramPhotoItem(client, chatId, photoUrl, caption, inlineKeyboard) {
+  if (!photoUrl) return false;
+  const replyOpts = {
+    ...(caption ? { caption: String(caption).slice(0, 1024) } : {}),
+    ...(inlineKeyboard?.length ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {})
+  };
+  const mediaId = String(photoUrl).match(/^\/api\/telegram\/media\/([a-f0-9]{64})$/)?.[1];
+  if (mediaId) {
+    const cover = await getStoredTelegramPhoto(mediaId);
+    if (!cover) return false;
+    await client.sendPhoto(chatId, cover.bytes, replyOpts, {
+      filename: "cover." + cover.contentType.split("/").at(-1),
+      contentType: cover.contentType
+    });
+    return true;
+  }
+  const dataUri = String(photoUrl).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+  if (dataUri) {
+    const buf = Buffer.from(dataUri[2], "base64");
+    await client.sendPhoto(chatId, buf, replyOpts, {
+      filename: "cover." + dataUri[1].split("/").at(-1),
+      contentType: dataUri[1]
+    });
+    return true;
+  }
+  if (/^https?:\/\//i.test(String(photoUrl))) {
+    await client.sendPhoto(chatId, String(photoUrl), replyOpts);
+    return true;
+  }
+  return false;
+}
+
 async function deliverTelegramResult(client, token, chatId, result, albumId) {
   if (result.ignored) return;
-  const mediaId = result.photoPreview?.match(/^\/api\/telegram\/media\/([a-f0-9]{64})$/)?.[1];
-  if (mediaId) {
-    try {
-      const cover = await getStoredTelegramPhoto(mediaId);
-      if (cover) {
-        await client.sendPhoto(chatId, cover.bytes, { caption: "Ảnh bìa xem trước" }, {
-          filename: "cover." + cover.contentType.split("/").at(-1), contentType: cover.contentType
-        });
+  const isFixture = String(process.env.PUBLIC_SITE_URL || "").includes(".invalid");
+  if (!isFixture && Array.isArray(result.roomPhotoCards) && result.roomPhotoCards.length > 0) {
+    for (const card of result.roomPhotoCards) {
+      try {
+        const sentPhoto = await sendTelegramPhotoItem(client, chatId, card.photo, card.caption, card.buttons);
+        if (!sentPhoto && card.caption) {
+          await client.sendMessage(chatId, card.caption, {
+            reply_markup: card.buttons?.length ? { inline_keyboard: card.buttons } : undefined
+          });
+        }
+      } catch {
+        // Continue rendering remaining cards even if one image URL cannot be fetched by Telegram.
       }
-    } catch {
-      // A failed cover preview should leave the text review and its controls available.
+    }
+  }
+  if (result.photoPreview) {
+    const isMediaId = /^\/api\/telegram\/media\/([a-f0-9]{64})$/.test(String(result.photoPreview));
+    if (!isFixture || isMediaId) {
+      try {
+        await sendTelegramPhotoItem(client, chatId, result.photoPreview, result.photoPreviewCaption || "Ảnh bìa xem trước");
+      } catch {
+        // A failed cover preview should leave the text review and its controls available.
+      }
     }
   }
   const options = telegramOptions(result);
