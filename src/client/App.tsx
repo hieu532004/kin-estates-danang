@@ -30,6 +30,7 @@ export interface Apartment {
   minLeaseMonths?: number | null;
   depositMonths?: number | null;
   electricityRate?: string | null;
+  waterRate?: string | null;
   naturalLightScore?: number;
   remoteWorkSetup?: string | null;
   petPolicy?: string;
@@ -39,6 +40,15 @@ export interface Apartment {
   locationAccuracy?: "exact" | "area";
   coordinates?: { lat: number; lng: number } | null;
   architecturalNotes?: Record<string, string> | string;
+  translations?: Record<string, {
+    address?: string;
+    orientation?: string;
+    electricityRate?: string;
+    waterRate?: string;
+    petPolicy?: string;
+    remoteWorkSetup?: string;
+    tags?: string[];
+  }>;
   tags?: string[];
   images?: string[];
 }
@@ -715,7 +725,7 @@ export const App: React.FC = () => {
       const timeout = window.setTimeout(() => controller.abort(), CATALOGUE_REQUEST_TIMEOUT_MS);
 
       try {
-        const response = await fetch("/api/apartments", { signal: controller.signal, cache: "no-cache" });
+        const response = await fetch(`/api/apartments?lang=${encodeURIComponent(lang)}`, { signal: controller.signal, cache: "no-cache" });
         const etag = response.headers.get("ETag");
         if (response.ok && etag && etag === lastETag) {
           await response.body?.cancel();
@@ -749,7 +759,7 @@ export const App: React.FC = () => {
       document.removeEventListener("visibilitychange", refreshCatalogue);
       activeRequest?.abort();
     };
-  }, []);
+  }, [lang]);
 
   const navigate = (path: string) => {
     if (window.location.pathname !== path) {
@@ -1124,13 +1134,32 @@ export const App: React.FC = () => {
     return map[raw] || raw;
   };
 
+  const getAptField = (
+    apt: Apartment | null | undefined,
+    field: "address" | "orientation" | "electricityRate" | "waterRate" | "petPolicy" | "remoteWorkSetup"
+  ): string => {
+    if (!apt) return "";
+    const raw = apt[field] || "";
+    if (!raw || lang === "vi") return raw;
+    return apt.translations?.[lang]?.[field] || trField(raw);
+  };
+
+  const getAptTags = (apt: Apartment | null | undefined): string[] => {
+    if (!apt) return [];
+    const raw = apt.tags || [];
+    if (lang === "vi") return raw;
+    const translated = apt.translations?.[lang]?.tags;
+    if (Array.isArray(translated) && translated.length === raw.length) return translated;
+    return raw.map((t) => trTag(t));
+  };
+
   const getLocalized = (field: Record<string, string> | string | undefined): string => {
     if (!field) return "";
     if (typeof field === "string") return trField(field);
     if (lang === "vi") return field.vi || field.en || "";
-    if (lang === "ru") return field.ru || field.en || field.vi || "";
+    if (lang === "ru") return (field.ru && field.ru !== field.vi ? field.ru : "") || field.en || field.vi || "";
     if (lang === "zh" || lang === "ko" || lang === "ja") {
-      if (field[lang]) return field[lang];
+      if (field[lang] && field[lang] !== field.vi) return field[lang];
       const enText = field.en || "";
       const viText = field.vi || "";
       const i18nDict: Record<string, Record<string, string>> = {
@@ -1415,7 +1444,7 @@ export const App: React.FC = () => {
     const address = document.createElement("div");
     address.style.fontSize = "0.78rem";
     address.style.color = "#475569";
-    address.textContent = `📍 ${apt.address?.trim() || apt.building?.trim() || trArea(apt.areaName)}`;
+    address.textContent = `📍 ${getAptField(apt, "address").trim() || apt.building?.trim() || trArea(apt.areaName)}`;
     content.append(title, address);
     const gmapUrl = getAddressSearchUrl(apt);
     if (gmapUrl) {
@@ -1812,9 +1841,9 @@ export const App: React.FC = () => {
                     {tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
                   </span>
                 )}
-                {(apt.tags || []).slice(0, 1).map((t) => (
+                {getAptTags(apt).slice(0, 1).map((t) => (
                   <span key={t} className="pill-badge-dark">
-                    {trTag(t)}
+                    {t}
                   </span>
                 ))}
               </div>
@@ -2321,7 +2350,7 @@ export const App: React.FC = () => {
                                         {u.bedrooms} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {u.sizeM2} m²
                                       </strong>
                                       <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                                        {trField(u.orientation) || trArea(u.areaName)}
+                                        {getAptField(u, "orientation") || trArea(u.areaName)}
                                       </div>
                                     </div>
                                     <strong style={{ color: "var(--accent-bronze-dark)", fontSize: "0.86rem" }}>
@@ -3356,7 +3385,7 @@ export const App: React.FC = () => {
 
               <div className="apt-location-details">
                 <div>
-                  {currentDetailApt.address?.trim() && <strong>{currentDetailApt.address.trim()}</strong>}
+                  {currentDetailApt.address?.trim() && <strong>{getAptField(currentDetailApt, "address").trim()}</strong>}
                   <span className="apt-location-status">{locationLabel(currentDetailApt)}</span>
                 </div>
                 {(getExactLocation(currentDetailApt) || getAddressSearchUrl(currentDetailApt)) &&
@@ -3370,7 +3399,7 @@ export const App: React.FC = () => {
 
                 {currentDetailApt.address && (
                   <div style={{ fontSize: "0.88rem", color: "var(--accent-bronze-dark)", fontWeight: 700, marginBottom: "0.65rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>📍 {currentDetailApt.address}</span>
+                    <span>📍 {getAptField(currentDetailApt, "address")}</span>
                     <span>·</span>
                     <span>
                       {currentDetailApt.status === "Rented"
@@ -3394,11 +3423,20 @@ export const App: React.FC = () => {
                   {currentDetailApt.floor != null && <span className="apt-compact-info-pill">
                     {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor}
                   </span>}
+                  {currentDetailApt.orientation && <span className="apt-compact-info-pill">
+                    {getAptField(currentDetailApt, "orientation")}
+                  </span>}
                   {currentDetailApt.electricityRate && <span className="apt-compact-info-pill">
-                    {trField(currentDetailApt.electricityRate)}
+                    {getAptField(currentDetailApt, "electricityRate")}
+                  </span>}
+                  {currentDetailApt.waterRate && <span className="apt-compact-info-pill">
+                    {getAptField(currentDetailApt, "waterRate")}
                   </span>}
                   {currentDetailApt.remoteWorkSetup && <span className="apt-compact-info-pill">
-                    {trField(currentDetailApt.remoteWorkSetup)}
+                    {getAptField(currentDetailApt, "remoteWorkSetup")}
+                  </span>}
+                  {currentDetailApt.petPolicy && <span className="apt-compact-info-pill">
+                    {getAptField(currentDetailApt, "petPolicy")}
                   </span>}
                   {currentDetailApt.minLeaseMonths != null && <span className="apt-compact-info-pill">
                     {tx("Từ", "Min", "起租", "От", "최소", "最低")} {currentDetailApt.minLeaseMonths} {tx("tháng", "months", "个月", "мес", "개월", "ヶ月")}
@@ -3406,9 +3444,9 @@ export const App: React.FC = () => {
                   {currentDetailApt.depositMonths != null && <span className="apt-compact-info-pill">
                     {tx("Cọc", "Deposit", "押金", "Депозит", "보증금", "敷金")} {currentDetailApt.depositMonths} {tx("tháng", "mo", "个月", "мес", "개월", "ヶ月")}
                   </span>}
-                  {(currentDetailApt.tags || []).map((tTag) => (
+                  {getAptTags(currentDetailApt).map((tTag) => (
                     <span key={tTag} className="apt-compact-info-pill">
-                      {trTag(tTag)}
+                      {tTag}
                     </span>
                   ))}
                 </div>
@@ -4439,14 +4477,14 @@ export const App: React.FC = () => {
                   </h3>
                   <div className="apt-location-details">
                     <div>
-                      {expandDialogApt.address?.trim() && <strong>{expandDialogApt.address.trim()}</strong>}
+                      {expandDialogApt.address?.trim() && <strong>{getAptField(expandDialogApt, "address").trim()}</strong>}
                       <span className="apt-location-status">{locationLabel(expandDialogApt)}</span>
                     </div>
                     {!getExactLocation(expandDialogApt) && getAddressSearchUrl(expandDialogApt) &&
                       renderLocationAction(expandDialogApt, "apt-detail-map-jump-btn")}
                   </div>
                   <div style={{ fontSize: "0.86rem", color: "var(--text-secondary)", marginBottom: "0.9rem" }}>
-                    {expandDialogApt.bedrooms ?? "—"} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {expandDialogApt.sizeM2 ?? "—"} m² · {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {expandDialogApt.floor ?? "—"} {expandDialogApt.electricityRate && `· ${trField(expandDialogApt.electricityRate)}`}
+                    {expandDialogApt.bedrooms ?? "—"} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {expandDialogApt.sizeM2 ?? "—"} m² · {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {expandDialogApt.floor ?? "—"} {expandDialogApt.electricityRate && `· ${getAptField(expandDialogApt, "electricityRate")}`}
                   </div>
                   <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.9rem", fontWeight: 800, color: "var(--bg-navy)", marginBottom: "1rem" }}>
                     {formatPrice(expandDialogApt)}

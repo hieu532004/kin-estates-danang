@@ -3,6 +3,7 @@ const path = require("path");
 const { createHash, randomUUID } = require("node:crypto");
 const mongoose = require("mongoose");
 const { initialApartments, initialBuildings, neighborhoods } = require("../data/seedData");
+const translationService = require("../services/translationService");
 
 const STORE_PATH = process.env.KIN_STORE_PATH
   ? path.resolve(process.env.KIN_STORE_PATH)
@@ -73,6 +74,7 @@ const ApartmentSchema = new mongoose.Schema(
       ko: String,
       ja: String
     },
+    translations: { type: mongoose.Schema.Types.Mixed, default: undefined },
     tags: [String],
     images: [String],
     source: { type: String, default: "web" } // web | telegram | excel | google_sheets | owner_submission
@@ -678,7 +680,8 @@ function apartmentAlreadyExists() {
 }
 
 async function createApartment(payload, { insertOnly = false, durable = false } = {}) {
-  const normalized = normalizeApartmentPayload(payload, { sparse: durable && payload.source === "telegram" });
+  const baseNormalized = normalizeApartmentPayload(payload, { sparse: durable && payload.source === "telegram" });
+  const normalized = await translationService.translateApartmentAllLanguages(baseNormalized);
   if (!insertOnly) {
     const existing = isNativeMongoConnected ? await getApartmentByCodeOrId(normalized.code) : findLocalApartment(normalized.code);
     if (existing) {
@@ -762,25 +765,23 @@ function normalizeApartmentUpdates(target, { _id, reservationHold, ...updates })
 
   if (typeof updates.title === "string") {
     updates.title = {
-      ...(target.title || {}),
       vi: updates.title,
-      en: updates.titleEn || target.title?.en || updates.title,
-      zh: target.title?.zh || updates.title,
-      ru: target.title?.ru || updates.title,
-      ko: target.title?.ko || updates.title,
-      ja: target.title?.ja || updates.title
+      en: updates.titleEn || updates.title,
+      zh: updates.title,
+      ru: updates.title,
+      ko: updates.title,
+      ja: updates.title
     };
   }
 
   if (typeof updates.architecturalNotes === "string") {
     updates.architecturalNotes = {
-      ...(target.architecturalNotes || {}),
       vi: updates.architecturalNotes,
-      en: updates.descriptionEn || target.architecturalNotes?.en || updates.architecturalNotes,
-      zh: target.architecturalNotes?.zh || updates.architecturalNotes,
-      ru: target.architecturalNotes?.ru || updates.architecturalNotes,
-      ko: target.architecturalNotes?.ko || updates.architecturalNotes,
-      ja: target.architecturalNotes?.ja || updates.architecturalNotes
+      en: updates.descriptionEn || updates.architecturalNotes,
+      zh: updates.architecturalNotes,
+      ru: updates.architecturalNotes,
+      ko: updates.architecturalNotes,
+      ja: updates.architecturalNotes
     };
   }
 
@@ -841,14 +842,40 @@ function mirrorApartmentUpdate(target, updated, durable = false) {
 async function updateApartment(identifier, updates, { expectedUpdatedAt } = {}) {
   const conditional = expectedUpdatedAt !== undefined;
   const expected = apartmentRevision(expectedUpdatedAt);
+  const textKeys = ["title", "architecturalNotes", "address", "orientation", "electricityRate", "waterRate", "petPolicy", "remoteWorkSetup", "tags"];
+  const shouldRetranslate = textKeys.some((k) => updates[k] !== undefined);
+
+  const prepareMergedPatch = async (target) => {
+    const patch = normalizeApartmentUpdates(target, updates);
+    if (!shouldRetranslate) return patch;
+    const clearedTranslations = { ...(target.translations || {}) };
+    for (const lang of translationService.TARGET_LANGS) {
+      if (clearedTranslations[lang]) {
+        const copy = { ...clearedTranslations[lang] };
+        for (const k of ["address", "orientation", "electricityRate", "waterRate", "petPolicy", "remoteWorkSetup", "tags"]) {
+          if (updates[k] !== undefined) delete copy[k];
+        }
+        clearedTranslations[lang] = copy;
+      }
+    }
+    const candidate = { ...target, ...patch, translations: clearedTranslations };
+    const translated = await translationService.translateApartmentAllLanguages(candidate);
+    return {
+      ...patch,
+      title: translated.title,
+      architecturalNotes: translated.architecturalNotes,
+      translations: translated.translations
+    };
+  };
 
   if (!isNativeMongoConnected) {
     const target = findLocalApartment(identifier);
     if (conditional && (!target || apartmentRevision(target.updatedAt) !== expected)) throw apartmentConflict();
     if (!target) return null;
+    const patch = await prepareMergedPatch(target);
     const updated = {
       ...target,
-      ...normalizeApartmentUpdates(target, updates),
+      ...patch,
       updatedAt: nextApartmentRevision(target.updatedAt).toISOString()
     };
     mirrorApartmentUpdate(target, updated, conditional);
@@ -859,11 +886,12 @@ async function updateApartment(identifier, updates, { expectedUpdatedAt } = {}) 
     const target = await getApartmentByCodeOrId(identifier);
     if (conditional && (!target || apartmentRevision(target.updatedAt) !== expected)) throw apartmentConflict();
     if (!target) return null;
+    const patch = await prepareMergedPatch(target);
 
     // Compare every write with its read to keep the revision monotonic during concurrent updates.
     const doc = await ApartmentModel.findOneAndUpdate(
       { _id: target._id, updatedAt: target.updatedAt ?? null },
-      { $set: { ...normalizeApartmentUpdates(target, updates), updatedAt: nextApartmentRevision(target.updatedAt) } },
+      { $set: { ...patch, updatedAt: nextApartmentRevision(target.updatedAt) } },
       { new: true, timestamps: false }
     ).lean();
     if (doc) {

@@ -10,6 +10,7 @@ const {
   storeTelegramPhoto, getStoredTelegramPhoto, MEDIA_ID, FILE_ID
 } = require("./src/services/telegramMediaService");
 const sheetsService = require("./src/services/googleSheetsService");
+const translationService = require("./src/services/translationService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -127,7 +128,7 @@ const PUBLIC_APARTMENT_FIELDS = [
   "_id", "code", "title", "building", "address", "areaName", "district", "priceUsd", "priceVnd",
   "bedrooms", "bathrooms", "sizeM2", "floor", "orientation", "minLeaseMonths", "depositMonths",
   "electricityRate", "waterRate", "wifiIncluded", "naturalLightScore", "remoteWorkSetup", "petPolicy",
-  "status", "availableFrom", "isVisible", "featured", "locationAccuracy", "coordinates", "architecturalNotes", "tags", "images", "createdAt", "updatedAt"
+  "status", "availableFrom", "isVisible", "featured", "locationAccuracy", "coordinates", "architecturalNotes", "translations", "tags", "images", "createdAt", "updatedAt"
 ];
 
 function publicApartment(apartment) {
@@ -138,7 +139,13 @@ const handleGetApartments = async (req, res) => {
   try {
     const admin = isAdmin(req);
     const filters = admin ? req.query : { ...req.query, includeHidden: false, admin: false };
-    const apartments = await db.getApartments(filters);
+    let apartments = await db.getApartments(filters);
+    const targetLang = String(req.query.lang || "").trim().toLowerCase();
+    if (translationService.TARGET_LANGS.includes(targetLang)) {
+      apartments = await Promise.all(
+        apartments.map((apt) => translationService.translateApartmentForLanguage(apt, targetLang))
+      );
+    }
     res.vary("Authorization");
     if (admin) res.set("Cache-Control", "no-store");
     res.json({
@@ -159,9 +166,13 @@ app.get("/api/apartments/:id", async (req, res) => {
   const admin = isAdmin(req);
   res.vary("Authorization");
   if (admin) res.set("Cache-Control", "no-store");
-  const apt = await db.getApartmentByCodeOrId(req.params.id);
+  let apt = await db.getApartmentByCodeOrId(req.params.id);
   if (!apt || (!db.isPublicApartment(apt) && !admin)) {
     return res.status(404).json({ ok: false, error: "Apartment not found" });
+  }
+  const targetLang = String(req.query.lang || "").trim().toLowerCase();
+  if (translationService.TARGET_LANGS.includes(targetLang)) {
+    apt = await translationService.translateApartmentForLanguage(apt, targetLang);
   }
   res.json({ ok: true, apartment: admin ? apt : publicApartment(apt) });
 });

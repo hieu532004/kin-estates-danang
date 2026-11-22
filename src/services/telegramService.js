@@ -85,8 +85,69 @@ function parseMultilineListingText(text = "") {
     else if (key.includes("tên") || key.includes("tiêu đề") || key === "title" || key === "name") data.title = val;
     else if (key.includes("tòa") || key.includes("toa") || key === "building" || key.includes("dự án")) data.building = val;
     else if (key.includes("khu") || key === "area") data.areaName = db.normalizeAreaName(val);
-    else if (key.includes("địa chỉ") || key.includes("dia chi") || key === "address") data.address = val;
+    else if (key.includes("địa chỉ") || key.includes("dia chi") || key === "address") {
+      data.address = val;
+      if (!data.district) {
+        const distMap = [
+          [/ngũ hành sơn/iu, "Ngũ Hành Sơn"],
+          [/sơn trà/iu, "Sơn Trà"],
+          [/hải châu/iu, "Hải Châu"],
+          [/thanh khê/iu, "Thanh Khê"],
+          [/liên chiểu/iu, "Liên Chiểu"],
+          [/cẩm lệ/iu, "Cẩm Lệ"],
+          [/hòa vang/iu, "Hòa Vang"]
+        ];
+        const found = distMap.find(([re]) => re.test(val));
+        if (found) data.district = found[1];
+      }
+    }
     else if (key.includes("quận") || key === "district") data.district = val;
+    else if (key === "thông số" || key === "thong so" || key === "specs") {
+      const segments = val.split(/[|,·•]+/).map((s) => s.trim()).filter(Boolean);
+      for (const seg of segments) {
+        const br = seg.match(/^(\d{1,2})\s*(?:pn|phòng ngủ|br)$/iu);
+        const wc = seg.match(/^(\d{1,2})\s*(?:wc|phòng tắm|bath)$/iu);
+        const sz = seg.match(/^(\d{1,5}(?:[.,]\d{1,2})?)\s*m[²2]$/iu);
+        const fl = seg.match(/^(?:tầng|tang|floor)\s*(-?\d{1,3})$/iu);
+        const ori = seg.match(/^(?:hướng|huong|view)\s*[:：]?\s*(.+)$/iu);
+        if (br) data.bedrooms = Number(br[1]);
+        else if (wc) data.bathrooms = Number(wc[1]);
+        else if (sz) data.sizeM2 = Number(sz[1].replace(",", "."));
+        else if (fl) data.floor = Number(fl[1]);
+        else if (ori) data.orientation = ori[1].trim();
+      }
+    }
+    else if (key === "hợp đồng" || key === "hop dong" || key === "lease") {
+      const segments = val.split(/[|,·•]+/).map((s) => s.trim()).filter(Boolean);
+      for (const seg of segments) {
+        const minM = seg.match(/(?:tối thiểu|min|hđ)\s*[:：]?\s*(\d{1,2})\s*(?:tháng|th)?/iu);
+        const dep = seg.match(/(?:cọc|đặt cọc|deposit)\s*[:：]?\s*(\d{1,2})\s*(?:tháng|th)?/iu);
+        const dt = seg.match(/(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})/);
+        if (minM) data.minLeaseMonths = Number(minM[1]);
+        if (dep) data.depositMonths = Number(dep[1]);
+        if (dt) {
+          const parsedDate = parseAvailabilityDate(dt[1]);
+          if (parsedDate) data.availableFrom = parsedDate;
+        }
+      }
+    }
+    else if (key === "chi phí" || key === "chi phi" || key === "dịch vụ" || key === "utilities") {
+      const segments = val.split(/[|·•]+/).map((s) => s.trim()).filter(Boolean);
+      for (const seg of segments) {
+        const elec = seg.match(/^(?:điện|dien)\s*[:：]?\s*(.+)$/iu);
+        const water = seg.match(/^(?:nước|nuoc)\s*[:：]?\s*(.+)$/iu);
+        const wifi = seg.match(/^(?:wi-?fi|internet)\s*[:：]?\s*(.+)$/iu);
+        const pet = seg.match(/^(?:thú cưng|thu cung|pet)\s*[:：]?\s*(.+)$/iu);
+        if (elec) data.electricityRate = seg.includes(":") || seg.includes("：") ? elec[1].trim() : seg;
+        else if (water) data.waterRate = seg.includes(":") || seg.includes("：") ? water[1].trim() : seg;
+        else if (wifi) {
+          const wv = wifi[1].trim();
+          if (/^(có|đã gồm|bao gồm|miễn phí|free|yes|true)/iu.test(wv)) data.wifiIncluded = true;
+          else if (/^(không|chưa gồm|no|false)/iu.test(wv)) data.wifiIncluded = false;
+        }
+        else if (pet) data.petPolicy = pet[1].trim();
+      }
+    }
     else if (key.includes("giá") || key.includes("gia") || key === "price") data.price = val;
     else if (key.includes("phòng ngủ") || key.includes("phong ngu") || key === "pn" || key === "bedrooms" || key === "br") {
       if (/^\d{1,2}$/.test(val)) data.bedrooms = Number(val);
@@ -265,32 +326,22 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower === "/form" || lower === "/add") {
     const res = {
       reply:
-        "📋 *BÀI MẪU ĐĂNG CĂN HỘ ĐẦY ĐỦ (CHẠM VÀO KHUNG ĐỂ COPY):*\n" +
-        "Anh chạm vào khung mẫu bên dưới để sao chép, sửa theo thông tin căn hộ thực tế rồi gửi vào đây (sau đó bấm 📎 gửi album ảnh từ điện thoại và bấm 📎 → Vị trí hoặc điền dòng Ghim bản đồ):\n\n" +
+        "📋 *MẪU ĐĂNG CĂN HỘ ĐẦY ĐỦ & ĐƠN GIẢN (CHẠM KHUNG ĐỂ COPY):*\n" +
+        "• Anh chỉ cần viết *Tiếng Việt* — khi đăng lên Web hệ thống tự động dịch đồng bộ sang cả *6 ngôn ngữ (Việt / Anh / Trung / Nga / Hàn / Nhật)*!\n" +
+        "• Gửi xong bấm 📎 chọn album ảnh từ điện thoại (dòng Ghim bản đồ có thể dán tọa độ, link Google Maps hoặc bấm 📎 → Vị trí):\n\n" +
         "\x60\x60\x60\nĐĂNG CĂN HỘ\n" +
-        "Tên: The Panoma 2 — Căn hộ góc 2PN View Sông Hàn & Cầu Rồng\n" +
-        "Tên tiếng Anh: The Panoma 2 — Corner 2BR Han River & Dragon Bridge View\n" +
+        "Tên: The Panoma 2 — Căn góc 2PN View Sông Hàn\n" +
         "Tòa nhà: The Panoma (Sun Cosmo)\n" +
         "Khu vực: Ven sông Hàn\n" +
         "Địa chỉ: 58 Trần Thị Lý, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng\n" +
-        "Quận: Ngũ Hành Sơn\n" +
         "Ghim bản đồ: 16.0508, 108.2355\n" +
-        "Giá: 21tr VND\n" +
-        "Phòng ngủ: 2\n" +
-        "Phòng tắm: 2\n" +
-        "Diện tích: 74 m²\n" +
-        "Tầng: 22\n" +
-        "Hướng: Đông Nam - View sông Hàn\n" +
-        "Ngày có thể vào: 01/12/2026\n" +
-        "Thuê tối thiểu: 6 tháng\n" +
-        "Đặt cọc: 1 tháng\n" +
-        "Điện: Giá nhà nước EVN (~2.800 ₫/kWh)\n" +
-        "Nước: Giá nhà nước\n" +
-        "Wi-Fi: Có\n" +
-        "Thú cưng: Cho phép thú cưng nhỏ\n" +
+        "Giá: 21tr\n" +
+        "Thông số: 2PN | 2WC | 74m2 | Tầng 22 | Hướng Đông Nam\n" +
+        "Hợp đồng: Tối thiểu 6 tháng | Cọc 1 tháng | Vào ở: 01/12/2026\n" +
+        "Chi phí: Điện EVN ~2.800đ | Nước nhà nước | Wi-Fi: Có | Thú cưng: Cho phép thú cưng nhỏ\n" +
         "Tiện ích: View sông Hàn, Hồ bơi vô cực, Gym, Bàn làm việc, Chỗ đỗ ô tô\n" +
-        "Mô tả: Căn góc 2 mặt kính Low-E kịch trần cách âm tuyệt đối, nội thất gỗ sồi mới 100%, máy giặt sấy riêng, bàn làm việc cạnh cửa sổ lớn và cáp quang 300Mbps.\n\x60\x60\x60",
-      buttons: [[{ text: "Đăng từng bước", callback_data: "/wizard" }, { text: "Mở bản nháp", callback_data: "/draft" }]]
+        "Mô tả: Căn góc 2 mặt kính Low-E cách âm, nội thất gỗ sồi mới 100%, máy giặt sấy riêng, bàn làm việc cạnh cửa sổ lớn và cáp quang 300Mbps.\n\x60\x60\x60",
+      buttons: [[{ text: "➕ Đăng từng bước (/wizard)", callback_data: "/wizard" }, { text: "📝 Mở bản nháp (/draft)", callback_data: "/draft" }]]
     };
     recordBotReply(res);
     return res;
