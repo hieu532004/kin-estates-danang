@@ -35,8 +35,8 @@
       "isVisible": true,
       "hideWhenRented": false,
       "featured": true,
-      "landlordName": "",
-      "landlordPhone": "",
+      "landlordName": "Chủ nhà đối tác KIN Estates",
+      "landlordPhone": "0349456644",
       "adminNote": "",
       "currentTenant": null,
       "locationAccuracy": "exact",
@@ -1073,152 +1073,6 @@
     }
   ],
   "botMessages": [
-    {
-      "id": "msg-1795167149120-68nn",
-      "timestamp": "2026-11-20T09:32:29.120Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "🪄 *ĐĂNG CĂN HỘ MỚI (BƯỚC 1 / 5): TÊN CĂN HỘ & TÒA NHÀ*\n━━━━━━━━━━━━━━━━━━━━━━\nAnh hãy nhập *Tên căn hộ* (có thể kèm tên tòa nhà sau dấu `|`):\n\n📌 _Ví dụ:_ `The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)`\n_(Gõ `/cancel` bất kỳ lúc nào để hủy)_",
-      "buttons": [
-        [
-          {
-            "text": "❌ Hủy đăng từng bước",
-            "callback_data": "/cancel"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795167158522-izfb",
-      "timestamp": "2026-11-20T09:32:38.522Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "The Panoma 2PN Góc View Sông Hàn | The Panoma (Sun Cosmo)"
-    },
-    {
-      "id": "msg-1795167158525-e588",
-      "timestamp": "2026-11-20T09:32:38.525Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "✅ Đã lưu tên: *The Panoma 2PN Góc View Sông Hàn* (The Panoma (Sun Cosmo))\n\n🪄 *BƯỚC 2 / 5: KHU VỰC & ĐỊA CHỈ CỤ THỂ*\nAnh bấm chọn khu vực bên dưới hoặc gõ theo dạng: `Khu vực | Địa chỉ đường, quận`\n📌 _Ví dụ:_ `Han Riverfront | Đường Trần Thị Lý, Quận Ngũ Hành Sơn, Đà Nẵng`",
-      "buttons": [
-        [
-          {
-            "text": "🌊 An Thượng (Mỹ Khê)",
-            "callback_data": "/wiz_area An Thuong | Khu phố An Thượng, Ngũ Hành Sơn"
-          },
-          {
-            "text": "🌉 Sông Hàn / Hải Châu",
-            "callback_data": "/wiz_area Han Riverfront | Đường Bạch Đằng / Trần Thị Lý"
-          }
-        ],
-        [
-          {
-            "text": "🌿 Sơn Trà (Hiyori/Monarchy)",
-            "callback_data": "/wiz_area Son Tra | Đường Võ Văn Kiệt, Quận Sơn Trà"
-          },
-          {
-            "text": "🏖️ Mặt biển Mỹ Khê",
-            "callback_data": "/wiz_area My Khe Beachfront | Đường Võ Nguyên Giáp, Đà Nẵng"
-          }
-        ],
-        [
-          {
-            "text": "❌ Hủy đăng",
-            "callback_data": "/cancel"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795169320468-ujf6",
-      "timestamp": "2026-11-20T10:08:40.468Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "/start"
-    },
-    {
-      "id": "msg-1795169320472-40zq",
-      "timestamp": "2026-11-20T10:08:40.473Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "🏠 *KIN ESTATES*\n10 căn · 10 đang trống · 1 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
-      "buttons": [
-        [
-          {
-            "text": "➕ Đăng căn mới",
-            "callback_data": "/wizard"
-          },
-          {
-            "text": "📝 Bản nháp",
-            "callback_data": "/draft"
-          }
-        ],
-        [
-          {
-            "text": "🏠 Kho căn hộ",
-            "callback_data": "/list"
-          },
-          {
-            "text": "🟢 Đang trống",
-            "callback_data": "/empty"
-          }
-        ],
-        [
-          {
-            "text": "📅 Khách & Lịch hẹn (/leads)",
-            "callback_data": "/leads"
-          },
-          {
-            "text": "🔑 Khách đang thuê (/tenants)",
-            "callback_data": "/tenants"
-          }
-        ],
-        [
-          {
-            "text": "📋 Mẫu nhập nhanh",
-            "callback_data": "/form"
-          },
-          {
-            "text": "📊 Excel",
-            "callback_data": "/excel"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795169336699-ivju",
-      "timestamp": "2026-11-20T10:08:56.699Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "/form"
-    },
-    {
-      "id": "msg-1795169336701-wkjb",
-      "timestamp": "2026-11-20T10:08:56.701Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "Sao chép mẫu, sửa thông tin và gửi lại. Bạn có thể gửi ảnh từ thư viện trước hoặc sau khi điền.\n\nĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ",
-      "buttons": [
-        [
-          {
-            "text": "Đăng từng bước",
-            "callback_data": "/wizard"
-          },
-          {
-            "text": "Mở bản nháp",
-            "callback_data": "/draft"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795169392520-w1xx",
-      "timestamp": "2026-11-20T10:09:52.520Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "ĐĂNG CĂN HỘ\nTên: Căn 2PN có ban công\nTòa nhà: The Panoma\nKhu vực: Ven sông Hàn\nGiá: 18,5tr\nPhòng ngủ: 2\nDiện tích: 72\nMô tả: Nội thất đầy đủ"
-    },
     {
       "id": "msg-1795169392529-8uds",
       "timestamp": "2026-11-20T10:09:52.529Z",
@@ -3261,6 +3115,210 @@
           {
             "text": "Thay bộ ảnh",
             "callback_data": "/setphoto DN-KIN-12E1A38DFB4F25"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795413863871-ek95",
+      "timestamp": "2026-11-23T06:04:23.871Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795413863874-i5kh",
+      "timestamp": "2026-11-23T06:04:23.874Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *KIN ESTATES*\n12 căn · 12 đang trống · 2 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
+      "buttons": [
+        [
+          {
+            "text": "🏠 Kho căn hộ",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📋 Mẫu đăng nhanh",
+            "callback_data": "/form"
+          },
+          {
+            "text": "👥 Khách & lịch xem",
+            "callback_data": "/crm"
+          }
+        ],
+        [
+          {
+            "text": "📅 Đặt phòng",
+            "callback_data": "/bookings"
+          },
+          {
+            "text": "📝 Bản nháp",
+            "callback_data": "/draft"
+          },
+          {
+            "text": "⚙️ Công cụ",
+            "callback_data": "/tools"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795413970766-f0x8",
+      "timestamp": "2026-11-23T06:06:10.766Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/list"
+    },
+    {
+      "id": "msg-1795413970769-4hyn",
+      "timestamp": "2026-11-23T06:06:10.769Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 Kho căn hộ · 12 căn (Trang 1/3)\nBấm trực tiếp dưới ảnh từng căn để quản lý, hoặc gõ `/list tên_căn` để tìm nhanh.",
+      "buttons": [
+        [
+          {
+            "text": "Trang sau ›",
+            "callback_data": "/list p2"
+          }
+        ],
+        [
+          {
+            "text": "Tất cả",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Thuê / Ẩn",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📋 Mẫu đăng",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🏠 Menu",
+            "callback_data": "/menu"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795414024363-30ti",
+      "timestamp": "2026-11-23T06:07:04.363Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/list p2"
+    },
+    {
+      "id": "msg-1795414024365-2r6y",
+      "timestamp": "2026-11-23T06:07:04.365Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 Kho căn hộ · 12 căn (Trang 2/3)\nBấm trực tiếp dưới ảnh từng căn để quản lý, hoặc gõ `/list tên_căn` để tìm nhanh.",
+      "buttons": [
+        [
+          {
+            "text": "‹ Trang trước",
+            "callback_data": "/list p1"
+          },
+          {
+            "text": "Trang sau ›",
+            "callback_data": "/list p3"
+          }
+        ],
+        [
+          {
+            "text": "Tất cả",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Thuê / Ẩn",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📋 Mẫu đăng",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🏠 Menu",
+            "callback_data": "/menu"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795414029528-hgoj",
+      "timestamp": "2026-11-23T06:07:09.528Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/list p3"
+    },
+    {
+      "id": "msg-1795414029530-28hj",
+      "timestamp": "2026-11-23T06:07:09.530Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 Kho căn hộ · 12 căn (Trang 3/3)\nBấm trực tiếp dưới ảnh từng căn để quản lý, hoặc gõ `/list tên_căn` để tìm nhanh.",
+      "buttons": [
+        [
+          {
+            "text": "‹ Trang trước",
+            "callback_data": "/list p2"
+          }
+        ],
+        [
+          {
+            "text": "Tất cả",
+            "callback_data": "/list"
+          },
+          {
+            "text": "🟢 Trống",
+            "callback_data": "/empty"
+          },
+          {
+            "text": "🔴 Thuê / Ẩn",
+            "callback_data": "/rented"
+          }
+        ],
+        [
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          },
+          {
+            "text": "📋 Mẫu đăng",
+            "callback_data": "/form"
+          },
+          {
+            "text": "🏠 Menu",
+            "callback_data": "/menu"
           }
         ]
       ]

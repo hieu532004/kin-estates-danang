@@ -277,4 +277,25 @@ async function getStoredTelegramPhoto(mediaId) {
   return contentType ? { bytes, contentType } : null;
 }
 
-module.exports = { storeTelegramPhoto, getStoredTelegramPhoto, MEDIA_ID, FILE_ID };
+async function storeUploadedImageBuffer(bytes) {
+  if (!Buffer.isBuffer(bytes) || bytes.length < 20 || bytes.length > MAX_PHOTO_BYTES) {
+    throw new Error("Ảnh không hợp lệ hoặc vượt quá giới hạn 5 MB.");
+  }
+  const contentType = rasterType(bytes);
+  if (!contentType) {
+    throw new Error("Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP.");
+  }
+  const mediaId = hash(bytes);
+  const files = db.getTelegramCollection("telegram_media");
+  if (files) {
+    await insertOnce(files, { _id: mediaId, bytes: new Binary(bytes), contentType });
+    return `/api/telegram/media/${mediaId}`;
+  }
+  if (process.env.VERCEL) {
+    return `data:${contentType};base64,${bytes.toString("base64")}`;
+  }
+  await writeLocal("photos", mediaId, bytes);
+  return `/api/telegram/media/${mediaId}`;
+}
+
+module.exports = { storeTelegramPhoto, getStoredTelegramPhoto, storeUploadedImageBuffer, MEDIA_ID, FILE_ID };

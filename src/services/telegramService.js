@@ -198,8 +198,17 @@ function calcDaysRemaining(endDateStr) {
   return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
+function getStudioWebAppUrl() {
+  if (String(process.env.PUBLIC_SITE_URL || "").includes(".invalid")) return null;
+  const base = (process.env.PUBLIC_SITE_URL || "https://kin-estates-danang.vercel.app").replace(/\/+$/, "");
+  if (!base.startsWith("https://")) return null;
+  return `${base}/kin-studio`;
+}
+
 function getMainMenuButtons() {
+  const studioUrl = getStudioWebAppUrl();
   return [
+    ...(studioUrl ? [[{ text: "📱 Mở Bảng Điều Khiển & Báo Cáo", web_app: { url: studioUrl } }]] : []),
     [
       { text: "🏠 Kho căn hộ", callback_data: "/list" },
       { text: "➕ Đăng căn mới", callback_data: "/wizard" }

@@ -1,16 +1,19 @@
 require("dotenv").config();
 const path = require("path");
-const { timingSafeEqual } = require("node:crypto");
+const { createHmac, timingSafeEqual } = require("node:crypto");
 const express = require("express");
 const cors = require("cors");
 const db = require("./src/db/database");
 const telegramService = require("./src/services/telegramService");
-const { createPublicInquiry, isAnonymousContactClick } = require("./src/services/apartmentCrmService");
 const {
-  storeTelegramPhoto, getStoredTelegramPhoto, MEDIA_ID, FILE_ID
+  createPublicInquiry, isAnonymousContactClick, getApartmentContactSummary
+} = require("./src/services/apartmentCrmService");
+const {
+  storeTelegramPhoto, getStoredTelegramPhoto, storeUploadedImageBuffer, MEDIA_ID, FILE_ID
 } = require("./src/services/telegramMediaService");
 const sheetsService = require("./src/services/googleSheetsService");
 const translationService = require("./src/services/translationService");
+const autoDeployService = require("./src/services/autoDeployService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,9 +39,78 @@ function isLocalAdmin(req) {
   return !origin || origin === `${req.protocol}://${host}`;
 }
 
+function studioSigningSecret() {
+  return (
+    process.env.KIN_STUDIO_SECRET ||
+    process.env.KIN_ADMIN_API_TOKEN ||
+    process.env.TELEGRAM_WEBHOOK_SECRET ||
+    configuredTelegramToken() ||
+    "kin-estates-studio-2026-secret"
+  );
+}
+
+function configuredStudioPasscode() {
+  return String(
+    process.env.KIN_ADMIN_PASSCODE ||
+    process.env.KIN_ADMIN_API_TOKEN ||
+    "kin2026"
+  ).trim();
+}
+
+function createStudioSessionToken(subject = "admin") {
+  const exp = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+  const payload = Buffer.from(JSON.stringify({ sub: subject, exp })).toString("base64url");
+  const sig = createHmac("sha256", studioSigningSecret()).update(payload).digest("base64url");
+  return `ks1.${payload}.${sig}`;
+}
+
+function verifyStudioSessionToken(rawToken) {
+  if (typeof rawToken !== "string" || !rawToken.startsWith("ks1.")) return false;
+  const parts = rawToken.split(".");
+  if (parts.length !== 3) return false;
+  const [, payload, sig] = parts;
+  const expectedSig = createHmac("sha256", studioSigningSecret()).update(payload).digest("base64url");
+  if (!safeMatch(sig, expectedSig)) return false;
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return Boolean(decoded && Number(decoded.exp) > Date.now());
+  } catch {
+    return false;
+  }
+}
+
+function verifyTelegramWebAppInitData(initData) {
+  const botToken = configuredTelegramToken();
+  const adminChatId = String(process.env.TELEGRAM_ADMIN_CHAT_ID || db.getSettings().telegramAdminChatId || "").trim();
+  if (!botToken || !initData || typeof initData !== "string") return false;
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get("hash");
+    if (!hash) return false;
+    params.delete("hash");
+    const pairs = [...params.entries()].sort(([a], [b]) => a.localeCompare(b));
+    const dataCheckString = pairs.map(([k, v]) => `${k}=${v}`).join("\n");
+    const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest();
+    const computedHash = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+    if (!safeMatch(hash, computedHash)) return false;
+    const authDate = Number(params.get("auth_date") || 0);
+    if (!authDate || Math.abs(Date.now() / 1000 - authDate) > 86400 * 7) return false;
+    const user = JSON.parse(params.get("user") || "{}");
+    if (!adminChatId) return Boolean(user.id);
+    return String(user.id) === adminChatId;
+  } catch {
+    return false;
+  }
+}
+
 function isAdmin(req) {
+  const auth = req.get("authorization") || "";
   const token = process.env.KIN_ADMIN_API_TOKEN;
-  return (token && safeMatch(req.get("authorization"), `Bearer ${token}`)) || isLocalAdmin(req);
+  if (token && safeMatch(auth, `Bearer ${token}`)) return true;
+  if (auth.startsWith("Bearer ks1.") && verifyStudioSessionToken(auth.slice(7))) return true;
+  const tgInitData = req.get("x-telegram-init-data");
+  if (tgInitData && verifyTelegramWebAppInitData(tgInitData)) return true;
+  return isLocalAdmin(req);
 }
 
 function requireAdmin(req, res, next) {
@@ -181,6 +253,7 @@ app.post("/api/apartments", requireAdmin, async (req, res) => {
   try {
     const created = await db.createApartment(req.body);
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
+    autoDeployService.scheduleAutoDeploy("Studio create apartment");
     res.status(201).json({
       ok: true,
       apartment: created,
@@ -197,6 +270,7 @@ app.patch("/api/apartments/:id", requireAdmin, async (req, res) => {
     const updated = await db.updateApartment(req.params.id, req.body);
     if (!updated) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated);
+    autoDeployService.scheduleAutoDeploy("Studio update apartment");
     res.json({
       ok: true,
       apartment: updated,
@@ -213,6 +287,7 @@ app.delete("/api/apartments/:id", requireAdmin, async (req, res) => {
     const deleted = await db.deleteApartment(req.params.id);
     if (!deleted) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await sheetsService.pushToGoogleSheetsWebhook("delete_apartment", { code: deleted.code });
+    autoDeployService.scheduleAutoDeploy("Studio delete apartment");
     res.json({
       ok: true,
       deleted,
@@ -725,6 +800,189 @@ app.post("/api/excel/import-leases", requireAdmin, async (req, res) => {
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
+});
+
+// 8. Private Mobile Management Studio & Executive Analytics API (Zero public exposure)
+app.post("/api/studio/auth", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const { passcode, initData } = req.body || {};
+  if (initData && verifyTelegramWebAppInitData(initData)) {
+    return res.json({ ok: true, mode: "telegram_mini_app", token: createStudioSessionToken("telegram_admin") });
+  }
+  if (isLocalAdmin(req) && !passcode && !initData) {
+    return res.json({ ok: true, mode: "local_admin", token: createStudioSessionToken("local_admin") });
+  }
+  const provided = typeof passcode === "string" ? passcode.trim() : "";
+  const expected = configuredStudioPasscode();
+  const apiToken = process.env.KIN_ADMIN_API_TOKEN;
+  if (provided && (safeMatch(provided, expected) || (apiToken && safeMatch(provided, apiToken)))) {
+    return res.json({ ok: true, mode: "passcode", token: createStudioSessionToken("passcode_admin") });
+  }
+  return res.status(403).json({ ok: false, error: "Mã khóa không chính xác." });
+});
+
+app.get("/api/studio/report", requireAdmin, async (req, res) => {
+  try {
+    const [apartments, inquiries, leases] = await Promise.all([
+      db.getApartments({ includeHidden: true }),
+      db.getInquiries(),
+      db.getLeases()
+    ]);
+
+    const codes = apartments.map((a) => a.code);
+    const contactSummaryMap = await getApartmentContactSummary(codes);
+    const now = Date.now();
+    const rate = db.getSettings().usdToVndRate || 25480;
+
+    let availableCount = 0;
+    let rentedCount = 0;
+    let reservedCount = 0;
+    let hiddenCount = 0;
+    let vacantPotentialVnd = 0;
+    let vacantPotentialUsd = 0;
+
+    const areaMap = new Map();
+    const enrichedApartments = apartments.map((apt) => {
+      const codeUpper = String(apt.code || "").toUpperCase();
+      const cs = contactSummaryMap.get(codeUpper) || { people: 0, clicks: 0, bookings: 0 };
+      const isHidden = apt.isVisible === false || apt.status === "Hidden";
+      if (isHidden) hiddenCount++;
+      else if (apt.status === "Rented") rentedCount++;
+      else if (apt.status === "Reserved") reservedCount++;
+      else {
+        availableCount++;
+        vacantPotentialVnd += Number(apt.priceVnd || 0);
+        vacantPotentialUsd += Number(apt.priceUsd || 0);
+      }
+
+      const areaKey = apt.areaName || "Khác";
+      const areaStat = areaMap.get(areaKey) || { area: areaKey, total: 0, available: 0, rented: 0, leads: 0, revenueVnd: 0 };
+      areaStat.total++;
+      if (!isHidden && apt.status === "Available") areaStat.available++;
+      if (apt.status === "Rented") {
+        areaStat.rented++;
+        areaStat.revenueVnd += Number(apt.priceVnd || 0);
+      }
+      areaStat.leads += cs.people;
+      areaMap.set(areaKey, areaStat);
+
+      return { ...apt, contactSummary: cs };
+    });
+
+    const activeLeases = leases.filter((l) => l.status !== "Ended");
+    const activeRevenueUsd = activeLeases.reduce((sum, l) => sum + Number(l.priceUsd || 0), 0);
+    const activeRevenueVnd = activeLeases.reduce(
+      (sum, l) => sum + Number(l.priceVnd || Math.round(Number(l.priceUsd || 0) * rate)),
+      0
+    );
+
+    const expiringSoonLeases = activeLeases
+      .map((l) => {
+        const end = l.endDate ? new Date(l.endDate).getTime() : NaN;
+        const daysLeft = Number.isFinite(end) ? Math.ceil((end - now) / 86400000) : null;
+        return { ...l, daysLeft };
+      })
+      .filter((l) => l.daysLeft !== null && l.daysLeft <= 45)
+      .sort((a, b) => (a.daysLeft ?? 999) - (b.daysLeft ?? 999));
+
+    const statusFunnel = { New: 0, Contacted: 0, Viewing_Scheduled: 0, Pending: 0, Confirmed: 0, Rented_Closed: 0, Cancelled: 0 };
+    const channelStats = new Map();
+    let pendingBookingsCount = 0;
+    let confirmedBookingsCount = 0;
+    let newLeadsCount = 0;
+
+    for (const inq of inquiries) {
+      if (inq.type === "owner_listing") continue;
+      const st = inq.status || "New";
+      if (statusFunnel[st] !== undefined) statusFunnel[st]++;
+      if (st === "New" && !["reservation", "booking"].includes(inq.type)) newLeadsCount++;
+      if (["reservation", "booking"].includes(inq.type)) {
+        if (["New", "Pending"].includes(st)) pendingBookingsCount++;
+        if (st === "Confirmed") confirmedBookingsCount++;
+      }
+      const ch = inq.messenger || "Khác";
+      channelStats.set(ch, (channelStats.get(ch) || 0) + 1);
+    }
+
+    const totalVisiblePool = Math.max(1, apartments.length - hiddenCount);
+    const occupancyRate = Math.round(((rentedCount + reservedCount) / totalVisiblePool) * 100);
+    const topApartments = [...enrichedApartments]
+      .sort((a, b) => (b.contactSummary.people + b.contactSummary.bookings * 2) - (a.contactSummary.people + a.contactSummary.bookings * 2))
+      .slice(0, 6);
+
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      kpi: {
+        totalApartments: apartments.length,
+        availableCount,
+        rentedCount,
+        reservedCount,
+        hiddenCount,
+        occupancyRate,
+        activeLeasesCount: activeLeases.length,
+        activeRevenueVnd,
+        activeRevenueUsd,
+        vacantPotentialVnd,
+        vacantPotentialUsd,
+        totalInquiries: inquiries.filter((i) => i.type !== "owner_listing").length,
+        newLeadsCount,
+        pendingBookingsCount,
+        confirmedBookingsCount,
+        expiringSoonCount: expiringSoonLeases.length
+      },
+      areaBreakdown: [...areaMap.values()].sort((a, b) => b.total - a.total),
+      topApartments,
+      statusFunnel,
+      channels: [...channelStats.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+      expiringSoonLeases,
+      apartments: enrichedApartments,
+      inquiries,
+      leases,
+      dbStatus: db.getDbStatus(),
+      botStatus: telegramService.getBotStatus()
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/studio/upload-photo", requireAdmin, async (req, res) => {
+  try {
+    const dataUrl = String(req.body?.dataUrl || "");
+    const match = dataUrl.match(/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/i);
+    if (!match) return res.status(400).json({ ok: false, error: "Định dạng ảnh không hợp lệ." });
+    const bytes = Buffer.from(match[1], "base64");
+    const url = await storeUploadedImageBuffer(bytes);
+    res.status(201).json({ ok: true, url });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/studio/reservations/:code/:action", requireAdmin, async (req, res) => {
+  try {
+    const action = req.params.action === "confirm" ? "confirm" : "cancel";
+    const result = await db.transitionReservation(req.params.code, action);
+    autoDeployService.scheduleAutoDeploy(`Studio reservation ${action}`);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/studio/sync-web", requireAdmin, async (req, res) => {
+  const result = await autoDeployService.syncStoreToLiveWeb("Mobile Studio manual sync");
+  res.json({ ok: true, result });
+});
+
+// Private Mobile Admin Dashboard entry (not linked anywhere on public client website)
+app.get(["/kin-studio", "/kin-studio/*"], (req, res) => {
+  res.set({
+    "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow"
+  });
+  res.sendFile(path.join(__dirname, "public", "studio-panel.html"));
 });
 
 // SPA Fallback

@@ -4,7 +4,7 @@
   "description": "KIN Estates — Da Nang Private Residences & Long-Term Apartment Rental Platform",
   "main": "server.js",
   "scripts": {
-    "build": "esbuild src/client/index.tsx --bundle --minify --outfile=public/js/bundle.js --loader:.tsx=tsx --loader:.ts=ts",
+    "build": "esbuild src/client/index.tsx --bundle --minify --outfile=public/js/bundle.js --loader:.tsx=tsx --loader:.ts=ts && esbuild src/client/studio.tsx --bundle --minify --outfile=public/js/studio.bundle.js --loader:.tsx=tsx --loader:.ts=ts",
     "start": "node server.js",
     "dev": "node server.js"
   },
