@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-type TabKey = "report" | "apartments" | "leads" | "leases";
+type TabKey = "report" | "apartments" | "leads" | "leases" | "about";
 
 interface Apartment {
   _id: string;
@@ -96,6 +96,34 @@ interface MediaItem {
   usedBy: Array<{ code: string; title: string }>;
 }
 
+interface AboutTourPhoto {
+  id: string;
+  image: string;
+  caption?: Record<string, string> | string;
+  tag?: string;
+  date?: string;
+  createdAt?: string;
+}
+
+interface AboutTestimonial {
+  id: string;
+  clientName: string;
+  subtitle?: string;
+  rating?: number;
+  quote?: Record<string, string> | string;
+  image?: string;
+  createdAt?: string;
+}
+
+interface AboutContent {
+  heroImage: string;
+  founderName: string;
+  founderQuote: Record<string, string> | string;
+  clientTourPhotos: AboutTourPhoto[];
+  testimonials: AboutTestimonial[];
+  updatedAt?: string;
+}
+
 interface ReportData {
   generatedAt: string;
   kpi: {
@@ -124,6 +152,7 @@ interface ReportData {
   apartments: Apartment[];
   inquiries: Inquiry[];
   leases: Lease[];
+  aboutContent?: AboutContent;
   dbStatus?: { mode?: string; isNativeMongoConnected?: boolean };
 }
 
@@ -418,6 +447,37 @@ function StudioApp() {
   const [mediaLoading, setMediaLoading] = useState<boolean>(false);
   const [photoUrlInput, setPhotoUrlInput] = useState<string>("");
 
+  // About Us CMS (Tour Photos + Customer Feedback + Hero/Quote)
+  const [aboutSubTab, setAboutSubTab] = useState<"photos" | "feedback" | "brand">("photos");
+  const [uploadingAbout, setUploadingAbout] = useState<boolean>(false);
+  const [tourPhotoModalOpen, setTourPhotoModalOpen] = useState<boolean>(false);
+  const [editingTourPhotoId, setEditingTourPhotoId] = useState<string | null>(null);
+  const [savingTourPhoto, setSavingTourPhoto] = useState<boolean>(false);
+  const [tourPhotoForm, setTourPhotoForm] = useState({
+    image: "",
+    caption: "",
+    tag: "Đà Nẵng · Dẫn khách xem nhà",
+    date: new Date().toISOString().slice(0, 7)
+  });
+
+  const [fbModalOpen, setFbModalOpen] = useState<boolean>(false);
+  const [editingFbId, setEditingFbId] = useState<string | null>(null);
+  const [savingFb, setSavingFb] = useState<boolean>(false);
+  const [fbForm, setFbForm] = useState({
+    clientName: "",
+    subtitle: "",
+    rating: 5,
+    quote: "",
+    image: ""
+  });
+
+  const [aboutHeroForm, setAboutHeroForm] = useState({
+    heroImage: "",
+    founderName: "",
+    founderQuote: ""
+  });
+  const [savingAboutBrand, setSavingAboutBrand] = useState<boolean>(false);
+
   // Leads filters, multi-select & CRUD modal
   const [leadSearch, setLeadSearch] = useState<string>("");
   const [leadSubTab, setLeadSubTab] = useState<"all" | "viewings" | "bookings">("all");
@@ -530,6 +590,14 @@ function StudioApp() {
       const data = await r.json();
       if (data.ok) {
         setReport(data);
+        if (data.aboutContent) {
+          const fq = data.aboutContent.founderQuote;
+          setAboutHeroForm({
+            heroImage: data.aboutContent.heroImage || "",
+            founderName: data.aboutContent.founderName || "",
+            founderQuote: typeof fq === "string" ? fq : fq?.vi || fq?.en || ""
+          });
+        }
         setAuthed(true);
         return true;
       }
@@ -1197,6 +1265,203 @@ function StudioApp() {
       setLeaseModalOpen(false);
       showToast(`Đã xóa hợp đồng ${lease.code}`);
       await loadReport();
+    }
+  };
+
+  /* ======================= ABOUT US CRUD (TOUR PHOTOS, FEEDBACK, BRAND) ======================= */
+  const viText = (val?: Record<string, string> | string) => {
+    if (!val) return "";
+    return typeof val === "string" ? val : val.vi || val.en || "";
+  };
+
+  const uploadSingleImage = async (file: File): Promise<string | null> => {
+    const dataUrl = await compressImageToDataUrl(file);
+    const r = await fetch("/api/studio/upload-photo", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ dataUrl })
+    });
+    const j = await r.json();
+    return j.ok && j.url ? j.url : null;
+  };
+
+  const handleQuickUploadTourPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploadingAbout(true);
+    try {
+      const urls: string[] = [];
+      for (const file of files.slice(0, 10)) {
+        const u = await uploadSingleImage(file);
+        if (u) urls.push(u);
+      }
+      if (urls.length) {
+        const r = await fetch("/api/studio/about/photos", {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ images: urls, tag: "Đà Nẵng · Dẫn khách xem nhà" })
+        });
+        const j = await r.json();
+        if (r.ok && j.ok) {
+          showToast(`Đã đăng ${urls.length} ảnh dẫn khách lên trang About!`);
+          await loadReport();
+        }
+      }
+    } catch {
+      showToast("Có lỗi khi tải ảnh, thử lại nhé.");
+    } finally {
+      setUploadingAbout(false);
+      e.target.value = "";
+    }
+  };
+
+  const openEditTourPhoto = (item?: AboutTourPhoto) => {
+    if (item) {
+      setEditingTourPhotoId(item.id);
+      setTourPhotoForm({
+        image: item.image || "",
+        caption: viText(item.caption),
+        tag: item.tag || "Đà Nẵng · Dẫn khách xem nhà",
+        date: item.date || new Date().toISOString().slice(0, 7)
+      });
+    } else {
+      setEditingTourPhotoId(null);
+      setTourPhotoForm({
+        image: "",
+        caption: "",
+        tag: "Đà Nẵng · Dẫn khách xem nhà",
+        date: new Date().toISOString().slice(0, 7)
+      });
+    }
+    setTourPhotoModalOpen(true);
+  };
+
+  const handleSaveTourPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tourPhotoForm.image.trim()) return showToast("Hãy tải ảnh hoặc nhập link ảnh.");
+    setSavingTourPhoto(true);
+    try {
+      const url = editingTourPhotoId
+        ? `/api/studio/about/photos/${encodeURIComponent(editingTourPhotoId)}`
+        : "/api/studio/about/photos";
+      const method = editingTourPhotoId ? "PATCH" : "POST";
+      const r = await fetch(url, {
+        method,
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(tourPhotoForm)
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được ảnh.");
+      setTourPhotoModalOpen(false);
+      showToast(editingTourPhotoId ? "Đã cập nhật ảnh & dịch 6 ngôn ngữ!" : "Đã thêm ảnh dẫn khách lên trang About!");
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setSavingTourPhoto(false);
+    }
+  };
+
+  const handleMoveTourPhoto = async (id: string, move: "left" | "right") => {
+    const r = await fetch(`/api/studio/about/photos/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ move })
+    });
+    if (r.ok) await loadReport();
+  };
+
+  const handleDeleteTourPhoto = async (id: string) => {
+    if (!window.confirm("Xóa ảnh này khỏi trang About?")) return;
+    const r = await fetch(`/api/studio/about/photos/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (r.ok) {
+      showToast("Đã xóa ảnh khỏi trang About.");
+      await loadReport();
+    }
+  };
+
+  const openFeedbackModal = (item?: AboutTestimonial) => {
+    if (item) {
+      setEditingFbId(item.id);
+      setFbForm({
+        clientName: item.clientName || "",
+        subtitle: item.subtitle || "",
+        rating: item.rating || 5,
+        quote: viText(item.quote),
+        image: item.image || ""
+      });
+    } else {
+      setEditingFbId(null);
+      setFbForm({
+        clientName: "",
+        subtitle: "",
+        rating: 5,
+        quote: "",
+        image: ""
+      });
+    }
+    setFbModalOpen(true);
+  };
+
+  const handleSaveFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fbForm.clientName.trim()) return showToast("Nhập tên khách hàng.");
+    if (!fbForm.quote.trim() && !fbForm.image.trim()) return showToast("Nhập nhận xét hoặc tải ảnh feedback.");
+    setSavingFb(true);
+    try {
+      const url = editingFbId
+        ? `/api/studio/about/testimonials/${encodeURIComponent(editingFbId)}`
+        : "/api/studio/about/testimonials";
+      const method = editingFbId ? "PATCH" : "POST";
+      const r = await fetch(url, {
+        method,
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(fbForm)
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được feedback.");
+      setFbModalOpen(false);
+      showToast(editingFbId ? "Đã cập nhật feedback & dịch 6 ngôn ngữ!" : "Đã đăng feedback lên trang About!");
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setSavingFb(false);
+    }
+  };
+
+  const handleDeleteFeedback = async (id: string) => {
+    if (!window.confirm("Xóa feedback này khỏi trang About?")) return;
+    const r = await fetch(`/api/studio/about/testimonials/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (r.ok) {
+      showToast("Đã xóa feedback.");
+      await loadReport();
+    }
+  };
+
+  const handleSaveAboutBrand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAboutBrand(true);
+    try {
+      const r = await fetch("/api/studio/about", {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(aboutHeroForm)
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được.");
+      showToast("Đã cập nhật ảnh bìa & trích dẫn trang About!");
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setSavingAboutBrand(false);
     }
   };
 
@@ -1985,6 +2250,182 @@ function StudioApp() {
             )}
           </>
         )}
+        {/* ================= TAB 5: TRANG ABOUT & ẢNH / FEEDBACK ================= */}
+        {tab === "about" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div className="st-chips" style={{ flex: 1 }}>
+                <button type="button" className={`st-chip ${aboutSubTab === "photos" ? "active" : ""}`} onClick={() => setAboutSubTab("photos")}>
+                  Ảnh dẫn khách ({report?.aboutContent?.clientTourPhotos?.length || 0})
+                </button>
+                <button type="button" className={`st-chip ${aboutSubTab === "feedback" ? "active" : ""}`} onClick={() => setAboutSubTab("feedback")}>
+                  Feedback ({report?.aboutContent?.testimonials?.length || 0})
+                </button>
+                <button type="button" className={`st-chip ${aboutSubTab === "brand" ? "active" : ""}`} onClick={() => setAboutSubTab("brand")}>
+                  Ảnh bìa & Quote
+                </button>
+              </div>
+              <a href="/about" target="_blank" rel="noreferrer" className="st-icon-circle" title="Xem trang About live">
+                <Icon.External />
+              </a>
+            </div>
+
+            {aboutSubTab === "photos" && (
+              <>
+                <div className="st-row-2">
+                  <label className="st-btn st-btn--bronze" style={{ cursor: "pointer" }}>
+                    <Icon.Plus size={15} /> {uploadingAbout ? "Đang tải..." : "Tải nhanh nhiều ảnh"}
+                    <input type="file" accept="image/*" multiple hidden onChange={handleQuickUploadTourPhotos} disabled={uploadingAbout} />
+                  </label>
+                  <button type="button" className="st-btn st-btn--primary" onClick={() => openEditTourPhoto()}>
+                    <Icon.Image size={15} /> Thêm kèm chú thích
+                  </button>
+                </div>
+
+                {(report?.aboutContent?.clientTourPhotos || []).length === 0 ? (
+                  <div className="st-empty">Chưa có ảnh dẫn khách nào. Tải ảnh từ điện thoại để hiển thị ngay trên trang About!</div>
+                ) : (
+                  (report?.aboutContent?.clientTourPhotos || []).map((item, idx, arr) => (
+                    <article key={item.id} className="st-apt-card">
+                      <div className="st-apt-top">
+                        <div className="st-apt-thumb-wrap" onClick={() => openEditTourPhoto(item)}>
+                          <img className="st-apt-thumb" src={item.image} alt="" />
+                        </div>
+                        <div className="st-apt-info">
+                          <div className="st-badge st-badge--bronze" style={{ marginBottom: 4 }}>
+                            {item.tag || "Dẫn khách xem nhà"}
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--navy)" }}>
+                            {viText(item.caption) || "(Chưa có chú thích — chạm Sửa để thêm)"}
+                          </div>
+                          <div className="st-apt-meta">{item.date || ""}</div>
+                        </div>
+                      </div>
+                      <div className="st-apt-actions">
+                        <button type="button" className="st-btn-mini" disabled={idx === 0} onClick={() => handleMoveTourPhoto(item.id, "left")}>
+                          ‹ Lên
+                        </button>
+                        <button type="button" className="st-btn-mini" disabled={idx === arr.length - 1} onClick={() => handleMoveTourPhoto(item.id, "right")}>
+                          Xuống ›
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditTourPhoto(item)}>
+                          <Icon.Edit /> Sửa
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteTourPhoto(item.id)}>
+                          <Icon.Trash /> Xóa
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </>
+            )}
+
+            {aboutSubTab === "feedback" && (
+              <>
+                <button type="button" className="st-btn st-btn--primary" onClick={() => openFeedbackModal()}>
+                  <Icon.Plus size={16} /> Thêm Feedback Khách Hàng
+                </button>
+
+                {(report?.aboutContent?.testimonials || []).length === 0 ? (
+                  <div className="st-empty">Chưa có feedback khách hàng nào.</div>
+                ) : (
+                  (report?.aboutContent?.testimonials || []).map((fb) => (
+                    <article key={fb.id} className="st-item-card">
+                      <div className="st-item-head">
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>{fb.clientName}</div>
+                          <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>{fb.subtitle}</div>
+                        </div>
+                        <span style={{ color: "#c7923e", fontSize: 12.5, fontWeight: 800 }}>
+                          {"★".repeat(Math.max(1, Math.min(5, Number(fb.rating) || 5)))}
+                        </span>
+                      </div>
+                      {viText(fb.quote) && (
+                        <div style={{ fontSize: 12.5, color: "var(--text-sub)", background: "var(--surface-soft)", padding: "8px 10px", borderRadius: 10 }}>
+                          “{viText(fb.quote)}”
+                        </div>
+                      )}
+                      {fb.image && (
+                        <img
+                          src={fb.image}
+                          alt=""
+                          style={{ width: "100%", maxHeight: 160, objectFit: "cover", borderRadius: 11, border: "1px solid var(--border)" }}
+                        />
+                      )}
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", paddingTop: 6, borderTop: "1px solid var(--border)" }}>
+                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openFeedbackModal(fb)}>
+                          <Icon.Edit /> Sửa
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteFeedback(fb.id)}>
+                          <Icon.Trash /> Xóa
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </>
+            )}
+
+            {aboutSubTab === "brand" && (
+              <form className="st-card" style={{ display: "flex", flexDirection: "column", gap: 12 }} onSubmit={handleSaveAboutBrand}>
+                <div className="st-card-head" style={{ marginBottom: 0 }}>
+                  <h2 className="st-card-title">Ảnh Bìa & Trích Dẫn Trang About</h2>
+                </div>
+                {aboutHeroForm.heroImage && (
+                  <img
+                    src={aboutHeroForm.heroImage}
+                    alt=""
+                    style={{ width: "100%", height: 175, objectFit: "cover", borderRadius: 14, border: "1px solid var(--border)" }}
+                  />
+                )}
+                <label className="st-btn st-btn--outline" style={{ cursor: "pointer" }}>
+                  <Icon.Image size={15} /> {uploadingAbout ? "Đang tải ảnh bìa..." : "Chọn ảnh bìa mới từ điện thoại"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={uploadingAbout}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingAbout(true);
+                      try {
+                        const u = await uploadSingleImage(file);
+                        if (u) {
+                          setAboutHeroForm((p) => ({ ...p, heroImage: u }));
+                          showToast("Đã tải ảnh bìa mới — bấm Lưu để cập nhật!");
+                        }
+                      } finally {
+                        setUploadingAbout(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </label>
+                <div className="st-field">
+                  <label className="st-label">Tên đội ngũ / Người đại diện</label>
+                  <input
+                    className="st-input"
+                    value={aboutHeroForm.founderName}
+                    onChange={(e) => setAboutHeroForm((p) => ({ ...p, founderName: e.target.value }))}
+                  />
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Lời trích dẫn (Viết Tiếng Việt — tự dịch 6 ngôn ngữ)</label>
+                  <textarea
+                    className="st-textarea"
+                    value={aboutHeroForm.founderQuote}
+                    onChange={(e) => setAboutHeroForm((p) => ({ ...p, founderQuote: e.target.value }))}
+                  />
+                </div>
+                <button type="submit" className="st-btn st-btn--primary" disabled={savingAboutBrand}>
+                  {savingAboutBrand ? "Đang lưu & dịch 6 ngôn ngữ..." : "Lưu Cập Nhật Trang About"}
+                </button>
+              </form>
+            )}
+          </>
+        )}
       </main>
 
       {/* FLOATING BULK ACTION BAR — APARTMENTS */}
@@ -2041,7 +2482,7 @@ function StudioApp() {
         </button>
       )}
 
-      {/* BOTTOM 4-TAB NAVIGATION */}
+      {/* BOTTOM 5-TAB NAVIGATION */}
       <nav className="st-bottom-nav" aria-label="Điều hướng quản trị">
         <button type="button" className={`st-nav-item ${tab === "report" ? "active" : ""}`} onClick={() => setTab("report")}>
           <Icon.Chart />
@@ -2053,12 +2494,16 @@ function StudioApp() {
         </button>
         <button type="button" className={`st-nav-item ${tab === "leads" ? "active" : ""}`} onClick={() => setTab("leads")}>
           <Icon.Users />
-          <span>Khách hàng</span>
+          <span>Khách</span>
           {pendingAlertCount > 0 && <span className="st-nav-dot">{pendingAlertCount}</span>}
         </button>
         <button type="button" className={`st-nav-item ${tab === "leases" ? "active" : ""}`} onClick={() => setTab("leases")}>
           <Icon.Key />
           <span>Hợp đồng</span>
+        </button>
+        <button type="button" className={`st-nav-item ${tab === "about" ? "active" : ""}`} onClick={() => setTab("about")}>
+          <Icon.Image size={20} />
+          <span>About</span>
         </button>
       </nav>
 
@@ -2810,6 +3255,179 @@ function StudioApp() {
 
               <button type="submit" className="st-btn st-btn--green" disabled={savingLease}>
                 {savingLease ? "Đang lưu..." : editingLeaseCode ? "Lưu Cập Nhật Hợp Đồng" : "Lưu Hợp Đồng & Chuyển Đã Thuê"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 7: TOUR PHOTO CREATE / EDIT ================= */}
+      {tourPhotoModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setTourPhotoModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">{editingTourPhotoId ? "Sửa Ảnh Dẫn Khách" : "Thêm Ảnh Dẫn Khách"}</h2>
+              <button type="button" className="st-close-btn" onClick={() => setTourPhotoModalOpen(false)}>✕</button>
+            </div>
+            <form className="st-sheet-body" onSubmit={handleSaveTourPhoto}>
+              {tourPhotoForm.image && (
+                <img
+                  src={tourPhotoForm.image}
+                  alt=""
+                  style={{ width: "100%", height: 185, objectFit: "cover", borderRadius: 14, border: "1px solid var(--border)" }}
+                />
+              )}
+              <label className="st-btn st-btn--outline" style={{ cursor: "pointer" }}>
+                <Icon.Image size={15} /> {uploadingAbout ? "Đang tải ảnh..." : tourPhotoForm.image ? "Đổi ảnh khác từ ĐT" : "Chọn ảnh từ điện thoại"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={uploadingAbout}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingAbout(true);
+                    try {
+                      const u = await uploadSingleImage(file);
+                      if (u) setTourPhotoForm((p) => ({ ...p, image: u }));
+                    } finally {
+                      setUploadingAbout(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+
+              <div className="st-field">
+                <label className="st-label">Nhãn khu vực / hoạt động</label>
+                <input
+                  className="st-input"
+                  placeholder="VD: An Thượng · Dẫn khách xem nhà"
+                  value={tourPhotoForm.tag}
+                  onChange={(e) => setTourPhotoForm((p) => ({ ...p, tag: e.target.value }))}
+                />
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Chú thích ảnh (Viết Tiếng Việt — tự dịch 6 ngôn ngữ)</label>
+                <textarea
+                  className="st-textarea"
+                  placeholder="VD: Bàn giao chìa khóa căn hộ 2PN view sông Hàn cho khách Nhật..."
+                  value={tourPhotoForm.caption}
+                  onChange={(e) => setTourPhotoForm((p) => ({ ...p, caption: e.target.value }))}
+                />
+              </div>
+
+              <button type="submit" className="st-btn st-btn--primary" disabled={savingTourPhoto}>
+                {savingTourPhoto ? "Đang lưu & dịch 6 ngôn ngữ..." : editingTourPhotoId ? "Lưu Cập Nhật Ảnh" : "Đăng Ảnh Lên Trang About"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 8: CUSTOMER FEEDBACK CREATE / EDIT ================= */}
+      {fbModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setFbModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">{editingFbId ? "Sửa Feedback Khách Hàng" : "Thêm Feedback Khách Hàng"}</h2>
+              <button type="button" className="st-close-btn" onClick={() => setFbModalOpen(false)}>✕</button>
+            </div>
+            <form className="st-sheet-body" onSubmit={handleSaveFeedback}>
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Tên khách hàng *</label>
+                  <input
+                    className="st-input"
+                    placeholder="VD: Alex & Sarah"
+                    value={fbForm.clientName}
+                    onChange={(e) => setFbForm((p) => ({ ...p, clientName: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Căn hộ / Thời hạn</label>
+                  <input
+                    className="st-input"
+                    placeholder="VD: The Panoma 2 · 12 tháng"
+                    value={fbForm.subtitle}
+                    onChange={(e) => setFbForm((p) => ({ ...p, subtitle: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Số sao đánh giá</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className={`st-chip ${fbForm.rating >= star ? "active" : ""}`}
+                      style={{ flex: 1, justifyContent: "center" }}
+                      onClick={() => setFbForm((p) => ({ ...p, rating: star }))}
+                    >
+                      {star} ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Nội dung đánh giá (Viết Tiếng Việt — tự dịch 6 ngôn ngữ)</label>
+                <textarea
+                  className="st-textarea"
+                  placeholder="Khách khen đội ngũ hỗ trợ tận tâm, căn hộ đúng ảnh..."
+                  value={fbForm.quote}
+                  onChange={(e) => setFbForm((p) => ({ ...p, quote: e.target.value }))}
+                />
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Ảnh khách / Ảnh chụp màn hình feedback (Tùy chọn)</label>
+                {fbForm.image && (
+                  <div style={{ position: "relative" }}>
+                    <img
+                      src={fbForm.image}
+                      alt=""
+                      style={{ width: "100%", maxHeight: 170, objectFit: "cover", borderRadius: 12, border: "1px solid var(--border)" }}
+                    />
+                    <button
+                      type="button"
+                      className="st-photo-del"
+                      onClick={() => setFbForm((p) => ({ ...p, image: "" }))}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                <label className="st-btn st-btn--outline" style={{ cursor: "pointer" }}>
+                  <Icon.Image size={15} /> {uploadingAbout ? "Đang tải ảnh..." : fbForm.image ? "Đổi ảnh feedback" : "Tải ảnh chụp màn hình / ảnh khách"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={uploadingAbout}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingAbout(true);
+                      try {
+                        const u = await uploadSingleImage(file);
+                        if (u) setFbForm((p) => ({ ...p, image: u }));
+                      } finally {
+                        setUploadingAbout(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              <button type="submit" className="st-btn st-btn--primary" disabled={savingFb}>
+                {savingFb ? "Đang lưu & dịch 6 ngôn ngữ..." : editingFbId ? "Lưu Cập Nhật Feedback" : "Đăng Feedback Lên Trang About"}
               </button>
             </form>
           </div>

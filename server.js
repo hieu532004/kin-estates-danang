@@ -587,7 +587,9 @@ app.get("/api/telegram/media/:mediaId", async (req, res) => {
   const { mediaId } = req.params;
   if (!MEDIA_ID.test(mediaId)) return photoUnavailable(res);
   try {
-    if (!await db.hasPublicApartmentPhoto([`/api/telegram/media/${mediaId}`])) return photoUnavailable(res);
+    const mediaUrl = `/api/telegram/media/${mediaId}`;
+    const allowed = (await db.hasPublicApartmentPhoto([mediaUrl])) || (await db.hasPublicSiteMedia([mediaUrl]));
+    if (!allowed) return photoUnavailable(res);
     const photo = await getStoredTelegramPhoto(mediaId);
     return photo ? sendTelegramPhoto(res, photo) : photoUnavailable(res);
   } catch {
@@ -885,10 +887,11 @@ app.post("/api/studio/auth", studioAuthRateLimit, async (req, res) => {
 
 app.get("/api/studio/report", requireAdmin, async (req, res) => {
   try {
-    const [apartments, inquiries, leases] = await Promise.all([
+    const [apartments, inquiries, leases, aboutContent] = await Promise.all([
       db.getApartments({ includeHidden: true }),
       db.getInquiries(),
-      db.getLeases()
+      db.getLeases(),
+      db.getAboutContent()
     ]);
 
     const codes = apartments.map((a) => a.code);
@@ -1014,6 +1017,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
       apartments: enrichedApartments,
       inquiries,
       leases,
+      aboutContent,
       dbStatus: db.getDbStatus(),
       botStatus: telegramService.getBotStatus()
     });
@@ -1196,17 +1200,29 @@ app.post("/api/studio/inquiries/bulk", requireAdmin, async (req, res) => {
 // Cloud Photo Gallery CRUD (MongoDB Atlas telegram_media)
 app.get("/api/studio/media", requireAdmin, async (req, res) => {
   try {
-    const [photos, apartments] = await Promise.all([
+    const [photos, apartments, about] = await Promise.all([
       listStoredTelegramPhotos(),
-      db.getApartments({ includeHidden: true })
+      db.getApartments({ includeHidden: true }),
+      db.getAboutContent()
     ]);
     const usageMap = new Map();
+    const markUse = (img, label) => {
+      if (!img) return;
+      const list = usageMap.get(img) || [];
+      list.push(label);
+      usageMap.set(img, list);
+    };
     for (const apt of apartments) {
       for (const img of apt.images || []) {
-        const list = usageMap.get(img) || [];
-        list.push({ code: apt.code, title: apt.title?.vi || apt.title?.en || apt.code });
-        usageMap.set(img, list);
+        markUse(img, { code: apt.code, title: apt.title?.vi || apt.title?.en || apt.code });
       }
+    }
+    if (about.heroImage) markUse(about.heroImage, { code: "ABOUT", title: "Ảnh bìa trang About" });
+    for (const p of about.clientTourPhotos || []) {
+      markUse(p.image, { code: "ABOUT", title: "Ảnh dẫn khách" });
+    }
+    for (const t of about.testimonials || []) {
+      if (t.image) markUse(t.image, { code: "FEEDBACK", title: `Feedback: ${t.clientName}` });
     }
     const items = photos.map((p) => ({
       ...p,
@@ -1245,8 +1261,196 @@ app.delete("/api/studio/media/:mediaId", requireAdmin, async (req, res) => {
         await db.updateApartment(apt.code, { images: nextImages });
       }
     }
+    await db.removeSiteMediaUrl(targetUrl);
     await deleteStoredTelegramPhoto(mediaId);
     res.json({ ok: true, deletedId: mediaId });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Public & Admin CRUD for About Us (Client Tour Photos, Customer Feedback, Hero & Quote)
+async function translateTextAllLangs(rawText) {
+  const clean = String(rawText || "").trim();
+  const base = { vi: clean, en: clean, zh: clean, ru: clean, ko: clean, ja: clean };
+  if (!clean) return base;
+  try {
+    const results = await Promise.all(
+      translationService.TARGET_LANGS.map(async (lang) => {
+        const [tr] = await translationService.translateBatch([clean], lang);
+        return [lang, tr || clean];
+      })
+    );
+    for (const [lang, val] of results) base[lang] = val;
+  } catch {
+    // Keep Vietnamese fallback if translation fails
+  }
+  return base;
+}
+
+app.get("/api/site-content/about", async (req, res) => {
+  try {
+    const about = await db.getAboutContent();
+    res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
+    res.json({ ok: true, about });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/studio/about", requireAdmin, async (req, res) => {
+  try {
+    const about = await db.getAboutContent();
+    res.set("Cache-Control", "no-store").json({ ok: true, about });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.patch("/api/studio/about", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const { heroImage, founderName, founderQuote } = req.body || {};
+    if (typeof heroImage === "string" && heroImage.trim()) current.heroImage = heroImage.trim();
+    if (typeof founderName === "string" && founderName.trim()) current.founderName = founderName.trim();
+    if (typeof founderQuote === "string" && founderQuote.trim()) {
+      current.founderQuote = await translateTextAllLangs(founderQuote);
+    }
+    const saved = await db.saveAboutContent(current);
+    res.json({ ok: true, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/studio/about/photos", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const { image, images, caption, tag, date } = req.body || {};
+    const urls = Array.isArray(images) && images.length ? images : image ? [image] : [];
+    const cleanUrls = urls.map((u) => String(u || "").trim()).filter(Boolean);
+    if (!cleanUrls.length) return res.status(400).json({ ok: false, error: "Chưa có ảnh nào được chọn." });
+
+    const translatedCaption = caption ? await translateTextAllLangs(caption) : { vi: "", en: "", zh: "", ru: "", ko: "", ja: "" };
+    const created = cleanUrls.map((url, idx) => ({
+      id: `tour-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+      image: url,
+      caption: translatedCaption,
+      tag: String(tag || "Đà Nẵng · Dẫn khách xem nhà").trim(),
+      date: String(date || new Date().toISOString().slice(0, 7)).trim(),
+      createdAt: new Date().toISOString()
+    }));
+    current.clientTourPhotos = [...created, ...(current.clientTourPhotos || [])];
+    const saved = await db.saveAboutContent(current);
+    res.status(201).json({ ok: true, created, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.patch("/api/studio/about/photos/:id", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const list = [...(current.clientTourPhotos || [])];
+    const idx = list.findIndex((p) => p.id === req.params.id);
+    if (idx < 0) return res.status(404).json({ ok: false, error: "Không tìm thấy ảnh." });
+
+    const { caption, tag, date, image, move } = req.body || {};
+    if (move === "left" && idx > 0) {
+      [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
+    } else if (move === "right" && idx < list.length - 1) {
+      [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]];
+    } else {
+      const target = { ...list[idx] };
+      if (typeof image === "string" && image.trim()) target.image = image.trim();
+      if (typeof tag === "string") target.tag = tag.trim();
+      if (typeof date === "string") target.date = date.trim();
+      if (typeof caption === "string") target.caption = await translateTextAllLangs(caption);
+      list[idx] = target;
+    }
+    current.clientTourPhotos = list;
+    const saved = await db.saveAboutContent(current);
+    res.json({ ok: true, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/studio/about/photos/:id", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const before = (current.clientTourPhotos || []).length;
+    current.clientTourPhotos = (current.clientTourPhotos || []).filter((p) => p.id !== req.params.id);
+    if (current.clientTourPhotos.length === before) {
+      return res.status(404).json({ ok: false, error: "Không tìm thấy ảnh." });
+    }
+    const saved = await db.saveAboutContent(current);
+    res.json({ ok: true, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/studio/about/testimonials", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const { clientName, subtitle, rating, quote, image } = req.body || {};
+    if (!String(clientName || "").trim()) return res.status(400).json({ ok: false, error: "Vui lòng nhập tên khách hàng." });
+    if (!String(quote || "").trim() && !String(image || "").trim()) {
+      return res.status(400).json({ ok: false, error: "Vui lòng nhập nội dung nhận xét hoặc tải ảnh feedback." });
+    }
+    const translatedQuote = await translateTextAllLangs(quote || "");
+    const item = {
+      id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      clientName: String(clientName).trim(),
+      subtitle: String(subtitle || "Khách thuê KIN Estates Đà Nẵng").trim(),
+      rating: Math.max(1, Math.min(5, Number(rating) || 5)),
+      quote: translatedQuote,
+      image: String(image || "").trim(),
+      createdAt: new Date().toISOString()
+    };
+    current.testimonials = [item, ...(current.testimonials || [])];
+    const saved = await db.saveAboutContent(current);
+    res.status(201).json({ ok: true, item, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.patch("/api/studio/about/testimonials/:id", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const list = [...(current.testimonials || [])];
+    const idx = list.findIndex((t) => t.id === req.params.id);
+    if (idx < 0) return res.status(404).json({ ok: false, error: "Không tìm thấy feedback." });
+
+    const target = { ...list[idx] };
+    const { clientName, subtitle, rating, quote, image } = req.body || {};
+    if (typeof clientName === "string" && clientName.trim()) target.clientName = clientName.trim();
+    if (typeof subtitle === "string") target.subtitle = subtitle.trim();
+    if (rating !== undefined) target.rating = Math.max(1, Math.min(5, Number(rating) || 5));
+    if (typeof image === "string") target.image = image.trim();
+    if (typeof quote === "string") target.quote = await translateTextAllLangs(quote);
+    list[idx] = target;
+
+    current.testimonials = list;
+    const saved = await db.saveAboutContent(current);
+    res.json({ ok: true, item: target, about: saved });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/studio/about/testimonials/:id", requireAdmin, async (req, res) => {
+  try {
+    const current = await db.getAboutContent();
+    const before = (current.testimonials || []).length;
+    current.testimonials = (current.testimonials || []).filter((t) => t.id !== req.params.id);
+    if (current.testimonials.length === before) {
+      return res.status(404).json({ ok: false, error: "Không tìm thấy feedback." });
+    }
+    const saved = await db.saveAboutContent(current);
+    res.json({ ok: true, about: saved });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }

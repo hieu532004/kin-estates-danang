@@ -1606,6 +1606,157 @@ function getNeighborhoods() {
   return store.neighborhoods || neighborhoods;
 }
 
+const DEFAULT_ABOUT_CONTENT = {
+  heroImage: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85",
+  founderName: "Đội ngũ KIN Estates Đà Nẵng",
+  founderQuote: {
+    vi: "Tìm một căn hộ không chỉ là chọn bốn bức tường đẹp — mà là có một người bản địa đáng tin cậy đồng hành cùng bạn từ buổi xem nhà đầu tiên cho đến suốt thời gian an cư tại Đà Nẵng.",
+    en: "Finding a home is about more than choosing a nice space — it's about having reliable local people by your side from the very first viewing to everyday life in Da Nang.",
+    zh: "找房不仅是选择一处漂亮的空间，更是在岘港拥有值得信赖的本地伙伴，从第一次看房到日常安居全程相伴。",
+    ru: "Поиск жилья — это больше, чем выбор красивой квартиры. Это надежные люди рядом с вами от первого просмотра до повседневных вопросов в Дананге.",
+    ko: "집을 찾는 것은 단순히 예쁜 공간을 고르는 일이 아니라, 첫 투어부터 다낭에서의 일상까지 믿고 의지할 수 있는 현지 파트너와 함께하는 것입니다.",
+    ja: "住まい探しは素敵な空間を選ぶだけではなく、最初の内覧からダナンでの日々の暮らしまで頼れる現地パートナーがそばにいることです。"
+  },
+  clientTourPhotos: [
+    {
+      id: "tour-default-1",
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=82",
+      caption: {
+        vi: "Bàn giao căn hộ 2PN hướng sông Hàn cho khách hàng chuyên gia quốc tế",
+        en: "Key handover for a 2BR Han Riverfront apartment with international remote professionals",
+        zh: "为国际远程办公客户交接汉江景两居室公寓",
+        ru: "Передача ключей от 2-комнатной квартиры с видом на реку Хан",
+        ko: "한강 뷰 2베드룸 아파트 입주 키 전달 및 현장 점검",
+        ja: "ハン川ビューの2ベッドルーム物件の鍵引き渡し"
+      },
+      tag: "Ven sông Hàn · Bàn giao nhà",
+      date: "2026-11",
+      createdAt: "2026-11-15T09:00:00.000Z"
+    },
+    {
+      id: "tour-default-2",
+      image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1000&q=82",
+      caption: {
+        vi: "Dẫn khách xem trực tiếp căn hộ ban công rộng khu biển Mỹ Khê — An Thượng",
+        en: "In-person viewing tour at a spacious balcony residence near My Khe Beach & An Thuong",
+        zh: "实地带客户看房：美溪海滩安上区宽敞阳台公寓",
+        ru: "Личный просмотр просторной квартиры с балконом в районе Ан Тхыонг",
+        ko: "미케 비치 안트엉 지역 넓은 발코니 레지던스 현장 투어",
+        ja: "ミーケービーチ・アントゥオンエリアのバルコニー付き物件内覧"
+      },
+      tag: "An Thượng · Dẫn khách xem nhà",
+      date: "2026-11",
+      createdAt: "2026-11-18T09:00:00.000Z"
+    }
+  ],
+  testimonials: [
+    {
+      id: "fb-default-1",
+      clientName: "Alex & Sarah",
+      subtitle: "The Panoma 2 · Hợp đồng 12 tháng",
+      rating: 5,
+      quote: {
+        vi: "Đội ngũ KIN Estates cực kỳ tận tâm. Chúng tôi chỉ gửi nhu cầu qua Telegram, hôm sau đã đi xem 4 căn đúng ý, ký hợp đồng song ngữ rõ ràng và được hỗ trợ đăng ký tạm trú ngay trong ngày.",
+        en: "The KIN Estates team made moving to Da Nang effortless. We messaged on Telegram, toured 4 spot-on apartments the very next day, signed a clear bilingual lease, and had our residency registration done the same afternoon.",
+        zh: "KIN Estates 团队非常专业贴心。通过 Telegram 沟通需求后，第二天就看了4套完全符合要求的房子，双语合同清晰透明，当天就帮我们办好了暂住登记。",
+        ru: "Команда KIN Estates сделала переезд в Дананг максимально простым. На следующий день посмотрели 4 отличные квартиры, подписали понятный двуязычный договор и сразу оформили регистрацию.",
+        ko: "KIN Estates 팀 덕분에 다낭 정착이 정말 수월했습니다. 텔레그램으로 문의한 다음 날 딱 맞는 집 4곳을 보고, 투명한 이중언어 계약과 거주 등록까지 하루 만에 마쳤습니다.",
+        ja: "KIN Estatesのスタッフはとても親切でした。Telegramで希望を伝えた翌日に理想通りの4件を内覧でき、明確なバイリンガル契約と滞在登録まで当日中に完了しました。"
+      },
+      image: "",
+      createdAt: "2026-11-10T09:00:00.000Z"
+    },
+    {
+      id: "fb-default-2",
+      clientName: "Min-Jun Park",
+      subtitle: "The Filmore Đà Nẵng · Hợp đồng 6 tháng",
+      rating: 5,
+      quote: {
+        vi: "Ảnh trên web sao ngoài đời đúng y như vậy, không bị báo giá ảo hay dẫn đi xem căn không liên quan. Đặc biệt các bạn đo sẵn tốc độ Wi-Fi và kiểm tra ánh sáng bàn làm việc rất kỹ.",
+        en: "Every photo matched reality — zero fake listings or wasted viewings. They even checked the fiber Wi-Fi speed and desk lighting beforehand since I work remotely full-time.",
+        zh: "网站上的照片与实地完全一致，没有任何虚假报价或浪费时间的看房。他们还提前测好了光纤网速和书桌采光，非常适合远程办公。",
+        ru: "Все фото на 100% соответствуют реальности, никаких фейковых цен. Ребята даже заранее проверили скорость интернета и свет у рабочего стола.",
+        ko: "웹사이트 사진과 실제 집이 100% 똑같아서 믿음이 갔습니다. 원격근무 때문에 와이파이 속도와 책상 채광을 미리 확인해 주신 점이 특히 감동이었어요.",
+        ja: "写真と実際の部屋が100%一致していて安心できました。リモートワーク用にWi-Fi速度やデスクの明るさまで事前に確認してくれました。"
+      },
+      image: "",
+      createdAt: "2026-11-14T09:00:00.000Z"
+    }
+  ],
+  updatedAt: "2026-11-23T00:00:00.000Z"
+};
+
+function normalizeAboutContent(raw) {
+  const src = raw && typeof raw === "object" ? raw : {};
+  return {
+    heroImage: typeof src.heroImage === "string" && src.heroImage.trim() ? src.heroImage.trim() : DEFAULT_ABOUT_CONTENT.heroImage,
+    founderName: typeof src.founderName === "string" && src.founderName.trim() ? src.founderName.trim() : DEFAULT_ABOUT_CONTENT.founderName,
+    founderQuote: src.founderQuote && typeof src.founderQuote === "object" ? src.founderQuote : DEFAULT_ABOUT_CONTENT.founderQuote,
+    clientTourPhotos: Array.isArray(src.clientTourPhotos) ? src.clientTourPhotos : DEFAULT_ABOUT_CONTENT.clientTourPhotos,
+    testimonials: Array.isArray(src.testimonials) ? src.testimonials : DEFAULT_ABOUT_CONTENT.testimonials,
+    updatedAt: src.updatedAt || new Date().toISOString()
+  };
+}
+
+async function getAboutContent() {
+  const col = getTelegramCollection("site_content");
+  if (col) {
+    const doc = await col.findOne({ _id: "about" });
+    if (doc) return normalizeAboutContent(doc);
+  }
+  if (store.siteContent?.about) {
+    return normalizeAboutContent(store.siteContent.about);
+  }
+  return normalizeAboutContent(DEFAULT_ABOUT_CONTENT);
+}
+
+async function saveAboutContent(nextContent) {
+  const normalized = normalizeAboutContent({ ...nextContent, updatedAt: new Date().toISOString() });
+  const col = getTelegramCollection("site_content");
+  if (col) {
+    await col.updateOne({ _id: "about" }, { $set: normalized }, { upsert: true });
+  }
+  store.siteContent = { ...(store.siteContent || {}), about: normalized };
+  saveJsonStore();
+  return normalized;
+}
+
+async function hasPublicSiteMedia(urls) {
+  const targets = new Set((urls || []).filter(Boolean));
+  if (!targets.size) return false;
+  const about = await getAboutContent();
+  if (targets.has(about.heroImage)) return true;
+  if ((about.clientTourPhotos || []).some((p) => targets.has(p.image))) return true;
+  if ((about.testimonials || []).some((t) => targets.has(t.image))) return true;
+  return false;
+}
+
+async function removeSiteMediaUrl(url) {
+  if (!url) return;
+  const about = await getAboutContent();
+  let changed = false;
+  if (about.heroImage === url) {
+    about.heroImage = DEFAULT_ABOUT_CONTENT.heroImage;
+    changed = true;
+  }
+  const nextPhotos = (about.clientTourPhotos || []).filter((p) => p.image !== url);
+  if (nextPhotos.length !== (about.clientTourPhotos || []).length) {
+    about.clientTourPhotos = nextPhotos;
+    changed = true;
+  }
+  const nextReviews = (about.testimonials || []).map((t) => {
+    if (t.image === url) {
+      changed = true;
+      return { ...t, image: "" };
+    }
+    return t;
+  });
+  if (changed) {
+    about.testimonials = nextReviews;
+    await saveAboutContent(about);
+  }
+}
+
 function getSettings() {
   return {
     ...store.settings,
@@ -1711,6 +1862,10 @@ module.exports = {
   setTelegramSession,
   getBuildings,
   getNeighborhoods,
+  getAboutContent,
+  saveAboutContent,
+  hasPublicSiteMedia,
+  removeSiteMediaUrl,
   getSettings,
   updateSettings,
   appendBotHistory,

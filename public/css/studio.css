@@ -827,7 +827,7 @@ svg {
   border: 1px solid rgba(252, 165, 165, 0.25);
 }
 
-/* Bottom Floating Navigation (4 Clean Tabs) */
+/* Bottom Floating Navigation (5 Clean Tabs) */
 .st-bottom-nav {
   position: fixed;
   bottom: 0;
@@ -839,10 +839,10 @@ svg {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
-  padding: 7px 10px calc(7px + var(--safe-bottom));
+  padding: 7px 6px calc(7px + var(--safe-bottom));
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
   z-index: 80;
   box-shadow: 0 -6px 24px rgba(18, 23, 29, 0.06);
 }

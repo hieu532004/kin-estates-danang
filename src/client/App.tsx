@@ -640,7 +640,14 @@ export const App: React.FC = () => {
   const [photoSelection, setPhotoSelection] = useState<{ code: string; source: string; index: number }>();
   const [activeGuideModal, setActiveGuideModal] = useState<typeof GUIDES_DATA[0] | null>(null);
   const [policyAgreed, setPolicyAgreed] = useState<boolean>(true);
-  const [policyDrawerOpen, setPolicyDrawerOpen] = useState<boolean>(false);
+  const [aboutContent, setAboutContent] = useState<{
+    heroImage?: string;
+    founderName?: string;
+    founderQuote?: Record<string, string>;
+    clientTourPhotos?: Array<{ id: string; image: string; caption?: Record<string, string> | string; tag?: string; date?: string }>;
+    testimonials?: Array<{ id: string; clientName: string; subtitle?: string; rating?: number; quote?: Record<string, string> | string; image?: string }>;
+  } | null>(null);
+  const [aboutLightbox, setAboutLightbox] = useState<{ src: string; caption?: string; sub?: string } | null>(null);
   const [detailPageOtherFilter, setDetailPageOtherFilter] = useState<string>("all");
 
   // Home Section 01 & 02 State
@@ -706,6 +713,10 @@ export const App: React.FC = () => {
     fetch("/api/neighborhoods", { signal })
       .then((response) => readPublicList<NeighborhoodInfo>(response, "neighborhoods"))
       .then((list) => { if (!signal.aborted) setNeighborhoods(list); })
+      .catch(() => {});
+    fetch("/api/site-content/about", { signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (!signal.aborted && data?.ok && data.about) setAboutContent(data.about); })
       .catch(() => {});
     return () => controller.abort();
   }, []);
@@ -1718,7 +1729,6 @@ export const App: React.FC = () => {
     setApartmentInquiryType("viewing");
     setApartmentInquiryState("idle");
     setPolicyAgreed(true);
-    setPolicyDrawerOpen(false);
     setInquiryApartmentCode(apt.code);
   };
 
@@ -4141,44 +4151,58 @@ export const App: React.FC = () => {
       )}
 
       {/* ====================================================================
-          PAGE 6: VỀ CHÚNG TÔI (/about) — 100% 6-LANGUAGE SYNCHRONIZED
+          PAGE 6: VỀ CHÚNG TÔI (/about) — EDITORIAL + ADMIN-MANAGED GALLERY & FEEDBACK
           ==================================================================== */}
-      {route === "/about" && (
+      {route.replace(/\/+$/, "") === "/about" && (() => {
+        const locText = (v?: Record<string, string> | string) => {
+          if (!v) return "";
+          if (typeof v === "string") return v;
+          return v[lang] || v.vi || v.en || "";
+        };
+        const heroPhoto = aboutContent?.heroImage || "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85";
+        const tourPhotos = aboutContent?.clientTourPhotos || [];
+        const testimonials = aboutContent?.testimonials || [];
+        const liveAvail = apartments.filter((a) => a.status === "Available");
+        const pricesUsd = liveAvail.map((a) => Number(a.priceUsd || 0)).filter((n) => n > 0);
+        const minUsd = pricesUsd.length ? Math.min(...pricesUsd) : 450;
+        const maxUsd = pricesUsd.length ? Math.max(...pricesUsd) : 2000;
+        return (
         <main className="page-route">
           <div className="page-container">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "2.5rem", alignItems: "center", marginBottom: "3rem" }}>
+            {/* Editorial Hero */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "2.5rem", alignItems: "center", marginBottom: "3.25rem" }}>
               <div>
                 <span className="eyebrow-badge">
-                  {tx("VỀ KIN ESTATES — DA NANG CURATED LIVING", "ABOUT KIN ESTATES — DA NANG CURATED LIVING", "关于 KIN ESTATES — 岘港精选长租平台", "О KIN ESTATES — КУРИРУЕМАЯ АРЕНДА В ДАНАНГЕ", "KIN ESTATES 소개 — 다낭 큐레이션 레지던스", "KIN ESTATESについて — ダナン厳選レジデンス")}
+                  {tx("VỀ KIN ESTATES — ĐÀ NẴNG", "ABOUT KIN ESTATES — DA NANG", "关于 KIN ESTATES — 岘港", "О KIN ESTATES — ДАНАНГ", "KIN ESTATES 소개 — 다낭", "KIN ESTATESについて — ダナン")}
                 </span>
                 <h1 className="section-heading-serif" style={{ marginBottom: "0.85rem" }}>
                   {tx(
-                    "Hiểu thành phố. Chú trọng từng chi tiết không gian sống.",
-                    "We Know the City. We Audit Every Architectural Detail.",
-                    "深耕岘港城市脉络，严苛把控每一处居住细节。",
-                    "Мы знаем город и проверяем каждую деталь пространства.",
-                    "다낭을 깊이 이해하고, 공간의 모든 디테일을 직접 검증합니다.",
-                    "街を深く知り、住空間のあらゆるディテールを現地で検証します。"
+                    "Hiểu thành phố. Chú trọng từng chi tiết.",
+                    "Know the city. Notice the details.",
+                    "了解这座城市，留意每一处细节。",
+                    "Знаем город. Замечаем детали.",
+                    "도시를 이해하고, 모든 디테일을 살핍니다.",
+                    "街を知り、細部に目を配る。"
                   )}
                 </h1>
-                <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: "1rem", lineHeight: 1.7, marginBottom: "1rem" }}>
                   {tx(
-                    "Sau bức ảnh đẹp là cuộc sống mỗi ngày. KIN Estates không cố gắng đăng hàng ngàn tin rao đại trà—mỗi căn hộ đều được đội ngũ tại Đà Nẵng trực tiếp mở cửa kiểm tra ánh sáng ban ngày, độ ồn xung quanh, bàn làm việc và sự minh bạch của chủ nhà.",
-                    "Behind every photo is your daily life. KIN Estates never floods you with unverified listings—every apartment is physically inspected by our Da Nang team for natural daylight, acoustic quietness, ergonomic work desks, and landlord reliability.",
-                    "精美照片背后是真实的日常生活。KIN Estates 绝不发布海量未核验房源——每一套公寓均由岘港本地团队实地开门检测白天采光、周边隔音、办公桌舒适度及房东信誉。",
-                    "За красивыми фото стоит ваша ежедневная жизнь. KIN Estates лично проверяет каждую квартиру в Дананге: дневной свет, тишину, рабочий стол и надежность собственника.",
-                    "아름다운 사진 뒤에는 매일의 일상이 있습니다. KIN Estates는 무분별한 허위 매물 대신 다낭 현지 팀이 직접 방문하여 채광, 소음, 업무 데스크, 집주인의 신뢰도를 검증한 매물만 소개합니다.",
-                    "美しい写真の先にある毎日の暮らし。KIN Estatesは未確認の物件を大量掲載せず、ダナン現地チームが自然光・防音・ワークデスク・オーナーの信頼性を直接確認したお部屋のみをご紹介します。"
+                    "Trước tiên, chúng tôi lắng nghe nơi bạn làm việc, dạo bộ và thư giãn mỗi tối — rồi mới bắt đầu tìm căn hộ phù hợp. Sau bức ảnh đẹp là cuộc sống mỗi ngày.",
+                    "First we ask where you will work, walk, and spend your evenings — then we look for the apartment. Beyond every beautiful photo is everyday life.",
+                    "首先我们会了解您平时在哪里办公、散步与度过夜晚，然后再为您寻找合适的公寓。精美照片背后，是真实的日常生活。",
+                    "Сначала мы узнаём, где вы работаете, гуляете и проводите вечера — и только потом подбираем квартиру. За красивыми фото стоит повседневная жизнь.",
+                    "먼저 당신이 어디서 일하고 산책하며 저녁을 보낼지 여쭤본 뒤 집을 찾습니다. 멋진 사진 너머에는 매일의 일상이 있습니다.",
+                    "まずあなたがどこで働き、歩き、夜を過ごすのかを伺ってから住まいを探します。美しい写真の先にあるのは毎日の暮らしです。"
                   )}
                 </p>
-                <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", lineHeight: 1.7, marginBottom: "1.5rem" }}>
                   {tx(
-                    "Dù bạn chuyển đến Đà Nẵng để làm việc từ xa 6 tháng hay định cư lâu dài cùng gia đình, chúng tôi đồng hành đa ngôn ngữ (Việt, Anh, Trung, Nga, Hàn, Nhật) từ lúc chọn khu phố cho đến khi hoàn tất đăng ký tạm trú.",
-                    "Whether you're relocating to Da Nang for a 6-month remote work chapter or moving long-term with family, our multilingual team (VI, EN, ZH, RU, KO, JA) supports you from neighborhood selection to police registration.",
-                    "无论您来岘港远程办公半年还是携家人长期定居，我们的六语团队（越、英、中、俄、韩、日）从街区选择到暂住登记全程陪伴。",
-                    "Переезжаете ли вы на 6 месяцев для удаленной работы или с семьей на год — наша команда (VI, EN, ZH, RU, KO, JA) поможет от выбора района до регистрации.",
-                    "6개월 워케이션부터 가족 단위 장기 정착까지, 6개 국어 전담팀이 지역 선택부터 공안 거주 등록까지 전 과정을 함께합니다.",
-                    "半年間のリモートワークからご家族での長期移住まで、6ヶ国語対応チームがエリア選びから滞在登録までサポートします。"
+                    "KIN Estates chuyên căn hộ, penthouse và biệt thự cho thuê dài hạn (3–12+ tháng) tại Đà Nẵng. Chúng tôi làm việc trực tiếp với chủ nhà, dẫn bạn xem nhà tận nơi và đồng hành suốt thời gian thuê bằng 6 ngôn ngữ (VI · EN · 中文 · RU · KO · JA).",
+                    "KIN Estates specializes in long-term apartments, penthouses, and private villas (3–12+ months) in Da Nang. We deal directly with owners, run viewings in person, and support you throughout your lease in 6 languages (VI · EN · ZH · RU · KO · JA).",
+                    "KIN Estates 专注岘港 3–12个月以上长期公寓与别墅租赁。我们直接对接房东、亲自陪同看房，并提供六语全程租期支持。",
+                    "KIN Estates специализируется на долгосрочной аренде (от 3 до 12+ месяцев) в Дананге. Мы работаем напрямую с собственниками, проводим личные просмотры и остаёмся на связи весь срок аренды.",
+                    "KIN Estates는 다낭 3~12개월 이상 장기 임대 전문 에이전시입니다. 임대인과 직접 소통하고 현장 투어부터 계약 기간 내내 6개 국어로 함께합니다.",
+                    "KIN Estatesはダナンの3〜12ヶ月以上の長期賃貸専門です。オーナー様と直接やり取りし、現地内覧からご入居期間中まで6ヶ国語でサポートします。"
                   )}
                 </p>
                 <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -4186,75 +4210,234 @@ export const App: React.FC = () => {
                     <span>{tx("Khám phá danh mục căn hộ →", "Explore Residences →", "浏览精选房源 →", "Смотреть квартиры →", "전체 매물 둘러보기 →", "物件一覧を見る →")}</span>
                   </button>
                   <button type="button" className="btn-luxe btn-luxe--outline" onClick={() => navigate("/how-to-rent")}>
-                    <span>{tx("Xem quy trình làm việc", "How We Work", "了解服务流程", "Как мы работаем", "진행 절차 보기", "サービスの流れ")}</span>
+                    <span>{tx("Quy trình thuê nhà", "How Renting Works", "了解租房流程", "Как проходит аренда", "임대 절차 보기", "賃貸の流れ")}</span>
                   </button>
                 </div>
               </div>
 
-              <div style={{ borderRadius: "22px", overflow: "hidden", boxShadow: "var(--shadow-elevated)" }}>
+              <div
+                style={{ borderRadius: "22px", overflow: "hidden", boxShadow: "var(--shadow-elevated)", cursor: "pointer" }}
+                onClick={() => setAboutLightbox({ src: heroPhoto, caption: aboutContent?.founderName || "KIN Estates Đà Nẵng" })}
+              >
                 <img
-                  src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"
-                  alt="KIN Estates Da Nang Team"
-                  style={{ width: "100%", height: "400px", objectFit: "cover", display: "block" }}
+                  src={heroPhoto}
+                  alt="KIN Estates Da Nang"
+                  style={{ width: "100%", height: "410px", objectFit: "cover", display: "block" }}
                 />
               </div>
             </div>
 
+            {/* 3 Architectural Approach Pillars (Local Knowledge · Clear Approach) */}
+            <div style={{ marginBottom: "1rem" }}>
+              <span className="eyebrow-badge">
+                {tx("AM HIỂU ĐỊA PHƯƠNG · CÁCH LÀM MINH BẠCH", "LOCAL KNOWLEDGE · A CLEAR APPROACH", "深耕本地 · 透明方式", "МЕСТНАЯ ЭКСПЕРТИЗА · ПРОЗРАЧНЫЙ ПОДХОД", "현지 전문성 · 투명한 방식", "現地の知見・明快なアプローチ")}
+              </span>
+              <h2 className="section-heading-serif" style={{ marginBottom: "1.25rem" }}>
+                {tx("Sau bức ảnh đẹp là cuộc sống mỗi ngày.", "Beyond the beautiful photo is everyday life.", "精美照片背后，是真实的日常。", "За красивыми фото — реальная жизнь.", "멋진 사진 너머의 매일의 삶.", "美しい写真の先にある毎日の暮らし。")}
+              </h2>
+            </div>
+            <div className="kin-about-pillars">
+              <div className="kin-about-pillar">
+                <h3>{tx("Chú trọng từng chi tiết", "Attention to detail", "关注每一处细节", "Внимание к деталям", "세심한 디테일", "細部へのこだわり")}</h3>
+                <p>{tx("Tình trạng nội thất, vị trí, ánh sáng, độ ồn và mọi điều khoản điện nước được trao đổi rõ ràng trước khi bạn quyết định.", "Condition, location, daylight, noise level, and rental terms are discussed clearly before you decide.", "在您做决定前，明确沟通房屋状况、地段采光及所有租赁条款。", "Состояние квартиры, локация и все условия аренды обсуждаются заранее.", "집의 상태, 위치, 채광 및 모든 계약 조건을 결정 전에 투명하게 안내합니다.", "設備状況、立地、採光、契約条件をご決定前に明確にお伝えします。")}</p>
+              </div>
+              <div className="kin-about-pillar">
+                <h3>{tx("Tư vấn chân thành, không ép chốt", "Clear conversations", "坦诚沟通，绝不催单", "Честный диалог без давления", "부담 없는 솔직한 상담", "押し売りのない誠実なご案内")}</h3>
+                <p>{tx("Chúng tôi phân tích thẳng thắn ưu & nhược điểm từng tòa nhà và trả lời trung thực mọi thắc mắc mà không tạo áp lực.", "We explain your options honestly — both strengths and trade-offs — and answer every question without pressure.", "客观分析每栋楼的优缺点，诚实回答您的疑问，不施加任何压力。", "Объясняем плюсы и минусы каждого варианта и отвечаем на вопросы без давления.", "각 건물의 장단점을 솔직히 설명드리고 압박 없이 모든 질문에 답해드립니다.", "各物件のメリット・注意点を率直にお伝えし、無理な勧誘はいたしません。")}</p>
+              </div>
+              <div className="kin-about-pillar">
+                <h3>{tx("Đồng hành an cư trọn vẹn", "Help settling in", "全程协助安居", "Помощь с заселением", "완벽한 정착 지원", "安心の入居サポート")}</h3>
+                <p>{tx("Sắp xếp lịch xem trực tiếp, ký hợp đồng song ngữ, lập biên bản bàn giao có ảnh & chỉ số đồng hồ và hỗ trợ đăng ký tạm trú.", "We coordinate viewings, bilingual contracts, photo handover reports with meter readings, and residency registration.", "安排实地看房、双语合同、带照片与水电表读数的交房清单，并协助办理暂住登记。", "Организуем просмотры, двуязычный договор, акт приёмки с фото и регистрацию tạm trú.", "현장 투어, 이중언어 계약, 사진·계량기 인수인계서 및 공안 거주 등록까지 지원합니다.", "内覧手配、バイリンガル契約、写真付き引渡し確認、滞在登録まで一貫対応します。")}</p>
+              </div>
+            </div>
+
+            {/* OUR CLIENTS — ADMIN-MANAGED CLIENT TOUR PHOTOS GALLERY */}
+            {tourPhotos.length > 0 && (
+              <section style={{ marginBottom: "1rem" }}>
+                <span className="eyebrow-badge">
+                  {tx("KHÁCH HÀNG CỦA CHÚNG TÔI", "OUR CLIENTS", "我们的客户", "НАШИ КЛИЕНТЫ", "우리의 고객들", "お客様との歩み")}
+                </span>
+                <h2 className="section-heading-serif" style={{ marginBottom: "0.45rem" }}>
+                  {tx("Chúng tôi gặp gỡ và dẫn xem nhà trực tiếp.", "We meet in person.", "我们亲自见面并带您看房。", "Мы встречаемся лично.", "직접 만나 현장 투어를 진행합니다.", "現地で直接お会いしてご案内します。")}
+                </h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.94rem", marginBottom: "1.35rem", maxWidth: "680px" }}>
+                  {tx(
+                    "Đội ngũ KIN Estates trực tiếp đi xem nhà, kiểm tra thực tế và bàn giao chìa khóa cùng khách hàng tại Đà Nẵng. Dưới đây là những khoảnh khắc thực tế cùng các cư dân của chúng tôi.",
+                    "Our Da Nang advisors personally inspect homes, host in-person tours, and hand over keys alongside our clients. Here are real moments with our residents.",
+                    "KIN Estates 团队在岘港亲自陪同看房与交接钥匙。以下是我们与客户的真实瞬间。",
+                    "Команда KIN Estates лично проводит просмотры и передаёт ключи в Дананге. Вот реальные фото с нашими клиентами.",
+                    "KIN Estates 팀이 다낭 현지에서 직접 투어와 키 전달을 진행합니다. 고객님들과 함께한 실제 현장 사진입니다.",
+                    "KIN Estatesチームがダナン現地で直接内覧・鍵の引き渡しを行っています。お客様との実際の風景です。"
+                  )}
+                </p>
+
+                <div className="kin-tour-grid">
+                  {tourPhotos.map((item) => {
+                    const cap = locText(item.caption);
+                    return (
+                      <article
+                        key={item.id}
+                        className="kin-tour-card"
+                        onClick={() => setAboutLightbox({ src: item.image, caption: cap, sub: item.tag || item.date })}
+                      >
+                        <div className="kin-tour-card__img-wrap">
+                          <img src={item.image} alt={cap || "KIN Estates client tour"} loading="lazy" />
+                          {(item.tag || item.date) && (
+                            <span className="kin-tour-card__tag">
+                              {item.tag || item.date}
+                            </span>
+                          )}
+                        </div>
+                        {cap && <div className="kin-tour-card__body">{cap}</div>}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* CLIENT FEEDBACK — ADMIN-MANAGED TESTIMONIALS & PROOF SCREENSHOTS */}
+            {testimonials.length > 0 && (
+              <section style={{ marginBottom: "1rem" }}>
+                <span className="eyebrow-badge">
+                  {tx("ĐÁNH GIÁ & FEEDBACK THỰC TẾ", "CLIENT FEEDBACK & REVIEWS", "客户真实评价", "ОТЗЫВЫ КЛИЕНТОВ", "고객 실제 후기", "お客様の声・レビュー")}
+                </span>
+                <h2 className="section-heading-serif" style={{ marginBottom: "1.25rem" }}>
+                  {tx("Khách hàng nói gì sau khi nhận nhà cùng KIN Estates?", "What our residents say after moving in.", "入住后的客户真实反馈。", "Что говорят клиенты после заселения.", "입주 후 고객님들이 전해주신 이야기.", "ご入居いただいたお客様の声。")}
+                </h2>
+                <div className="kin-feedback-grid">
+                  {testimonials.map((fb) => {
+                    const quoteText = locText(fb.quote);
+                    const stars = "★".repeat(Math.max(1, Math.min(5, Number(fb.rating) || 5)));
+                    return (
+                      <article key={fb.id} className="kin-feedback-card">
+                        <div className="kin-feedback-stars" aria-label={`${fb.rating || 5} stars`}>{stars}</div>
+                        {quoteText && <p className="kin-feedback-quote">“{quoteText}”</p>}
+                        {fb.image && (
+                          <div
+                            className="kin-feedback-proof"
+                            onClick={() => setAboutLightbox({ src: fb.image!, caption: quoteText, sub: `${fb.clientName}${fb.subtitle ? ` · ${fb.subtitle}` : ""}` })}
+                          >
+                            <img src={fb.image} alt={`Feedback from ${fb.clientName}`} loading="lazy" />
+                          </div>
+                        )}
+                        <div className="kin-feedback-author">
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text-primary)" }}>{fb.clientName}</div>
+                            {fb.subtitle && <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{fb.subtitle}</div>}
+                          </div>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--accent-bronze-dark)", background: "#FAF3E8", padding: "0.22rem 0.6rem", borderRadius: "999px" }}>
+                            {tx("Đã xác thực", "Verified", "已核实", "Проверено", "인증됨", "確認済")}
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Founder / Team Quote */}
+            <div className="kin-about-quote-box">
+              <blockquote>“{locText(aboutContent?.founderQuote) || tx("Tìm một căn hộ không chỉ là chọn bốn bức tường đẹp — mà là có một người bản địa đáng tin cậy đồng hành cùng bạn từ buổi xem nhà đầu tiên cho đến suốt thời gian an cư tại Đà Nẵng.", "Finding a home is about more than choosing the right space — it's about having reliable local people by your side from the first viewing to everyday life in Da Nang.")}”</blockquote>
+              <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "#E6C89C", letterSpacing: "0.06em" }}>
+                — {aboutContent?.founderName || "KIN Estates Đà Nẵng"}
+              </div>
+            </div>
+
+            {/* Your Habits Become Questions at the Viewing */}
             <h2 className="section-heading-serif" style={{ marginBottom: "1.25rem" }}>
-              {tx("Thói quen của bạn trở thành câu hỏi khi chúng tôi đi xem nhà", "Your Daily Habits Shape Our On-Site Inspection", "您的日常习惯，就是我们实地看房的核验清单", "Ваши привычки определяют то, как мы проверяем жилье", "당신의 라이프스타일이 우리의 현장 검수 기준이 됩니다", "あなたのライフスタイルに合わせた現地チェック")}
+              {tx("Thói quen của bạn trở thành câu hỏi khi đi xem nhà", "Your habits become questions at the viewing", "您的日常习惯，就是我们看房时的核验清单", "Ваши привычки становятся вопросами на просмотре", "당신의 라이프스타일이 현장 투어의 기준이 됩니다", "あなたの習慣が内覧時のチェック基準になります")}
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "3rem" }}>
-              <div style={{ background: "#FFFFFF", padding: "1.75rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
-                <span className="eyebrow-badge">{tx("01 · LÀM VIỆC TẠI NHÀ", "01 · REMOTE WORK", "01 · 远程办公", "01 · УДАЛЕННАЯ РАБОТА", "01 · 리모트 워크", "01 · リモートワーク")}</span>
-                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", marginBottom: "0.45rem" }}>
-                  {tx("Góc làm việc & Đường truyền", "Ergonomic Desk & Fiber Speed", "独立办公桌与光纤网络", "Рабочая зона и оптоволокно", "업무 공간 & 광랜 속도", "ワークデスク＆高速光回線")}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.25rem", marginBottom: "3rem" }}>
+              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+                <span className="eyebrow-badge">{tx("01 · LÀM VIỆC TẠI NHÀ", "01 · WORKING FROM HOME", "01 · 远程办公", "01 · УДАЛЕННАЯ РАБОТА", "01 · 재택근무", "01 · リモートワーク")}</span>
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
+                  {tx("Góc làm việc & Đường truyền", "Where does your workday happen?", "办公空间与光纤网络", "Где проходит ваш рабочий день?", "업무 공간 & 인터넷 환경", "ワークスペース＆光回線")}
                 </h3>
-                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                  {tx(
-                    "Bàn ăn không phải lúc nào cũng ngồi làm việc 8 tiếng được. Chúng tôi kiểm tra chiều cao bàn ghế, ánh sáng không bị chói màn hình và đường truyền cáp quang riêng.",
-                    "A dining table isn't built for an 8-hour workday. We audit desk ergonomics, glare-free natural light, and dedicated fiber Wi-Fi latency.",
-                    "餐桌并不适合每天8小时办公。我们实地检查办公桌椅高度、无眩光自然采光以及独立光纤路由。",
-                    "Обеденный стол не заменит рабочий. Мы проверяем высоту стола, отсутствие бликов на экране и скорость роутера.",
-                    "식탁에서 하루 8시간 일할 수는 없습니다. 책상과 의자 높이, 모니터 빛 반사 없는 채광, 전용 와이파이 속도를 체크합니다.",
-                    "ダイニングテーブルは長時間の仕事に向きません。デスクの高さ、画面が反射しない自然光、専用Wi-Fiを検証します。"
-                  )}
+                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
+                  {tx("Kiểm tra diện tích bàn làm việc, ánh sáng tự nhiên không chói màn hình, vị trí ổ cắm và tốc độ mạng ngay trong căn phòng bạn sẽ dùng.", "Check desk space, daylight, sockets, and fiber Wi-Fi speed in the exact room you will actually work in.", "实地检查书桌空间、自然采光、插座位置以及实际办公房间的光纤速度。", "Проверяем стол, свет, розетки и скорость интернета именно в той комнате, где вы будете работать.", "실제 업무할 방의 책상 공간, 채광, 콘센트, 광랜 속도를 직접 확인합니다.", "実際に仕事をする部屋のデスク環境・採光・コンセント・Wi-Fi速度を確認します。")}
                 </p>
               </div>
-              <div style={{ background: "#FFFFFF", padding: "1.75rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
-                <span className="eyebrow-badge">{tx("02 · CHUYỂN ĐẾN CÙNG GIA ĐÌNH", "02 · FAMILY RELOCATION", "02 · 家庭定居", "02 · ПЕРЕЕЗД С СЕМЬЕЙ", "02 · 가족 단위 이주", "02 · ご家族での移住")}</span>
-                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", marginBottom: "0.45rem" }}>
-                  {tx("Bếp, Lưu trữ & Trường học", "Full Kitchen, Storage & Schools", "厨房、储物空间与国际学校", "Кухня, хранение и школы", "주방, 수납공간 & 국제학교", "キッチン・収納・国際学校")}
+              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+                <span className="eyebrow-badge">{tx("02 · CHUYỂN ĐẾN CÙNG GIA ĐÌNH", "02 · MOVING TOGETHER", "02 · 家庭同住", "02 · ПЕРЕЕЗД ВМЕСТЕ", "02 · 가족·동반 이주", "02 · ご家族での移住")}</span>
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
+                  {tx("Bếp, Tủ đồ & Lộ trình mỗi ngày", "What does each person need?", "厨房、收纳与日常动线", "Что важно каждому члену семьи?", "수납·동선 & 생활 인프라", "収納・間取り・生活導線")}
                 </h3>
-                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                  {tx(
-                    "Kiểm tra hệ tủ quần áo đủ lớn cho hợp đồng 1 năm, bếp nấu rộng rãi, máy giặt sấy riêng và khoảng cách di chuyển tới trường quốc tế.",
-                    "We verify full-size wardrobe storage for 1-year leases, spacious kitchens, private washer-dryers, and commute times to international schools.",
-                    "核验满足一年长租的大容量衣柜、宽敞厨房、独立洗烘一体机以及前往国际学校的通勤时间。",
-                    "Проверяем вместительность шкафов на год, удобную кухню, сушильную машину и близость к международным школам.",
-                    "1년 거주를 위한 넉넉한 옷장, 넓은 주방, 개별 세탁·건조기 및 국제학교 통학 거리를 꼼꼼히 확인합니다.",
-                    "1年契約に十分なクローゼット収納、広いキッチン、専用洗濯乾燥機、インターナショナルスクールへの距離を確認します。"
-                  )}
+                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
+                  {tx("So sánh kích thước phòng ngủ, hệ tủ lưu trữ cho hợp đồng dài hạn, thang máy, bếp nấu và khoảng cách đến trường học hay siêu thị.", "Compare bedroom sizes, storage for long stays, lift access, kitchens, and daily routes to schools and markets.", "对比卧室空间、长租储物衣柜、电梯与厨房配置以及日常通勤路线。", "Сравниваем спальни, места хранения, лифты и удобство ежедневных маршрутов для каждого.", "침실 구성, 장기 거주 수납공간, 엘리베이터, 국제학교·마트 동선까지 비교합니다.", "寝室・収納・エレベーター・学校やスーパーへの導線を丁寧に比較します。")}
                 </p>
               </div>
-              <div style={{ background: "#FFFFFF", padding: "1.75rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
-                <span className="eyebrow-badge">{tx("03 · CÓ THÚ CƯNG ĐI CÙNG", "03 · PET-FRIENDLY LIVING", "03 · 携带宠物入住", "03 · С ДОМАШНИМИ ЖИВОТНЫМИ", "03 · 반려동물 동반", "03 · ペットとの暮らし")}</span>
-                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", marginBottom: "0.45rem" }}>
-                  {tx("Cam kết rõ trong hợp đồng", "Written Pet Clauses in Lease", "合同明确写入宠物条款", "Письменное согласие в договоре", "계약서 내 반려동물 조항 명시", "契約書へのペット可条項の明記")}
+              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+                <span className="eyebrow-badge">{tx("03 · CÓ THÚ CƯNG ĐI CÙNG", "03 · BRINGING A PET", "03 · 携带宠物", "03 · С ПИТОМЦЕМ", "03 · 반려동물 동반", "03 · ペットと暮らす")}</span>
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
+                  {tx("Quy định tòa nhà & Hợp đồng", "What are the building rules?", "大楼规定与合同条款", "Какие правила в этом доме?", "건물 규정 & 계약서 명시", "管理規約と契約条項")}
                 </h3>
-                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                  {tx(
-                    "Xác nhận trước quy định của Ban quản lý tòa nhà (như The Monarchy hay biệt thự Nam Việt Á) và ghi rõ sự đồng ý của chủ nhà vào hợp đồng thuê.",
-                    "We pre-verify building management rules (such as The Monarchy or Nam Viet A villas) and encode written landlord pet approval directly into your lease.",
-                    "提前核实大楼物业规定（如 The Monarchy 或南越亚别墅），并将房东允许养宠物的书面条款直接写入合同。",
-                    "Заранее согласуем правила управляющей компании и вписываем разрешение на питомца прямо в договор.",
-                    "건물 관리규정(더 모나키, 남비엣아 빌라 등)을 사전 확인하고 임대차 계약서에 반려동물 허용 조항을 명시합니다.",
-                    "建物の管理規約を事前確認し、オーナーのペット飼育許可を賃貸契約書に明記します。"
-                  )}
+                <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
+                  {tx("Làm rõ quy định nuôi thú cưng của Ban quản lý tòa nhà và ghi rõ sự đồng ý của chủ nhà vào hợp đồng trước khi đặt cọc.", "Clarify pet permissions, building restrictions, and any deposit terms in writing before you decide.", "在签约前明确物业宠物规定、限制与相关押金条款并写入合同。", "Заранее уточняем правила дома по животным и фиксируем согласие владельца в договоре.", "건물 관리규정과 보증금 조건을 사전에 확인하고 임대차 계약서에 명시합니다.", "建物のペット規約や条件を事前確認し、オーナー承諾を契約書に明記します。")}
                 </p>
               </div>
             </div>
 
-            {/* Landlord / Owner Property Submission Card (Notifies Admin Telegram Bot & Can Be Approved in 1 Click) */}
+            {/* 5-Step How Renting Works + Live Inventory Snapshot */}
+            <div style={{ marginBottom: "1rem" }}>
+              <span className="eyebrow-badge">{tx("QUY TRÌNH THUÊ NHÀ", "HOW RENTING WORKS", "租房流程", "КАК ПРОХОДИТ АРЕНДА", "임대 진행 절차", "ご契約までの流れ")}</span>
+              <h2 className="section-heading-serif" style={{ marginBottom: "1.15rem" }}>
+                {tx("5 bước đơn giản từ tin nhắn đầu tiên đến lúc nhận chìa khóa", "5 clear steps from your first message to receiving the keys", "从第一条消息到拿到钥匙的5个清晰步骤", "5 простых шагов от первого сообщения до ключей", "첫 문의부터 입주 키 수령까지 5단계", "最初のご相談から鍵のお渡しまで5ステップ")}
+              </h2>
+            </div>
+            <div className="kin-about-steps">
+              {[
+                { n: "01", vi: "Chia sẻ ngân sách, khu vực, số phòng ngủ và ngày dự kiến vào ở.", en: "Tell us your budget, preferred area, bedrooms, lease length, and move-in date." },
+                { n: "02", vi: "Nhận danh sách căn hộ tuyển chọn thực tế trong vòng 24 giờ.", en: "Receive a curated shortlist of verified available homes within 24 hours." },
+                { n: "03", vi: "Đi xem nhà trực tiếp cùng đội ngũ KIN Estates theo khung giờ thuận tiện.", en: "Tour the apartments in person at a time that suits your schedule." },
+                { n: "04", vi: "Ký hợp đồng song ngữ rõ ràng trực tiếp với chủ nhà trước khi thanh toán cọc.", en: "Sign a clear bilingual lease before paying anything — deposit goes directly to the owner." },
+                { n: "05", vi: "Nhận chìa khóa, biên bản bàn giao kèm ảnh & chỉ số điện nước, hỗ trợ tạm trú NA17.", en: "Get keys, a photo handover report with meter readings, and full temporary residency support." }
+              ].map((s) => (
+                <div key={s.n} className="kin-about-step">
+                  <div className="kin-about-step__num">STEP {s.n}</div>
+                  <div style={{ fontSize: "0.86rem", color: "var(--text-secondary)", lineHeight: 1.58 }}>{lang === "vi" ? s.vi : s.en}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Live Catalogue & Direct Contact Strip */}
+            <div style={{ background: "#FFFFFF", border: "1px solid var(--border-light)", borderRadius: "20px", padding: "1.65rem 1.75rem", marginBottom: "2.5rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1.25rem", boxShadow: "var(--shadow-soft)" }}>
+              <div style={{ maxWidth: "520px" }}>
+                <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", color: "var(--accent-bronze-dark)", textTransform: "uppercase", marginBottom: "0.35rem" }}>
+                  {tx("DỮ LIỆU TRỰC TIẾP · CHỈ CHO THUÊ DÀI HẠN (3+ THÁNG)", "LIVE CATALOGUE · LONG STAYS ONLY (3+ MONTHS)", "实时房源 · 专注3个月以上长租", "АКТУАЛЬНЫЙ КАТАЛОГ · ОТ 3 МЕСЯЦЕВ", "실시간 매물 · 3개월 이상 장기 전용", "最新物件・3ヶ月以上の長期専門")}
+                </div>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                  {tx(
+                    `Hiện có ${liveAvail.length} căn hộ đang trống từ $${minUsd} đến $${maxUsd}/tháng`,
+                    `Currently ${liveAvail.length} verified residences available from $${minUsd} to $${maxUsd}/month`
+                  )}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  {tx("Giá công khai trực tiếp từ chủ nhà · Điện nước giá nhà nước · ", "Direct owner pricing · Transparent utility terms · ")}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/privacy-policy")}
+                    style={{ background: "none", border: "none", padding: 0, color: "var(--accent-bronze-dark)", fontWeight: 700, textDecoration: "underline", cursor: "pointer", font: "inherit" }}
+                  >
+                    {tx("Xem chính sách bảo mật & dữ liệu", "Read our Privacy Policy", "查看隐私政策", "Политика конфиденциальности", "개인정보 처리방침 보기", "プライバシーポリシーを見る")}
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--navy" style={{ textDecoration: "none" }}>
+                  <span>Telegram @KIN_Estates</span>
+                </a>
+                <a href="https://zalo.me/0349456644" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
+                  <span>Zalo 0349 456 644</span>
+                </a>
+                <a href="https://wa.me/84349456644" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Landlord / Owner Property Submission Card */}
             <div style={{ background: "#FFFFFF", padding: "2rem", borderRadius: "22px", border: "1px solid rgba(168,124,81,0.28)", boxShadow: "var(--shadow-soft)", marginBottom: "2rem" }}>
               <span className="eyebrow-badge">
                 {tx("DÀNH CHO CHỦ NHÀ & ĐỐI TÁC ĐÀ NẴNG", "FOR DA NANG PROPERTY OWNERS", "面向岘港房东与合作伙伴", "ДЛЯ СОБСТВЕННИКОВ ЖИЛЬЯ", "다낭 임대인 및 파트너 전용", "ダナンの物件オーナー様へ")}
@@ -4264,12 +4447,12 @@ export const App: React.FC = () => {
               </h2>
               <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
                 {tx(
-                  "Gửi thông tin căn hộ cần cho thuê dài hạn. Hệ thống sẽ thông báo ngay tới Bot Telegram của Ban quản trị KIN Estates để kiểm duyệt và đăng tải.",
-                  "Submit your long-term residence details below. Our advisory team receives an instant Telegram Bot notification to review and publish your property.",
-                  "在下方提交您的长租房源信息，我们的管理团队将通过 Telegram 机器人实时收到通知并审核上架。",
-                  "Отправьте данные вашей квартиры ниже — команда получит мгновенное уведомление в Telegram для публикации.",
-                  "장기 임대 매물 정보를 남겨주시면 관리팀 텔레그램 봇으로 즉시 알림이 전송되어 검토 후 등록됩니다.",
-                  "長期賃貸物件の情報を送信いただくと、管理チームのTelegramボットへ即座に通知され審査・掲載されます。"
+                  "Gửi thông tin căn hộ cần cho thuê dài hạn. Hệ thống sẽ thông báo ngay tới đội ngũ KIN Estates để kiểm duyệt và đăng tải.",
+                  "Submit your long-term residence details below. Our advisory team receives an instant notification to review and publish your property.",
+                  "在下方提交您的长租房源信息，我们的管理团队将实时收到通知并审核上架。",
+                  "Отправьте данные вашей квартиры ниже — команда получит мгновенное уведомление для публикации.",
+                  "장기 임대 매물 정보를 남겨주시면 관리팀으로 즉시 알림이 전송되어 검토 후 등록됩니다.",
+                  "長期賃貸物件の情報を送信いただくと、担当チームへ即座に通知され審査・掲載されます。"
                 )}
               </p>
 
@@ -4320,12 +4503,12 @@ export const App: React.FC = () => {
                   if (data.ok) {
                     setBookingFeedback(
                       tx(
-                        "✓ Đã gửi thông tin phòng ký gửi! Ban quản trị KIN Estates đã nhận thông báo qua Bot Telegram để duyệt đăng.",
-                        "✓ Property submitted! Our team has been notified via Telegram Bot for immediate review.",
-                        "✓ 房源已提交！管理团队已通过 Telegram 收到通知。",
-                        "✓ Объект отправлен! Администратор получил уведомление в Telegram.",
-                        "✓ 매물 접수 완료! 관리팀 텔레그램으로 알림이 전송되었습니다.",
-                        "✓ 物件情報を送信しました！担当者へTelegram通知が送られました。"
+                        "✓ Đã gửi thông tin phòng ký gửi! Ban quản trị KIN Estates đã nhận thông báo để duyệt đăng.",
+                        "✓ Property submitted! Our team has been notified for immediate review.",
+                        "✓ 房源已提交！管理团队已收到通知。",
+                        "✓ Объект отправлен! Администратор получил уведомление.",
+                        "✓ 매물 접수 완료! 관리팀으로 알림이 전송되었습니다.",
+                        "✓ 物件情報を送信しました！担当者へ通知が送られました。"
                       )
                     );
                     e.currentTarget.reset();
@@ -4397,6 +4580,207 @@ export const App: React.FC = () => {
             </div>
           </div>
         </main>
+        );
+      })()}
+
+      {/* ====================================================================
+          PAGE 7: CHÍNH SÁCH BẢO MẬT & DỮ LIỆU (/privacy-policy) — DEDICATED PAGE
+          ==================================================================== */}
+      {route.replace(/\/+$/, "") === "/privacy-policy" && (
+        <main className="page-route">
+          <div className="page-container">
+            <div className="kin-doc-wrap">
+              <nav className="kin-breadcrumb" aria-label="Breadcrumb">
+                <button type="button" onClick={() => navigate("/")}>
+                  {tx("Trang chủ", "Home", "首页", "Главная", "홈", "ホーム")}
+                </button>
+                <span>/</span>
+                <span>{tx("Chính sách dữ liệu", "Privacy policy", "隐私政策", "Политика конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}</span>
+              </nav>
+
+              <span className="eyebrow-badge">
+                {tx("TÀI LIỆU PHÁP LÝ & MINH BẠCH", "DOCUMENTS", "法律与隐私文件", "ДОКУМЕНТЫ", "문서 및 정책", "ドキュメント")}
+              </span>
+              <h1 className="section-heading-serif" style={{ marginBottom: "0.65rem" }}>
+                {tx("Chính sách bảo mật & dữ liệu", "Privacy policy", "隐私与数据政策", "Политика конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}
+              </h1>
+              <p style={{ fontSize: "1.02rem", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "0.85rem" }}>
+                {tx(
+                  "Biểu mẫu yêu cầu trên KIN Estates thu thập những gì, vì sao, ai tiếp nhận dữ liệu, chúng tôi lưu giữ bao lâu và cách bạn yêu cầu xóa dữ liệu.",
+                  "What the KIN Estates request form collects, why, who receives the data, how long we keep it, and how to have it deleted.",
+                  "KIN Estates 预约表单收集哪些信息、收集目的、谁将接收数据、保存期限以及如何申请删除。",
+                  "Какие данные собирает форма KIN Estates, зачем, кто их получает, сколько мы их храним и как удалить.",
+                  "KIN Estates 문의 양식에서 수집하는 항목, 목적, 수신자, 보관 기간 및 삭제 요청 방법을 안내합니다.",
+                  "KIN Estatesのお問い合わせフォームで収集する情報、利用目的、管理体制、保管期間、削除方法について説明します。"
+                )}
+              </p>
+
+              <div className="kin-doc-meta">
+                <strong>KIN Estates Đà Nẵng</strong>
+                <span>·</span>
+                <span>{tx("Cập nhật 23.11.2026", "Updated 23.11.2026", "更新于 2026.11.23", "Обновлено 23.11.2026", "업데이트 2026.11.23", "更新日 2026.11.23")}</span>
+                <span>·</span>
+                <span>{tx("3 phút đọc", "3 min read", "阅读约 3 分钟", "3 мин чтения", "약 3분 소요", "読了目安 3分")}</span>
+              </div>
+
+              {/* Table of Contents */}
+              <div className="kin-doc-toc">
+                <div className="kin-doc-toc__title">{tx("Mục lục", "Contents", "目录", "Содержание", "목차", "目次")}</div>
+                <ul className="kin-doc-toc__list">
+                  <li><a href="#pp-controller">1. {tx("Đơn vị xử lý dữ liệu", "Who handles the data", "数据处理主体", "Кто обрабатывает данные", "데이터 관리 주체", "データ管理者")}</a></li>
+                  <li><a href="#pp-collect">2. {tx("Thông tin chúng tôi thu thập", "What we collect", "我们收集的内容", "Что мы собираем", "수집하는 정보", "収集する情報")}</a></li>
+                  <li><a href="#pp-why">3. {tx("Mục đích sử dụng", "Why we collect it", "使用目的", "Зачем это нужно", "이용 목적", "利用目的")}</a></li>
+                  <li><a href="#pp-recipients">4. {tx("Ai tiếp nhận & Hạ tầng lưu trữ", "Who receives it & Storage", "数据接收方与存储", "Кто получает данные", "제공 및 보관 인프라", "提供先と保管インフラ")}</a></li>
+                  <li><a href="#pp-retention">5. {tx("Thời gian lưu trữ", "How long we keep it", "保存期限", "Срок хранения", "보관 기간", "保管期間")}</a></li>
+                  <li><a href="#pp-rights">6. {tx("Quyền của bạn", "Your rights", "您的权利", "Ваши права", "고객의 권리", "お客様の権利")}</a></li>
+                  <li><a href="#pp-contact">7. {tx("Liên hệ về dữ liệu", "How to reach us", "联系我们", "Связаться с нами", "문의처", "お問い合わせ")}</a></li>
+                </ul>
+              </div>
+
+              {/* Document Body */}
+              <article className="kin-doc-article">
+                <p className="kin-doc-lead">
+                  {tx(
+                    "Trang này giải thích rõ ràng, ngắn gọn và trung thực về những gì xảy ra với thông tin bạn gửi trên website KIN Estates. Mọi nội dung dưới đây phản ánh đúng 100% cách hệ thống của chúng tôi đang vận hành.",
+                    "This page explains in plain words what happens to the details you leave on the KIN Estates website. Nothing here goes beyond what we actually do.",
+                    "本页面以简洁透明的语言说明您在 KIN Estates 网站提交信息后的处理方式，绝无隐藏条款。",
+                    "На этой странице простыми словами описано, что происходит с данными, которые вы оставляете на сайте KIN Estates.",
+                    "이 페이지는 KIN Estates 웹사이트에 남겨주신 정보가 어떻게 처리되는지 투명하고 알기 쉽게 설명합니다.",
+                    "このページでは、KIN Estatesのウェブサイトにご入力いただいた情報の取り扱いについて分かりやすく説明します。"
+                  )}
+                </p>
+
+                <section id="pp-controller" className="kin-doc-section">
+                  <h2>{tx("1. Đơn vị xử lý dữ liệu", "1. Who handles the data", "1. 数据处理主体", "1. Кто обрабатывает данные", "1. 데이터 관리 주체", "1. データ管理者")}</h2>
+                  <p>
+                    {tx(
+                      "Đơn vị quản lý dữ liệu: KIN Estates — dịch vụ tư vấn và kết nối cho thuê căn hộ, penthouse và biệt thự dài hạn (3–12+ tháng) tại thành phố Đà Nẵng, Việt Nam.",
+                      "Data controller: KIN Estates, a long-term residential rental advisory service (3–12+ months) based in Da Nang, Vietnam.",
+                      "数据控制方：KIN Estates，位于越南岘港的长期住宅租赁顾问服务机构。",
+                      "Оператор данных: KIN Estates — сервис подбора долгосрочной аренды квартир и вилл в Дананге, Вьетнам.",
+                      "데이터 관리자: 베트남 다낭 기반 장기 주거 임대 전문 컨설팅 KIN Estates.",
+                      "データ管理者：ベトナム・ダナンを拠点とする長期賃貸住宅アドバイザリー KIN Estates。"
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-collect" className="kin-doc-section">
+                  <h2>{tx("2. Thông tin chúng tôi thu thập", "2. What we collect", "2. 我们收集的内容", "2. Что мы собираем", "2. 수집하는 정보", "2. 収集する情報")}</h2>
+                  <p>{tx("Khi bạn gửi biểu mẫu hẹn xem nhà, đặt giữ chỗ hoặc ký gửi căn hộ, bạn cung cấp cho chúng tôi:", "Through our viewing, booking, or consultation forms, you share:", "通过预约看房或咨询表单，您向我们提供：", "Через форму заявки вы передаёте нам:", "방문 예약 또는 상담 양식을 통해 다음 정보를 입력하시게 됩니다:", "内覧予約やお問い合わせフォームを通じて以下の情報をご提供いただきます：")}</p>
+                  <ul>
+                    <li>{tx("Họ tên và kênh liên hệ bạn chọn (Zalo, WhatsApp, Telegram, WeChat hoặc số điện thoại);", "Your name and preferred contact handle (Zalo, WhatsApp, Telegram, WeChat, or phone number);")}</li>
+                    <li>{tx("Mã căn hộ bạn quan tâm, thời gian hẹn xem thuận tiện, ngày dự kiến nhận phòng và ghi chú nhu cầu (nếu có);", "The apartment code you are inquiring about, preferred viewing time, move-in date, and optional notes;")}</li>
+                    <li>{tx("Xác nhận đồng ý xử lý thông tin (ô đánh dấu ngay trong biểu mẫu).", "Your explicit consent to processing (the checkbox in the form).")}</li>
+                  </ul>
+                  <p>
+                    {tx(
+                      "Website KHÔNG yêu cầu thông tin hộ chiếu, số CCCD, số thẻ ngân hàng và KHÔNG bắt buộc bạn tạo tài khoản mật khẩu.",
+                      "This website NEVER asks for passport numbers, ID scans, or payment card details, and does not require creating a user account.",
+                      "本网站绝不要求您提供护照信息、银行卡号，也无需注册账户。",
+                      "Сайт НЕ запрашивает паспортные данные, номера банковских карт и не требует регистрации аккаунта.",
+                      "본 웹사이트는 여권 정보나 결제 카드 번호를 요구하지 않으며 별도의 회원가입도 필요하지 않습니다.",
+                      "当サイトではパスポート情報やクレジットカード番号の入力、アカウント登録は一切求めません。"
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-why" className="kin-doc-section">
+                  <h2>{tx("3. Mục đích sử dụng", "3. Why we collect it", "3. 使用目的", "3. Зачем это нужно", "3. 이용 목적", "3. 利用目的")}</h2>
+                  <p>
+                    {tx(
+                      "Chúng tôi chỉ dùng thông tin của bạn cho duy nhất 2 mục đích: (1) tìm căn hộ phù hợp nhu cầu và (2) liên hệ xác nhận lịch xem nhà hoặc giữ chỗ theo đúng kênh bạn đã chọn. Chúng tôi không gửi thư quảng cáo spam và tuyệt đối không bán hay trao đổi danh sách khách hàng.",
+                      "For two things only: to match you with the right residence and to contact you about your viewing or booking via the messenger you chose. We do not send marketing spam and we never sell or trade client lists.",
+                      "仅用于两个目的：为您匹配合适房源，并通过您指定的通讯软件联系看房。我们不发送垃圾推广信息，也绝不出售客户名单。",
+                      "Только для двух целей: подобрать подходящее жильё и связаться с вами в выбранном мессенджере. Мы не делаем спам-рассылок и не продаём базы.",
+                      "단 두 가지 목적에만 사용합니다: 맞춤 매물 추천 및 선택하신 메신저로의 투어 일정 조율. 스팸 발송이나 제3자 판매는 절대 하지 않습니다.",
+                      "目的は2つのみです：ご希望に合う物件のご提案と、ご指定の連絡先への内覧・予約連絡。営業メールの配信や第三者への販売は一切行いません。"
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-recipients" className="kin-doc-section">
+                  <h2>{tx("4. Ai tiếp nhận & Hạ tầng lưu trữ", "4. Who receives it & Storage", "4. 数据接收方与存储", "4. Кто получает данные", "4. 제공 및 보관 인프라", "4. 提供先と保管インフラ")}</h2>
+                  <p>
+                    {tx(
+                      "Yêu cầu của bạn được chuyển trực tiếp tới đội ngũ tư vấn nội bộ KIN Estates tại Đà Nẵng để sắp xếp lịch xem căn hộ. Chúng tôi không chia sẻ dữ liệu của bạn cho bất kỳ công ty môi giới bên ngoài, mạng quảng cáo hay bên môi giới dữ liệu nào.",
+                      "Your request goes directly to our internal KIN Estates Da Nang advisory team to coordinate viewings and owner communication. Nothing is passed to external agencies, ad networks, or data brokers."
+                    )}
+                  </p>
+                  <p>
+                    {tx(
+                      "Dữ liệu yêu cầu được mã hóa truyền tải qua HTTPS và lưu trữ bảo mật trên hạ tầng đám mây MongoDB Atlas & Vercel. Bản đồ trên trang tải nền bản đồ từ dịch vụ bản đồ tiêu chuẩn, do đó trình duyệt của bạn chỉ gửi địa chỉ IP tiêu chuẩn khi tải ô bản đồ như mọi website khác.",
+                      "Requests are transmitted over HTTPS and stored securely on MongoDB Atlas and Vercel cloud infrastructure. Interactive maps load standard map tiles directly in your browser."
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-retention" className="kin-doc-section">
+                  <h2>{tx("5. Thời gian lưu trữ", "5. How long we keep it", "5. 保存期限", "5. Срок хранения", "5. 보관 기간", "5. 保管期間")}</h2>
+                  <p>
+                    {tx(
+                      "Chúng tôi lưu giữ thông tin trong suốt thời gian hỗ trợ bạn tìm nhà và theo dõi lịch xem. Sau khi kết thúc quá trình tìm kiếm, dữ liệu yêu cầu được tự động rà soát và xóa khỏi hệ thống sau tối đa 12 tháng kể từ lần liên hệ gần nhất (trừ trường hợp bạn đã ký hợp đồng thuê chính thức cần lưu hồ sơ theo quy định).",
+                      "We keep your enquiry while your home search is active so we can pick up seamlessly if you message again. Twelve months after your last contact, enquiry records are purged from our server (unless retained as part of an active signed residential lease)."
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-rights" className="kin-doc-section">
+                  <h2>{tx("6. Quyền của bạn", "6. Your rights", "6. 您的权利", "6. Ваши права", "6. 고객의 권리", "6. お客様の権利")}</h2>
+                  <p>
+                    {tx(
+                      "Bạn có toàn quyền yêu cầu kiểm tra thông tin chúng tôi đang lưu giữ về bạn, chỉnh sửa số điện thoại/kênh liên hệ hoặc yêu cầu xóa toàn bộ dữ liệu bất kỳ lúc nào. Chỉ cần nhắn cho chúng tôi qua Telegram, Zalo hoặc WhatsApp kèm từ khóa \"Xóa dữ liệu\" — chúng tôi sẽ hoàn tất xóa vĩnh viễn trong vòng 30 ngày (thường trong 24 giờ) và nhắn xác nhận lại cho bạn.",
+                      "You can ask at any time what details we hold about you, update your contact info, or request complete deletion. Simply message us on Telegram, Zalo, or WhatsApp with the word \"data\" — we permanently delete your record within 30 days (usually within 24 hours) and confirm by message."
+                    )}
+                  </p>
+                </section>
+
+                <section id="pp-contact" className="kin-doc-section">
+                  <h2>{tx("7. Liên hệ về dữ liệu", "7. How to reach us", "7. 联系我们", "7. Связаться с нами", "7. 문의처", "7. お問い合わせ")}</h2>
+                  <p>{tx("Mọi câu hỏi về quyền riêng tư hoặc yêu cầu xóa dữ liệu, vui lòng liên hệ trực tiếp đội ngũ KIN Estates Đà Nẵng:", "For any privacy questions or data deletion requests, contact the KIN Estates Da Nang team directly:")}</p>
+                  <ul>
+                    <li><strong>Telegram:</strong> <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>@KIN_Estates</a></li>
+                    <li><strong>Zalo:</strong> <a href="https://zalo.me/0349456644" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>0349 456 644</a></li>
+                    <li><strong>WhatsApp / Hotline:</strong> <a href="https://wa.me/84349456644" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>+84 349 456 644</a></li>
+                  </ul>
+                  <div style={{ marginTop: "1.35rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    <button type="button" className="btn-luxe btn-luxe--navy" onClick={() => navigate("/apartments")}>
+                      <span>{tx("← Quay lại danh mục căn hộ", "← Back to Residences", "← 返回房源列表", "← К списку квартир", "← 매물 목록으로", "← 物件一覧に戻る")}</span>
+                    </button>
+                    <button type="button" className="btn-luxe btn-luxe--outline" onClick={() => navigate("/about")}>
+                      <span>{tx("Về KIN Estates", "About KIN Estates", "关于 KIN Estates", "О KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</span>
+                    </button>
+                  </div>
+                </section>
+              </article>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* LIGHTBOX FOR ABOUT US CLIENT PHOTOS & FEEDBACK SCREENSHOTS */}
+      {aboutLightbox && (
+        <div className="kin-lightbox-backdrop" onClick={() => setAboutLightbox(null)}>
+          <div className="kin-lightbox-box" onClick={(e) => e.stopPropagation()}>
+            <img src={aboutLightbox.src} alt={aboutLightbox.caption || "KIN Estates"} />
+            {(aboutLightbox.caption || aboutLightbox.sub) && (
+              <div className="kin-lightbox-caption">
+                {aboutLightbox.sub && (
+                  <div style={{ fontSize: "0.78rem", color: "#E6C89C", fontWeight: 700, marginBottom: "0.25rem" }}>
+                    {aboutLightbox.sub}
+                  </div>
+                )}
+                {aboutLightbox.caption && <div>{aboutLightbox.caption}</div>}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setAboutLightbox(null)}
+              style={{ background: "rgba(255,255,255,0.14)", color: "#fff", border: "1px solid rgba(255,255,255,0.28)", borderRadius: "999px", padding: "0.45rem 1.25rem", fontWeight: 700, cursor: "pointer" }}
+            >
+              {tx("Đóng ✕", "Close ✕", "关闭 ✕", "Закрыть ✕", "닫기 ✕", "閉じる ✕")}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ====================================================================
@@ -4609,34 +4993,18 @@ export const App: React.FC = () => {
                     />
                     <span className="kin-policy-checkbox-text">
                       {tx("Tôi đồng ý xử lý thông tin để tìm nhà (", "I agree to data processing to find a home (", "我同意处理个人信息以匹配房源（", "Я согласен на обработку данных для подбора жилья (", "집 찾기를 위한 개인정보 처리에 동의합니다 (", "お部屋探しのための情報処理に同意します（")}
-                      <button
-                        type="button"
+                      <a
+                        href="/privacy-policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="kin-policy-link-btn"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setPolicyDrawerOpen((p) => !p);
-                        }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {tx("chính sách dữ liệu", "data policy", "数据隐私政策", "политика данных", "개인정보 정책", "データポリシー")}
-                      </button>
+                      </a>
                       {tx(")", ")", "）", ")", ")", "）")}
                     </span>
                   </label>
-
-                  {policyDrawerOpen && (
-                    <div className="kin-policy-drawer">
-                      <strong>KIN Estates Privacy & Data Policy:</strong>{" "}
-                      {tx(
-                        "Thông tin liên hệ của bạn chỉ được sử dụng duy nhất bởi đội ngũ tư vấn KIN Estates tại Đà Nẵng để xác nhận lịch xem căn hộ và hỗ trợ hợp đồng thuê. Chúng tôi cam kết bảo mật tuyệt đối và không chia sẻ cho bất kỳ bên thứ ba nào.",
-                        "Your contact handle is used exclusively by the KIN Estates Da Nang advisory team to coordinate your apartment viewing and lease handover. Never shared with third parties.",
-                        "您的联系信息仅供 KIN Estates 岘港顾问团队用于安排看房与租约交接，绝不向任何第三方透露。",
-                        "Ваши контакты используются исключительно командой KIN Estates в Дананге для организации просмотра и никогда не передаются третьим лицам.",
-                        "고객님의 연락처는 KIN Estates 다낭 전담팀이 투어 일정을 조율하는 목적으로만 사용하며 제3자에게 절대 공유되지 않습니다.",
-                        "お客様の連絡先はKIN Estatesダナン担当チームが内覧手配のみに使用し、第三者に提供することは一切ありません。"
-                      )}
-                    </div>
-                  )}
 
                   <div>
                     <label className="kin-booking-field-label" htmlFor="kin-inquiry-date">
@@ -4810,6 +5178,7 @@ export const App: React.FC = () => {
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/how-to-rent")}>{tx("Quy trình thuê nhà", "How to Rent", "租房流程", "Процесс аренды", "임대 진행 절차", "賃貸の流れ")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/guides")}>{tx("Cẩm nang & Chỉ số giá", "Guides & Price Index", "生活指南与价格指数", "Гиды и индекс цен", "생활 가이드 & 가격 지수", "ガイド＆家賃指数")}</span>
               <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")}>{tx("Về KIN Estates & Chủ nhà", "About KIN Estates", "关于 KIN Estates", "О компании KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</span>
+              <span style={{ cursor: "pointer" }} onClick={() => navigate("/privacy-policy")}>{tx("Chính sách bảo mật & dữ liệu", "Privacy & Data Policy", "隐私与数据政策", "Политика конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}</span>
             </div>
           </div>
 
