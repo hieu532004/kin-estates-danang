@@ -1074,72 +1074,6 @@
   ],
   "botMessages": [
     {
-      "id": "msg-1795169392529-8uds",
-      "timestamp": "2026-11-20T10:09:52.529Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "4/4 · Ảnh và mô tả\nBấm 📎 để gửi cả album. Ảnh đầu tiên sẽ làm ảnh bìa.\nBạn có thể gửi thêm một đoạn mô tả hoặc bấm Xem trước.",
-      "buttons": [
-        [
-          {
-            "text": "Xem trước",
-            "callback_data": "/draft_preview 26362f858607b5"
-          }
-        ],
-        [
-          {
-            "text": "Hủy thao tác",
-            "callback_data": "/draft_cancel 26362f858607b5"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795169398821-89ac",
-      "timestamp": "2026-11-20T10:09:58.821Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "/draft_preview 26362f858607b5"
-    },
-    {
-      "id": "msg-1795169398831-kojp",
-      "timestamp": "2026-11-20T10:09:58.831Z",
-      "sender": "bot",
-      "user": "KIN Estates Bot",
-      "text": "Xem trước · Căn 2PN có ban công\nThe Panoma · Han Riverfront\n18.500.000 ₫/tháng · $726\n2 PN · 72 m²\n0 ảnh · Thêm ít nhất một ảnh để đăng\nNội thất đầy đủ",
-      "buttons": [
-        [
-          {
-            "text": "Lưu căn ở chế độ ẩn",
-            "callback_data": "/draft_hide 26362f858607b5.1"
-          }
-        ],
-        [
-          {
-            "text": "Sửa thông tin",
-            "callback_data": "/draft_edit 26362f858607b5"
-          },
-          {
-            "text": "Chỉnh ảnh",
-            "callback_data": "/draft_resume 26362f858607b5"
-          }
-        ],
-        [
-          {
-            "text": "Hủy thao tác",
-            "callback_data": "/draft_cancel 26362f858607b5"
-          }
-        ]
-      ]
-    },
-    {
-      "id": "msg-1795169431859-zfbm",
-      "timestamp": "2026-11-20T10:10:31.859Z",
-      "sender": "user",
-      "user": "KIN_Estates",
-      "text": "/draft_resume 26362f858607b5"
-    },
-    {
       "id": "msg-1795169431862-bkfg",
       "timestamp": "2026-11-20T10:10:31.862Z",
       "sender": "bot",
@@ -3322,6 +3256,78 @@
           }
         ]
       ]
+    },
+    {
+      "id": "msg-1795425624666-atsv",
+      "timestamp": "2026-11-23T09:20:24.666Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/start"
+    },
+    {
+      "id": "msg-1795425624669-8ynt",
+      "timestamp": "2026-11-23T09:20:24.669Z",
+      "sender": "bot",
+      "user": "KIN Estates Bot",
+      "text": "🏠 *KIN ESTATES*\n12 căn · 12 đang trống · 2 yêu cầu mới\n\nĐăng căn mới bằng nút bên dưới hoặc gửi ảnh từ thư viện để bắt đầu bản nháp.",
+      "buttons": [
+        [
+          {
+            "text": "📱 Mở Bảng Điều Khiển & Báo Cáo",
+            "web_app": {
+              "url": "https://kin-estates-danang.vercel.app/kin-studio"
+            }
+          }
+        ],
+        [
+          {
+            "text": "🏠 Kho căn hộ",
+            "callback_data": "/list"
+          },
+          {
+            "text": "➕ Đăng căn mới",
+            "callback_data": "/wizard"
+          }
+        ],
+        [
+          {
+            "text": "📋 Mẫu đăng nhanh",
+            "callback_data": "/form"
+          },
+          {
+            "text": "👥 Khách & lịch xem",
+            "callback_data": "/crm"
+          }
+        ],
+        [
+          {
+            "text": "📅 Đặt phòng",
+            "callback_data": "/bookings"
+          },
+          {
+            "text": "📝 Bản nháp",
+            "callback_data": "/draft"
+          },
+          {
+            "text": "⚙️ Công cụ",
+            "callback_data": "/tools"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "msg-1795425628405-fwhx",
+      "timestamp": "2026-11-23T09:20:28.405Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/tools"
+    },
+    {
+      "id": "msg-1795425635152-zxj7",
+      "timestamp": "2026-11-23T09:20:35.152Z",
+      "sender": "user",
+      "user": "KIN_Estates",
+      "text": "/sync_web"
     }
   ],
   "wizardSessions": {
