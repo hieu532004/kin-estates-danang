@@ -200,7 +200,7 @@ function calcDaysRemaining(endDateStr) {
 
 function getStudioWebAppUrl() {
   if (String(process.env.PUBLIC_SITE_URL || "").includes(".invalid")) return null;
-  const base = (process.env.PUBLIC_SITE_URL || "https://kin-estates-danang.vercel.app").replace(/\/+$/, "");
+  const base = (process.env.PUBLIC_SITE_URL || "https://www.kinestatesdanang.com").replace(/\/+$/, "");
   if (!base.startsWith("https://")) return null;
   return `${base}/kin-studio`;
 }
@@ -347,9 +347,9 @@ async function processTelegramCommand(rawText, meta = {}) {
   }
 
   if (lower === "/tools") {
-    const studioUrl = publicStudioUrl();
+    const studioUrl = getStudioWebAppUrl();
     return {
-      reply: "⚙️ Công cụ quản lý · Cloud 24/7\n(Dữ liệu tự động cập nhật trực tiếp lên Website)",
+      reply: "⚙️ Công cụ quản lý · Cloud 24/7\n(Dữ liệu tự động cập nhật trực tiếp lên https://www.kinestatesdanang.com)",
       parseMode: null,
       buttons: [
         [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
@@ -364,11 +364,11 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower === "/sync_web") {
     const syncRes = await autoDeployService.syncStoreToLiveWeb("manual /sync_web");
     const msg = syncRes.pushed
-      ? "✅ Đã đẩy toàn bộ căn hộ & ảnh mới nhất lên Website Deploy!\nTrang web kin-estates-danang.vercel.app sẽ tự cập nhật sau ~15 giây."
+      ? "✅ Đã đẩy toàn bộ căn hộ & ảnh mới nhất lên Website!\nTrang web https://www.kinestatesdanang.com sẽ tự cập nhật sau ~15 giây."
       : syncRes.unchanged
-      ? "✅ Dữ liệu và ảnh trên Website Deploy đã đồng bộ mới nhất rồi!"
+      ? "✅ Dữ liệu và ảnh trên https://www.kinestatesdanang.com đã đồng bộ mới nhất rồi!"
       : syncRes.skipped
-      ? "ℹ️ Hệ thống đang chạy ở chế độ Cloud trực tiếp."
+      ? "ℹ️ Hệ thống đang chạy ở chế độ Cloud 24/7 trực tiếp trên https://www.kinestatesdanang.com."
       : `⚠️ Chưa thể đồng bộ tự động (${syncRes.error || "lỗi git"}).`;
     return { reply: msg, parseMode: null, buttons: getMainMenuButtons() };
   }

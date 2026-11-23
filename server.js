@@ -154,6 +154,24 @@ app.use((err, req, res, next) => {
   if (!err.type || !String(err.type).startsWith("entity.")) return next(err);
   res.status(err.status || 400).json({ ok: false, error: "Invalid request body" });
 });
+
+// 301 SEO Redirect from legacy *.vercel.app host to custom domain (preserves 100% search authority)
+app.use((req, res, next) => {
+  const host = String(req.get("x-forwarded-host") || req.get("host") || "").toLowerCase();
+  if (
+    process.env.VERCEL &&
+    host === "kin-estates-danang.vercel.app" &&
+    !req.path.startsWith("/api/") &&
+    !req.path.startsWith("/css/") &&
+    !req.path.startsWith("/js/") &&
+    !req.path.startsWith("/img/") &&
+    !req.path.startsWith("/videos/")
+  ) {
+    return res.redirect(301, `https://www.kinestatesdanang.com${req.originalUrl || "/"}`);
+  }
+  return next();
+});
+
 app.use(express.static(path.join(__dirname, "public"), { index: false }));
 
 function createRateLimiter({ windowMs, max }) {

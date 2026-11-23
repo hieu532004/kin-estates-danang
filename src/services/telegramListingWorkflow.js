@@ -204,7 +204,7 @@ async function pushListing(event, apartment) {
 
 function savedListing(apartment, message) {
   const rows = managementButtons(apartment.code);
-  const siteBase = process.env.PUBLIC_SITE_URL || (process.env.VERCEL ? "https://kin-estates-danang.vercel.app" : "");
+  const siteBase = process.env.PUBLIC_SITE_URL || (process.env.VERCEL ? "https://www.kinestatesdanang.com" : "");
   if (apartment.isVisible !== false && siteBase) {
     try {
       const link = new URL(`/apartments/${encodeURIComponent(apartment.code)}`, siteBase);
