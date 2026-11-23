@@ -255,7 +255,7 @@ function enrichDefaultApartments(list) {
     isVisible: apt.isVisible !== undefined ? Boolean(apt.isVisible) : apt.status !== "Hidden",
     hideWhenRented: Boolean(apt.hideWhenRented),
     landlordName: apt.landlordName || "Chủ nhà đối tác KIN Estates",
-    landlordPhone: apt.landlordPhone || "0349456644"
+    landlordPhone: apt.landlordPhone || "0389711601"
   }));
 }
 

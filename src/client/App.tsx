@@ -3321,7 +3321,7 @@ export const App: React.FC = () => {
 
                 <div className="apt-messenger-pills">
                   <a
-                    href="https://zalo.me/0349456644"
+                    href="https://zalo.me/0389711601"
                     target="_blank"
                     rel="noreferrer"
                     className="apt-messenger-pill"
@@ -3332,7 +3332,7 @@ export const App: React.FC = () => {
                   </a>
 
                   <a
-                    href="https://wa.me/84349456644"
+                    href="https://wa.me/84389711601"
                     target="_blank"
                     rel="noreferrer"
                     className="apt-messenger-pill"
@@ -4428,10 +4428,10 @@ export const App: React.FC = () => {
                 <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--navy" style={{ textDecoration: "none" }}>
                   <span>Telegram @KIN_Estates</span>
                 </a>
-                <a href="https://zalo.me/0349456644" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
-                  <span>Zalo 0349 456 644</span>
+                <a href="https://zalo.me/0389711601" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
+                  <span>Zalo 0389 711 601</span>
                 </a>
-                <a href="https://wa.me/84349456644" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
+                <a href="https://wa.me/84389711601" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none" }}>
                   <span>WhatsApp</span>
                 </a>
               </div>
@@ -4739,8 +4739,8 @@ export const App: React.FC = () => {
                   <p>{tx("Mọi câu hỏi về quyền riêng tư hoặc yêu cầu xóa dữ liệu, vui lòng liên hệ trực tiếp đội ngũ KIN Estates Đà Nẵng:", "For any privacy questions or data deletion requests, contact the KIN Estates Da Nang team directly:")}</p>
                   <ul>
                     <li><strong>Telegram:</strong> <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>@KIN_Estates</a></li>
-                    <li><strong>Zalo:</strong> <a href="https://zalo.me/0349456644" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>0349 456 644</a></li>
-                    <li><strong>WhatsApp / Hotline:</strong> <a href="https://wa.me/84349456644" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>+84 349 456 644</a></li>
+                    <li><strong>Zalo:</strong> <a href="https://zalo.me/0389711601" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>0389 711 601</a></li>
+                    <li><strong>WhatsApp / Hotline:</strong> <a href="https://wa.me/84389711601" target="_blank" rel="noreferrer" style={{ color: "var(--accent-bronze-dark)", fontWeight: 700 }}>+84 389 711 601</a></li>
                   </ul>
                   <div style={{ marginTop: "1.35rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
                     <button type="button" className="btn-luxe btn-luxe--navy" onClick={() => navigate("/apartments")}>
@@ -5187,7 +5187,7 @@ export const App: React.FC = () => {
               {tx("LIÊN HỆ TRỰC TIẾP", "DIRECT CONTACT", "直接联系", "КОНТАКТЫ", "직접 문의", "お問い合わせ")}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", fontSize: "0.88rem", color: "rgba(255,255,255,0.82)" }}>
-              <span>Zalo / WhatsApp: +84 349 456 644</span>
+              <span>Zalo / WhatsApp: +84 389 711 601</span>
               <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" style={{ color: "#F5D9B8", textDecoration: "none", fontWeight: 700 }}>
                 Telegram: @KIN_Estates
               </a>
@@ -5201,7 +5201,7 @@ export const App: React.FC = () => {
           MOBILE STICKY BOTTOM CONTACT BAR WITH CRISP VECTOR SVG ICONS
           ==================================================================== */}
       <nav className="kin-mobile-contact-bar" aria-label="Direct Contact Bar">
-        <a href="https://zalo.me/0349456644" target="_blank" rel="noreferrer" className="mobile-contact-item">
+        <a href="https://zalo.me/0389711601" target="_blank" rel="noreferrer" className="mobile-contact-item">
           <span className="contact-circle zalo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -5209,7 +5209,7 @@ export const App: React.FC = () => {
           </span>
           <span>Zalo</span>
         </a>
-        <a href="https://wa.me/84349456644" target="_blank" rel="noreferrer" className="mobile-contact-item">
+        <a href="https://wa.me/84389711601" target="_blank" rel="noreferrer" className="mobile-contact-item">
           <span className="contact-circle whatsapp">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -5226,7 +5226,7 @@ export const App: React.FC = () => {
           </span>
           <span>Telegram</span>
         </a>
-        <a href="tel:+84349456644" className="mobile-contact-item">
+        <a href="tel:+84389711601" className="mobile-contact-item">
           <span className="contact-circle call">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
