@@ -288,7 +288,7 @@ async function storeUploadedImageBuffer(bytes) {
   const mediaId = hash(bytes);
   const files = db.getTelegramCollection("telegram_media");
   if (files) {
-    await insertOnce(files, { _id: mediaId, bytes: new Binary(bytes), contentType });
+    await insertOnce(files, { _id: mediaId, bytes: new Binary(bytes), contentType, createdAt: new Date() });
     return `/api/telegram/media/${mediaId}`;
   }
   if (process.env.VERCEL) {
@@ -298,4 +298,55 @@ async function storeUploadedImageBuffer(bytes) {
   return `/api/telegram/media/${mediaId}`;
 }
 
-module.exports = { storeTelegramPhoto, getStoredTelegramPhoto, storeUploadedImageBuffer, MEDIA_ID, FILE_ID };
+async function listStoredTelegramPhotos() {
+  const files = db.getTelegramCollection("telegram_media");
+  if (files) {
+    const docs = await files
+      .find({}, { projection: { _id: 1, contentType: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .toArray();
+    return docs.map((d) => ({
+      id: String(d._id),
+      url: `/api/telegram/media/${d._id}`,
+      contentType: d.contentType || "image/jpeg",
+      createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : null
+    }));
+  }
+  try {
+    const dir = path.join(mediaDirectory(), "photos");
+    const entries = await fs.readdir(dir);
+    return entries
+      .filter((name) => MEDIA_ID.test(name))
+      .map((id) => ({ id, url: `/api/telegram/media/${id}`, contentType: "image/jpeg", createdAt: null }));
+  } catch {
+    return [];
+  }
+}
+
+async function deleteStoredTelegramPhoto(mediaId) {
+  if (!MEDIA_ID.test(mediaId)) return false;
+  const files = db.getTelegramCollection("telegram_media");
+  let deleted = false;
+  if (files) {
+    const res = await files.deleteOne({ _id: mediaId });
+    deleted = res.deletedCount > 0;
+  }
+  try {
+    await fs.rm(path.join(mediaDirectory(), "photos", mediaId), { force: true });
+    deleted = true;
+  } catch {
+    // Ignore read-only filesystem on serverless
+  }
+  return deleted;
+}
+
+module.exports = {
+  storeTelegramPhoto,
+  getStoredTelegramPhoto,
+  storeUploadedImageBuffer,
+  listStoredTelegramPhotos,
+  deleteStoredTelegramPhoto,
+  MEDIA_ID,
+  FILE_ID
+};

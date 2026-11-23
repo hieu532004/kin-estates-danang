@@ -9,7 +9,13 @@ const {
   createPublicInquiry, isAnonymousContactClick, getApartmentContactSummary
 } = require("./src/services/apartmentCrmService");
 const {
-  storeTelegramPhoto, getStoredTelegramPhoto, storeUploadedImageBuffer, MEDIA_ID, FILE_ID
+  storeTelegramPhoto,
+  getStoredTelegramPhoto,
+  storeUploadedImageBuffer,
+  listStoredTelegramPhotos,
+  deleteStoredTelegramPhoto,
+  MEDIA_ID,
+  FILE_ID
 } = require("./src/services/telegramMediaService");
 const sheetsService = require("./src/services/googleSheetsService");
 const translationService = require("./src/services/translationService");
@@ -897,6 +903,19 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
     let vacantPotentialVnd = 0;
     let vacantPotentialUsd = 0;
 
+    const normalizeAreaLabel = (rawArea) => {
+      const s = String(rawArea || "").trim();
+      if (!s) return "Khác";
+      const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (folded.includes("an thuong")) return "An Thượng";
+      if (folded.includes("han river") || folded.includes("song han")) return "Ven sông Hàn";
+      if (folded.includes("my khe")) return "Biển Mỹ Khê";
+      if (folded.includes("son tra")) return "Sơn Trà";
+      if (folded.includes("hai chau")) return "Hải Châu";
+      if (folded.includes("ngu hanh son")) return "Ngũ Hành Sơn";
+      return s;
+    };
+
     const areaMap = new Map();
     const enrichedApartments = apartments.map((apt) => {
       const codeUpper = String(apt.code || "").toUpperCase();
@@ -911,7 +930,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
         vacantPotentialUsd += Number(apt.priceUsd || 0);
       }
 
-      const areaKey = apt.areaName || "Khác";
+      const areaKey = normalizeAreaLabel(apt.areaName);
       const areaStat = areaMap.get(areaKey) || { area: areaKey, total: 0, available: 0, rented: 0, leads: 0, revenueVnd: 0 };
       areaStat.total++;
       if (!isHidden && apt.status === "Available") areaStat.available++;
@@ -1022,6 +1041,212 @@ app.post("/api/studio/reservations/:code/:action", requireAdmin, async (req, res
     const result = await db.transitionReservation(req.params.code, action);
     autoDeployService.scheduleAutoDeploy(`Studio reservation ${action}`);
     res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Bulk Apartment CRUD (Multi-select update or delete)
+app.post("/api/studio/apartments/bulk", requireAdmin, async (req, res) => {
+  try {
+    const { action, codes, updates } = req.body || {};
+    const list = Array.isArray(codes) ? [...new Set(codes.map((c) => String(c || "").trim()).filter(Boolean))] : [];
+    if (!list.length) return res.status(400).json({ ok: false, error: "Chưa chọn căn hộ nào." });
+
+    const succeeded = [];
+    const failed = [];
+
+    if (action === "delete") {
+      for (const code of list) {
+        try {
+          const removed = await db.deleteApartment(code);
+          if (removed) succeeded.push(code);
+          else failed.push({ code, error: "Không tìm thấy căn hộ." });
+        } catch (err) {
+          failed.push({ code, error: err.message });
+        }
+      }
+      return res.json({ ok: true, action: "delete", count: succeeded.length, succeeded, failed });
+    }
+
+    if (action === "update" && updates && typeof updates === "object") {
+      const rate = db.getSettings().usdToVndRate || 25480;
+      for (const code of list) {
+        try {
+          const apt = await db.getApartmentByCodeOrId(code);
+          if (!apt) {
+            failed.push({ code, error: "Không tìm thấy căn hộ." });
+            continue;
+          }
+          const patch = {};
+          if (updates.status && ["Available", "Reserved", "Rented", "Hidden"].includes(updates.status)) {
+            patch.status = updates.status;
+            if (updates.status === "Hidden") patch.isVisible = false;
+            else if (updates.isVisible === undefined) patch.isVisible = true;
+          }
+          if (typeof updates.isVisible === "boolean") {
+            patch.isVisible = updates.isVisible;
+          }
+          if (typeof updates.areaName === "string" && updates.areaName.trim()) {
+            patch.areaName = updates.areaName.trim();
+          }
+          if (typeof updates.building === "string" && updates.building.trim()) {
+            patch.building = updates.building.trim();
+          }
+          if (typeof updates.featured === "boolean") {
+            patch.featured = updates.featured;
+          }
+          const baseVnd = Number(apt.priceVnd || Math.round(Number(apt.priceUsd || 0) * rate));
+          if (updates.priceMode === "fixed" && Number(updates.priceVnd) > 0) {
+            patch.priceVnd = Math.round(Number(updates.priceVnd));
+            patch.priceUsd = Math.round(patch.priceVnd / rate);
+          } else if (updates.priceMode === "percent" && Number.isFinite(Number(updates.priceAdjustPercent))) {
+            const nextVnd = Math.max(1000000, Math.round((baseVnd * (1 + Number(updates.priceAdjustPercent) / 100)) / 100000) * 100000);
+            patch.priceVnd = nextVnd;
+            patch.priceUsd = Math.round(nextVnd / rate);
+          } else if (updates.priceMode === "delta" && Number.isFinite(Number(updates.priceAdjustVnd))) {
+            const nextVnd = Math.max(1000000, Math.round(baseVnd + Number(updates.priceAdjustVnd)));
+            patch.priceVnd = nextVnd;
+            patch.priceUsd = Math.round(nextVnd / rate);
+          }
+          if (Object.keys(patch).length > 0) {
+            await db.updateApartment(code, patch);
+          }
+          succeeded.push(code);
+        } catch (err) {
+          failed.push({ code, error: err.message });
+        }
+      }
+      return res.json({ ok: true, action: "update", count: succeeded.length, succeeded, failed });
+    }
+
+    return res.status(400).json({ ok: false, error: "Thao tác hàng loạt không hợp lệ." });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Admin Manual Customer / Inquiry Creation
+app.post("/api/studio/inquiries", requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const clientName = String(body.clientName || "").trim();
+    if (!clientName) return res.status(400).json({ ok: false, error: "Vui lòng nhập tên khách hàng." });
+    const aptCode = String(body.apartmentCode || "CURATED-SHORTLIST").trim().toUpperCase();
+    const apt = aptCode && aptCode !== "CURATED-SHORTLIST" ? await db.getApartmentByCodeOrId(aptCode) : null;
+    const inquiry = await db.createInquiry({
+      type: body.type === "reservation" ? "reservation" : "viewing",
+      clientName,
+      messenger: String(body.messenger || "Zalo").trim(),
+      contactHandle: String(body.contactHandle || "").trim(),
+      apartmentCode: apt ? apt.code : aptCode || "CURATED-SHORTLIST",
+      apartmentTitle: apt ? (apt.title?.vi || apt.title?.en || apt.code) : String(body.apartmentTitle || "Tư vấn chọn căn hộ"),
+      budgetUsd: String(body.budgetUsd || "").trim(),
+      viewingTime: String(body.viewingTime || "").trim(),
+      moveInDate: String(body.moveInDate || "").trim(),
+      notes: String(body.notes || "").trim(),
+      status: String(body.status || "New").trim(),
+      source: "studio_admin"
+    });
+    res.status(201).json({ ok: true, inquiry });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Bulk Customer / Inquiry Update or Delete
+app.post("/api/studio/inquiries/bulk", requireAdmin, async (req, res) => {
+  try {
+    const { action, ids, updates } = req.body || {};
+    const list = Array.isArray(ids) ? [...new Set(ids.map((id) => String(id || "").trim()).filter(Boolean))] : [];
+    if (!list.length) return res.status(400).json({ ok: false, error: "Chưa chọn khách hàng nào." });
+
+    const succeeded = [];
+    const failed = [];
+    if (action === "delete") {
+      for (const id of list) {
+        try {
+          const removed = await db.deleteInquiry(id);
+          if (removed) succeeded.push(id);
+          else failed.push({ id, error: "Không tìm thấy." });
+        } catch (err) {
+          failed.push({ id, error: err.message });
+        }
+      }
+      return res.json({ ok: true, action: "delete", count: succeeded.length, succeeded, failed });
+    }
+    if (action === "update" && updates && typeof updates === "object") {
+      for (const id of list) {
+        try {
+          const updated = await db.updateInquiry(id, updates);
+          if (updated) succeeded.push(id);
+          else failed.push({ id, error: "Không tìm thấy." });
+        } catch (err) {
+          failed.push({ id, error: err.message });
+        }
+      }
+      return res.json({ ok: true, action: "update", count: succeeded.length, succeeded, failed });
+    }
+    return res.status(400).json({ ok: false, error: "Thao tác không hợp lệ." });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Cloud Photo Gallery CRUD (MongoDB Atlas telegram_media)
+app.get("/api/studio/media", requireAdmin, async (req, res) => {
+  try {
+    const [photos, apartments] = await Promise.all([
+      listStoredTelegramPhotos(),
+      db.getApartments({ includeHidden: true })
+    ]);
+    const usageMap = new Map();
+    for (const apt of apartments) {
+      for (const img of apt.images || []) {
+        const list = usageMap.get(img) || [];
+        list.push({ code: apt.code, title: apt.title?.vi || apt.title?.en || apt.code });
+        usageMap.set(img, list);
+      }
+    }
+    const items = photos.map((p) => ({
+      ...p,
+      usedBy: usageMap.get(p.url) || []
+    }));
+    res.json({ ok: true, count: items.length, items });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/studio/media/:mediaId", async (req, res) => {
+  const { mediaId } = req.params;
+  if (!MEDIA_ID.test(mediaId)) return photoUnavailable(res);
+  const queryToken = typeof req.query.token === "string" ? req.query.token.trim() : "";
+  if (!isAdmin(req) && !verifyStudioSessionToken(queryToken)) {
+    return res.status(403).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const photo = await getStoredTelegramPhoto(mediaId);
+    return photo ? sendTelegramPhoto(res, photo) : photoUnavailable(res);
+  } catch {
+    return photoUnavailable(res, 503);
+  }
+});
+
+app.delete("/api/studio/media/:mediaId", requireAdmin, async (req, res) => {
+  try {
+    const { mediaId } = req.params;
+    if (!MEDIA_ID.test(mediaId)) return res.status(400).json({ ok: false, error: "Mã ảnh không hợp lệ." });
+    const targetUrl = `/api/telegram/media/${mediaId}`;
+    const apartments = await db.getApartments({ includeHidden: true });
+    for (const apt of apartments) {
+      if (Array.isArray(apt.images) && apt.images.includes(targetUrl)) {
+        const nextImages = apt.images.filter((u) => u !== targetUrl);
+        await db.updateApartment(apt.code, { images: nextImages });
+      }
+    }
+    await deleteStoredTelegramPhoto(mediaId);
+    res.json({ ok: true, deletedId: mediaId });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }

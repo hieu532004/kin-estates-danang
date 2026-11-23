@@ -1381,7 +1381,14 @@ async function getLeases(filters = {}) {
 
 async function getLeaseByCodeOrId(identifier) {
   if (!identifier) return null;
-  const clean = String(identifier).trim().toUpperCase();
+  const raw = String(identifier).trim();
+  const clean = raw.toUpperCase();
+  if (isNativeMongoConnected) {
+    const conds = [{ code: clean }, { apartmentCode: clean, status: "Active" }];
+    if (mongoose.Types.ObjectId.isValid(raw)) conds.push({ _id: raw });
+    const doc = await LeaseModel.findOne({ $or: conds }).lean();
+    if (doc) return { ...doc, _id: String(doc._id) };
+  }
   return (
     (store.leases || []).find(
       (l) =>
@@ -1472,9 +1479,20 @@ async function updateLease(identifier, updates) {
   const target = await getLeaseByCodeOrId(identifier);
   if (!target) return null;
 
+  const { _id: _ignoreId, ...safeUpdates } = updates || {};
+  const rate = store.settings?.usdToVndRate || 25480;
+  if (safeUpdates.priceUsd !== undefined && safeUpdates.priceVnd === undefined) {
+    const parsed = parsePriceInput(safeUpdates.priceUsd, undefined);
+    safeUpdates.priceUsd = parsed.priceUsd;
+    safeUpdates.priceVnd = parsed.priceVnd;
+  } else if (safeUpdates.priceVnd !== undefined && safeUpdates.priceUsd === undefined) {
+    safeUpdates.priceVnd = Number(safeUpdates.priceVnd);
+    safeUpdates.priceUsd = Math.round(safeUpdates.priceVnd / rate);
+  }
+
   const merged = {
     ...target,
-    ...updates,
+    ...safeUpdates,
     updatedAt: new Date().toISOString()
   };
 
@@ -1486,11 +1504,12 @@ async function updateLease(identifier, updates) {
   }
 
   if (isNativeMongoConnected) {
-    await LeaseModel.findOneAndUpdate({ code: target.code }, merged);
+    const { _id: _stripId, ...mongoPatch } = merged;
+    await LeaseModel.findOneAndUpdate({ code: target.code }, { $set: mongoPatch });
   }
 
   // If lease ended, automatically set the apartment back to Available & Visible!
-  if (updates.status === "Ended" && merged.apartmentCode) {
+  if (safeUpdates.status === "Ended" && merged.apartmentCode) {
     await updateApartment(merged.apartmentCode, {
       status: "Available",
       isVisible: true,

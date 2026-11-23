@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-type TabKey = "report" | "apartments" | "leads" | "leases" | "tools";
+type TabKey = "report" | "apartments" | "leads" | "leases";
 
 interface Apartment {
   _id: string;
@@ -41,6 +41,7 @@ interface Apartment {
   petPolicy?: string;
   status: string;
   isVisible?: boolean;
+  featured?: boolean;
   locationAccuracy?: "exact" | "area";
   coordinates?: { lat: number; lng: number } | null;
   architecturalNotes?: Record<string, string> | string;
@@ -87,6 +88,14 @@ interface Lease {
   daysLeft?: number | null;
 }
 
+interface MediaItem {
+  id: string;
+  url: string;
+  contentType: string;
+  createdAt: string | null;
+  usedBy: Array<{ code: string; title: string }>;
+}
+
 interface ReportData {
   generatedAt: string;
   kpi: {
@@ -115,16 +124,16 @@ interface ReportData {
   apartments: Apartment[];
   inquiries: Inquiry[];
   leases: Lease[];
-  dbStatus?: { mode?: string };
-  botStatus?: { connected?: boolean; mode?: string };
+  dbStatus?: { mode?: string; isNativeMongoConnected?: boolean };
 }
 
 const RATE_VND = 25480;
 const AREAS = [
   { val: "Han Riverfront", label: "Ven sông Hàn" },
   { val: "An Thuong", label: "An Thượng" },
+  { val: "My Khe Beachfront", label: "Biển Mỹ Khê" },
   { val: "Son Tra", label: "Sơn Trà" },
-  { val: "My Khe Beachfront", label: "Biển Mỹ Khê" }
+  { val: "Hải Châu", label: "Hải Châu" }
 ];
 const QUICK_TAGS = [
   "View sông Hàn",
@@ -138,6 +147,133 @@ const QUICK_TAGS = [
   "Chỗ đỗ ô tô",
   "Thú cưng"
 ];
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=70";
+
+/* Crisp Minimalist Inline SVG Icons */
+const Icon = {
+  Chart: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="12" width="4" height="9" rx="1" />
+      <rect x="10" y="7" width="4" height="14" rx="1" />
+      <rect x="17" y="3" width="4" height="18" rx="1" />
+    </svg>
+  ),
+  Home: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 10.5L12 3l9 7.5" />
+      <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+    </svg>
+  ),
+  Users: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  Key: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="m21 2-9.6 9.6" />
+      <path d="m15.5 7.5 3 3L22 7l-3-3" />
+    </svg>
+  ),
+  Plus: ({ size = 16 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  ),
+  Refresh: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  ),
+  External: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </svg>
+  ),
+  Lock: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  ),
+  Search: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  ),
+  Check: ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  ),
+  Checklist: () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="6" height="6" rx="1.5" />
+      <path d="m4.5 8 1 1 2-2" />
+      <path d="M13 8h8" />
+      <rect x="3" y="14" width="6" height="6" rx="1.5" />
+      <path d="M13 17h8" />
+    </svg>
+  ),
+  Image: ({ size = 15 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.5" />
+      <path d="m21 16-5-5L5 20" />
+    </svg>
+  ),
+  Edit: ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  ),
+  Trash: ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    </svg>
+  ),
+  Eye: ({ off = false }: { off?: boolean }) =>
+    off ? (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94" />
+        <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19" />
+        <path d="m1 1 22 22" />
+      </svg>
+    ) : (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
+  Phone: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  ),
+  Calendar: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  ),
+  Pin: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+};
 
 function fmtVnd(n: number | undefined | null): string {
   const v = Number(n || 0);
@@ -158,6 +294,34 @@ function notesOf(apt: Apartment): string {
   return apt.architecturalNotes?.vi || apt.architecturalNotes?.en || "";
 }
 
+function normalizeAreaValue(raw?: string): string {
+  const s = String(raw || "").trim();
+  const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (folded.includes("an thuong")) return "An Thuong";
+  if (folded.includes("my khe")) return "My Khe Beachfront";
+  if (folded.includes("son tra")) return "Son Tra";
+  if (folded.includes("hai chau")) return "Hải Châu";
+  return "Han Riverfront";
+}
+
+function areaDisplayLabel(raw?: string): string {
+  const val = normalizeAreaValue(raw);
+  return AREAS.find((a) => a.val === val)?.label || raw || "Đà Nẵng";
+}
+
+function statusLabelVi(status: string): string {
+  switch (status) {
+    case "New": return "Mới";
+    case "Contacted": return "Đã liên hệ";
+    case "Viewing_Scheduled": return "Đã hẹn xem";
+    case "Pending": return "Chờ giữ chỗ";
+    case "Confirmed": return "Đang giữ chỗ";
+    case "Rented_Closed": return "Đã chốt thuê";
+    case "Cancelled": return "Đã hủy";
+    default: return status;
+  }
+}
+
 function contactHref(handle?: string, messenger?: string): { href: string; label: string } | null {
   const raw = String(handle || "").trim();
   if (!raw || /^bấm liên hệ/i.test(raw)) return null;
@@ -165,19 +329,19 @@ function contactHref(handle?: string, messenger?: string): { href: string; label
   const m = String(messenger || "").toLowerCase();
   if (raw.startsWith("@") || m.includes("telegram")) {
     const u = raw.replace(/^@/, "").replace(/^https?:\/\/t\.me\//i, "");
-    if (u && !/^\d+$/.test(u)) return { href: `https://t.me/${u}`, label: `💬 Telegram @${u}` };
+    if (u && !/^\d+$/.test(u)) return { href: `https://t.me/${u}`, label: `Telegram @${u}` };
   }
   if (m.includes("zalo") && digits.length >= 9) {
-    return { href: `https://zalo.me/${digits}`, label: `💬 Zalo ${raw}` };
+    return { href: `https://zalo.me/${digits}`, label: `Zalo ${raw}` };
   }
   if (m.includes("whatsapp") && digits.length >= 9) {
     const intl = digits.startsWith("0") ? `84${digits.slice(1)}` : digits;
-    return { href: `https://wa.me/${intl}`, label: `💬 WhatsApp ${raw}` };
+    return { href: `https://wa.me/${intl}`, label: `WhatsApp ${raw}` };
   }
   if (digits.length >= 8) {
-    return { href: `tel:${raw.replace(/\s+/g, "")}`, label: `📞 Gọi ${raw}` };
+    return { href: `tel:${raw.replace(/\s+/g, "")}`, label: `Gọi ${raw}` };
   }
-  return { href: `https://t.me/${raw.replace(/^@/, "")}`, label: `💬 ${raw}` };
+  return { href: `https://t.me/${raw.replace(/^@/, "")}`, label: raw };
 }
 
 function daysUntil(dateStr?: string): number | null {
@@ -232,17 +396,73 @@ function StudioApp() {
   const [loading, setLoading] = useState<boolean>(false);
   const [toast, setToast] = useState<string>("");
 
-  // Apartments filter
+  // Apartments filters & multi-select
   const [aptSearch, setAptSearch] = useState<string>("");
   const [aptFilter, setAptFilter] = useState<string>("all");
+  const [aptSelectMode, setAptSelectMode] = useState<boolean>(false);
+  const [selectedApts, setSelectedApts] = useState<string[]>([]);
+  const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
+  const [bulkAptSaving, setBulkAptSaving] = useState<boolean>(false);
+  const [bulkAptForm, setBulkAptForm] = useState({
+    status: "",
+    visibility: "",
+    areaName: "",
+    priceMode: "",
+    priceValue: ""
+  });
 
-  // Leads filter
-  const [leadSubTab, setLeadSubTab] = useState<"viewings" | "bookings">("viewings");
+  // Cloud Media Library modal (shared for standalone management or picking into apartment)
+  const [mediaModalOpen, setMediaModalOpen] = useState<boolean>(false);
+  const [mediaPickerMode, setMediaPickerMode] = useState<boolean>(false);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [mediaLoading, setMediaLoading] = useState<boolean>(false);
+  const [photoUrlInput, setPhotoUrlInput] = useState<string>("");
+
+  // Leads filters, multi-select & CRUD modal
+  const [leadSearch, setLeadSearch] = useState<string>("");
+  const [leadSubTab, setLeadSubTab] = useState<"all" | "viewings" | "bookings">("all");
   const [leadAptFilter, setLeadAptFilter] = useState<string>("");
-  const [schedulingLead, setSchedulingLead] = useState<Inquiry | null>(null);
-  const [scheduleInput, setScheduleInput] = useState<string>("");
+  const [leadSelectMode, setLeadSelectMode] = useState<boolean>(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [bulkLeadModalOpen, setBulkLeadModalOpen] = useState<boolean>(false);
+  const [bulkLeadStatus, setBulkLeadStatus] = useState<string>("Contacted");
+  const [leadModalOpen, setLeadModalOpen] = useState<boolean>(false);
+  const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+  const [savingLead, setSavingLead] = useState<boolean>(false);
+  const [leadForm, setLeadForm] = useState({
+    clientName: "",
+    contactHandle: "",
+    messenger: "Zalo",
+    apartmentCode: "CURATED-SHORTLIST",
+    type: "viewing",
+    status: "New",
+    viewingTime: "",
+    moveInDate: "",
+    budgetUsd: "",
+    notes: ""
+  });
 
-  // Editor sheet
+  // Leases filter & CRUD modal
+  const [leaseSearch, setLeaseSearch] = useState<string>("");
+  const [leaseModalOpen, setLeaseModalOpen] = useState<boolean>(false);
+  const [editingLeaseCode, setEditingLeaseCode] = useState<string | null>(null);
+  const [savingLease, setSavingLease] = useState<boolean>(false);
+  const [leaseForm, setLeaseForm] = useState({
+    apartmentCode: "",
+    tenantName: "",
+    tenantContact: "",
+    messenger: "Zalo",
+    priceVndTr: "20",
+    priceUsd: "785",
+    depositMonths: "1",
+    paymentDay: "5",
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
+    status: "Active",
+    notes: ""
+  });
+
+  // Apartment Editor Sheet
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [savingApt, setSavingApt] = useState<boolean>(false);
@@ -252,6 +472,8 @@ function StudioApp() {
     building: "",
     areaName: "Han Riverfront",
     address: "",
+    status: "Available",
+    isVisible: true,
     priceVndTr: "18.5",
     priceUsd: "725",
     bedrooms: "2",
@@ -274,28 +496,13 @@ function StudioApp() {
     hasPin: false
   });
 
-  // Lease modal
-  const [leaseModalOpen, setLeaseModalOpen] = useState<boolean>(false);
-  const [leaseForm, setLeaseForm] = useState({
-    apartmentCode: "",
-    tenantName: "",
-    tenantContact: "",
-    messenger: "Telegram",
-    priceUsd: "800",
-    depositMonths: "1",
-    paymentDay: "5",
-    startDate: new Date().toISOString().slice(0, 10),
-    endDate: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
-    notes: ""
-  });
-
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapObjRef = useRef<any>(null);
   const markerObjRef = useRef<any>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
-    window.setTimeout(() => setToast((cur) => (cur === msg ? "" : cur)), 3000);
+    window.setTimeout(() => setToast((cur) => (cur === msg ? "" : cur)), 2800);
   };
 
   const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
@@ -334,12 +541,31 @@ function StudioApp() {
     }
   };
 
-  // Initial auth bootstrap (Telegram Mini App -> stored token -> local admin -> lock screen)
+  const loadMediaLibrary = async () => {
+    setMediaLoading(true);
+    try {
+      const r = await fetch("/api/studio/media", { headers: authHeaders(), cache: "no-store" });
+      const j = await r.json();
+      if (j.ok) setMediaItems(j.items || []);
+    } catch {
+      showToast("Không tải được kho ảnh Cloud.");
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  const openMediaLibrary = async (picker = false) => {
+    setMediaPickerMode(picker);
+    setMediaModalOpen(true);
+    await loadMediaLibrary();
+  };
+
+  // Auth Bootstrap
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     tg?.ready?.();
     tg?.expand?.();
-    tg?.setHeaderColor?.("#14191F");
+    tg?.setHeaderColor?.("#12171D");
 
     (async () => {
       try {
@@ -365,7 +591,6 @@ function StudioApp() {
             return;
           }
         }
-        // Try local admin auto-auth if on localhost
         const loc = await fetch("/api/studio/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -378,14 +603,14 @@ function StudioApp() {
           await loadReport(locJson.token);
         }
       } catch {
-        // Show passcode lock screen
+        // fallback to passcode screen
       } finally {
         setCheckingAuth(false);
       }
     })();
   }, []);
 
-  // Initialize Leaflet Map Picker inside Editor Sheet
+  // Leaflet Map Picker inside Apartment Editor
   useEffect(() => {
     if (!editorOpen || !mapContainerRef.current || !window.L) return;
     const timer = window.setTimeout(() => {
@@ -397,7 +622,10 @@ function StudioApp() {
       }
       const startLat = Number.isFinite(form.lat) ? form.lat : 16.0545;
       const startLng = Number.isFinite(form.lng) ? form.lng : 108.2345;
-      const map = L.map(mapContainerRef.current, { zoomControl: true, attributionControl: false }).setView([startLat, startLng], form.hasPin ? 16 : 13);
+      const map = L.map(mapContainerRef.current, { zoomControl: true, attributionControl: false }).setView(
+        [startLat, startLng],
+        form.hasPin ? 16 : 13
+      );
       L.tileLayer("https://mt1.google.com/vt/lyrs=m&hl=vi&x={x}&y={y}&z={z}", { maxZoom: 19 }).addTo(map);
       const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
       marker.on("dragend", () => {
@@ -432,7 +660,7 @@ function StudioApp() {
     });
     const j = await r.json();
     if (!r.ok || !j.ok) {
-      setAuthError(j.error || "Sai mã khóa.");
+      setAuthError(j.error || "Sai mã khóa quản trị.");
       return;
     }
     localStorage.setItem("kin_studio_token", j.token);
@@ -440,13 +668,17 @@ function StudioApp() {
     await loadReport(j.token);
   };
 
+  /* ======================= APARTMENTS CRUD ======================= */
   const openCreateEditor = () => {
     setEditingCode(null);
+    setPhotoUrlInput("");
     setForm({
       title: "",
       building: "",
       areaName: "Han Riverfront",
       address: "",
+      status: "Available",
+      isVisible: true,
       priceVndTr: "18",
       priceUsd: String(Math.round(18_000_000 / RATE_VND)),
       bedrooms: "2",
@@ -473,12 +705,15 @@ function StudioApp() {
 
   const openEditEditor = (apt: Apartment) => {
     setEditingCode(apt.code);
+    setPhotoUrlInput("");
     const vndTr = apt.priceVnd ? (apt.priceVnd / 1_000_000).toFixed(1).replace(/\.0$/, "") : "";
     setForm({
       title: titleOf(apt),
       building: apt.building || "",
-      areaName: apt.areaName || "Han Riverfront",
+      areaName: normalizeAreaValue(apt.areaName),
       address: apt.address || "",
+      status: apt.status || "Available",
+      isVisible: apt.isVisible !== false && apt.status !== "Hidden",
       priceVndTr: vndTr,
       priceUsd: String(apt.priceUsd || ""),
       bedrooms: String(apt.bedrooms ?? 1),
@@ -503,7 +738,7 @@ function StudioApp() {
     setEditorOpen(true);
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, addToLibraryOnly = false) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploadingPhoto(true);
@@ -520,15 +755,27 @@ function StudioApp() {
         if (j.ok && j.url) uploaded.push(j.url);
       }
       if (uploaded.length) {
-        setForm((prev) => ({ ...prev, images: [...prev.images, ...uploaded] }));
-        showToast(`📸 Đã tải lên ${uploaded.length} ảnh từ điện thoại!`);
+        if (!addToLibraryOnly) {
+          setForm((prev) => ({ ...prev, images: [...prev.images, ...uploaded] }));
+        } else {
+          await loadMediaLibrary();
+        }
+        showToast(`Đã tải lên ${uploaded.length} ảnh lên Cloud!`);
       }
     } catch {
-      showToast("⚠️ Có lỗi khi tải ảnh, thử lại nhé.");
+      showToast("Có lỗi khi tải ảnh, thử lại nhé.");
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
     }
+  };
+
+  const movePhoto = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= form.images.length) return;
+    const copy = [...form.images];
+    [copy[idx], copy[target]] = [copy[target], copy[idx]];
+    setForm((p) => ({ ...p, images: copy }));
   };
 
   const handleSaveApartment = async (e: React.FormEvent) => {
@@ -543,6 +790,8 @@ function StudioApp() {
         building: form.building.trim() || "KIN Estates Residence",
         areaName: form.areaName,
         address: form.address.trim(),
+        status: form.status,
+        isVisible: form.status === "Hidden" ? false : form.isVisible,
         priceVnd: vnd || Math.round(usd * RATE_VND),
         priceUsd: usd || Math.round(vnd / RATE_VND),
         bedrooms: Number(form.bedrooms) || 1,
@@ -572,10 +821,10 @@ function StudioApp() {
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được");
       setEditorOpen(false);
-      showToast(editingCode ? "✅ Đã cập nhật căn hộ & dịch 6 ngôn ngữ!" : "🎉 Đã đăng căn hộ mới & dịch 6 ngôn ngữ!");
+      showToast(editingCode ? "Đã lưu & đồng bộ ngay lên Web!" : "Đã đăng căn mới & dịch 6 ngôn ngữ!");
       await loadReport();
     } catch (err: any) {
-      showToast(`❌ ${err.message}`);
+      showToast(err.message);
     } finally {
       setSavingApt(false);
     }
@@ -599,10 +848,159 @@ function StudioApp() {
       method: "DELETE",
       headers: authHeaders()
     });
+    const j = await r.json().catch(() => ({}));
     if (r.ok) {
       setEditorOpen(false);
-      showToast(`🗑️ Đã xóa căn ${code}`);
+      showToast(`Đã xóa căn ${code}`);
       await loadReport();
+    } else {
+      showToast(j.error || "Không thể xóa căn hộ này.");
+    }
+  };
+
+  const toggleSelectApt = (code: string) => {
+    setSelectedApts((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+  };
+
+  const handleBulkUpdateApts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApts.length) return;
+    const updates: Record<string, any> = {};
+    if (bulkAptForm.status) updates.status = bulkAptForm.status;
+    if (bulkAptForm.visibility === "show") updates.isVisible = true;
+    if (bulkAptForm.visibility === "hide") updates.isVisible = false;
+    if (bulkAptForm.areaName) updates.areaName = bulkAptForm.areaName;
+    if (bulkAptForm.priceMode && bulkAptForm.priceValue.trim() !== "") {
+      const val = parseFloat(bulkAptForm.priceValue.replace(",", "."));
+      if (Number.isFinite(val)) {
+        updates.priceMode = bulkAptForm.priceMode;
+        if (bulkAptForm.priceMode === "fixed") updates.priceVnd = Math.round(val * 1_000_000);
+        if (bulkAptForm.priceMode === "percent") updates.priceAdjustPercent = val;
+        if (bulkAptForm.priceMode === "delta") updates.priceAdjustVnd = Math.round(val * 1_000_000);
+      }
+    }
+    if (!Object.keys(updates).length) {
+      return showToast("Hãy chọn ít nhất 1 mục cần cập nhật.");
+    }
+    setBulkAptSaving(true);
+    try {
+      const r = await fetch("/api/studio/apartments/bulk", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ action: "update", codes: selectedApts, updates })
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Cập nhật hàng loạt thất bại.");
+      setBulkAptModalOpen(false);
+      setSelectedApts([]);
+      setAptSelectMode(false);
+      showToast(`Đã cập nhật ${j.count} căn hộ thành công!`);
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setBulkAptSaving(false);
+    }
+  };
+
+  const handleBulkDeleteApts = async () => {
+    if (!selectedApts.length) return;
+    if (!window.confirm(`Xóa vĩnh viễn ${selectedApts.length} căn hộ đã chọn? Thao tác không thể hoàn tác.`)) return;
+    const r = await fetch("/api/studio/apartments/bulk", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ action: "delete", codes: selectedApts })
+    });
+    const j = await r.json();
+    if (r.ok && j.ok) {
+      setSelectedApts([]);
+      setAptSelectMode(false);
+      const failNote = j.failed?.length ? ` (${j.failed.length} căn đang giữ chỗ)` : "";
+      showToast(`Đã xóa ${j.count} căn hộ${failNote}`);
+      await loadReport();
+    } else {
+      showToast(j.error || "Không thể xóa hàng loạt.");
+    }
+  };
+
+  const handleDeleteMedia = async (item: MediaItem) => {
+    const warn = item.usedBy.length
+      ? `Ảnh này đang gắn trên ${item.usedBy.length} căn hộ. Xóa sẽ gỡ ảnh khỏi căn đó và xóa vĩnh viễn trên Cloud?`
+      : "Xóa vĩnh viễn ảnh này khỏi kho Cloud?";
+    if (!window.confirm(warn)) return;
+    const r = await fetch(`/api/studio/media/${encodeURIComponent(item.id)}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (r.ok) {
+      setForm((p) => ({ ...p, images: p.images.filter((u) => u !== item.url) }));
+      showToast("Đã xóa ảnh khỏi Cloud.");
+      await Promise.all([loadMediaLibrary(), loadReport()]);
+    }
+  };
+
+  /* ======================= CUSTOMERS / LEADS CRUD ======================= */
+  const openCreateLead = () => {
+    setEditingLeadId(null);
+    setLeadForm({
+      clientName: "",
+      contactHandle: "",
+      messenger: "Zalo",
+      apartmentCode: report?.apartments?.[0]?.code || "CURATED-SHORTLIST",
+      type: "viewing",
+      status: "New",
+      viewingTime: "",
+      moveInDate: "",
+      budgetUsd: "",
+      notes: ""
+    });
+    setLeadModalOpen(true);
+  };
+
+  const openEditLead = (inq: Inquiry) => {
+    setEditingLeadId(inq.code || inq._id);
+    setLeadForm({
+      clientName: inq.clientName || "",
+      contactHandle: inq.contactHandle || "",
+      messenger: inq.messenger || "Zalo",
+      apartmentCode: inq.apartmentCode || "CURATED-SHORTLIST",
+      type: ["reservation", "booking"].includes(inq.type) ? "reservation" : "viewing",
+      status: inq.status || "New",
+      viewingTime: inq.viewingTime ? inq.viewingTime.replace(" ", "T").slice(0, 16) : "",
+      moveInDate: inq.moveInDate || "",
+      budgetUsd: inq.budgetUsd || "",
+      notes: inq.notes || ""
+    });
+    setLeadModalOpen(true);
+  };
+
+  const handleSaveLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadForm.clientName.trim()) return showToast("Nhập tên khách hàng.");
+    setSavingLead(true);
+    try {
+      const payload = {
+        ...leadForm,
+        viewingTime: leadForm.viewingTime ? leadForm.viewingTime.replace("T", " ") : ""
+      };
+      const url = editingLeadId
+        ? `/api/inquiries/${encodeURIComponent(editingLeadId)}`
+        : "/api/studio/inquiries";
+      const method = editingLeadId ? "PATCH" : "POST";
+      const r = await fetch(url, {
+        method,
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload)
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được thông tin khách.");
+      setLeadModalOpen(false);
+      showToast(editingLeadId ? "Đã cập nhật khách hàng!" : "Đã thêm khách hàng mới!");
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setSavingLead(false);
     }
   };
 
@@ -613,7 +1011,7 @@ function StudioApp() {
       body: JSON.stringify(updates)
     });
     const j = await r.json();
-    if (!r.ok || !j.ok) return showToast(`⚠️ ${j.error || "Không cập nhật được"}`);
+    if (!r.ok || !j.ok) return showToast(j.error || "Không cập nhật được");
     showToast(msg);
     await loadReport();
   };
@@ -624,113 +1022,185 @@ function StudioApp() {
       headers: authHeaders()
     });
     const j = await r.json();
-    if (!r.ok || !j.ok) return showToast(`⚠️ ${j.error || "Thao tác thất bại"}`);
-    showToast(action === "confirm" ? "✅ Đã xác nhận giữ chỗ!" : "🔄 Đã hủy giữ chỗ & mở trống căn!");
+    if (!r.ok || !j.ok) return showToast(j.error || "Thao tác thất bại");
+    showToast(action === "confirm" ? "Đã xác nhận giữ chỗ!" : "Đã hủy giữ chỗ & mở trống căn!");
     await loadReport();
   };
 
   const handleDeleteLead = async (inq: Inquiry) => {
-    if (!window.confirm(`Xóa yêu cầu của khách ${inq.clientName}?`)) return;
+    if (!window.confirm(`Xóa khách hàng ${inq.clientName}?`)) return;
     const r = await fetch(`/api/inquiries/${encodeURIComponent(inq.code || inq._id)}`, {
       method: "DELETE",
       headers: authHeaders()
     });
+    const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast("🗑️ Đã xóa yêu cầu khách hàng.");
+      setLeadModalOpen(false);
+      showToast("Đã xóa khách hàng.");
       await loadReport();
+    } else {
+      showToast(j.error || "Không xóa được.");
     }
   };
 
-  const openLeaseModalFromLead = (inq?: Inquiry) => {
+  const toggleSelectLead = (id: string) => {
+    setSelectedLeads((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleBulkUpdateLeads = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLeads.length) return;
+    const r = await fetch("/api/studio/inquiries/bulk", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ action: "update", ids: selectedLeads, updates: { status: bulkLeadStatus } })
+    });
+    const j = await r.json();
+    if (r.ok && j.ok) {
+      setBulkLeadModalOpen(false);
+      setSelectedLeads([]);
+      setLeadSelectMode(false);
+      showToast(`Đã cập nhật ${j.count} khách hàng!`);
+      await loadReport();
+    } else {
+      showToast(j.error || "Cập nhật thất bại.");
+    }
+  };
+
+  const handleBulkDeleteLeads = async () => {
+    if (!selectedLeads.length) return;
+    if (!window.confirm(`Xóa ${selectedLeads.length} khách hàng đã chọn?`)) return;
+    const r = await fetch("/api/studio/inquiries/bulk", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ action: "delete", ids: selectedLeads })
+    });
+    const j = await r.json();
+    if (r.ok && j.ok) {
+      setSelectedLeads([]);
+      setLeadSelectMode(false);
+      showToast(`Đã xóa ${j.count} khách hàng.`);
+      await loadReport();
+    } else {
+      showToast(j.error || "Không xóa được.");
+    }
+  };
+
+  /* ======================= LEASES CRUD ======================= */
+  const openCreateLease = (inq?: Inquiry) => {
+    setEditingLeaseCode(null);
     const firstAvail = report?.apartments.find((a) => a.status === "Available") || report?.apartments[0];
     const targetApt = inq?.apartmentCode
       ? report?.apartments.find((a) => a.code === inq.apartmentCode)
       : firstAvail;
+    const vndTr = targetApt?.priceVnd
+      ? (targetApt.priceVnd / 1_000_000).toFixed(1).replace(/\.0$/, "")
+      : "20";
     setLeaseForm({
       apartmentCode: targetApt?.code || inq?.apartmentCode || "",
       tenantName: inq?.clientName || "",
       tenantContact: inq?.contactHandle || "",
-      messenger: inq?.messenger || "Telegram",
-      priceUsd: String(targetApt?.priceUsd || 800),
+      messenger: inq?.messenger || "Zalo",
+      priceVndTr: vndTr,
+      priceUsd: String(targetApt?.priceUsd || Math.round(20_000_000 / RATE_VND)),
       depositMonths: String(targetApt?.depositMonths || 1),
       paymentDay: "5",
       startDate: new Date().toISOString().slice(0, 10),
       endDate: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
+      status: "Active",
       notes: inq ? `Chốt thuê từ yêu cầu ${inq.code}` : ""
     });
     setLeaseModalOpen(true);
   };
 
-  const handleCreateLease = async (e: React.FormEvent) => {
+  const openEditLease = (l: Lease) => {
+    setEditingLeaseCode(l.code);
+    const vnd = l.priceVnd || Math.round((l.priceUsd || 0) * RATE_VND);
+    setLeaseForm({
+      apartmentCode: l.apartmentCode || "",
+      tenantName: l.tenantName || "",
+      tenantContact: l.tenantContact || "",
+      messenger: l.messenger || "Zalo",
+      priceVndTr: vnd ? (vnd / 1_000_000).toFixed(1).replace(/\.0$/, "") : "",
+      priceUsd: String(l.priceUsd || ""),
+      depositMonths: String(l.depositMonths || 1),
+      paymentDay: String(l.paymentDay || 5),
+      startDate: l.startDate || "",
+      endDate: l.endDate || "",
+      status: l.status || "Active",
+      notes: l.notes || ""
+    });
+    setLeaseModalOpen(true);
+  };
+
+  const handleSaveLease = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leaseForm.apartmentCode || !leaseForm.tenantName.trim()) {
       return showToast("Nhập mã căn và tên khách thuê.");
     }
-    const r = await fetch("/api/leases", {
-      method: "POST",
-      headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify(leaseForm)
-    });
-    const j = await r.json();
-    if (!r.ok || !j.ok) return showToast(`⚠️ ${j.error || "Không tạo được hợp đồng"}`);
-    setLeaseModalOpen(false);
-    showToast("🔑 Đã tạo hợp đồng thuê & chuyển căn sang Đã thuê!");
-    await loadReport();
+    setSavingLease(true);
+    try {
+      const vnd = Math.round(parseFloat(leaseForm.priceVndTr.replace(",", ".")) * 1_000_000) || 0;
+      const usd = parseInt(leaseForm.priceUsd, 10) || Math.round(vnd / RATE_VND);
+      const payload = {
+        apartmentCode: leaseForm.apartmentCode,
+        tenantName: leaseForm.tenantName.trim(),
+        tenantContact: leaseForm.tenantContact.trim(),
+        messenger: leaseForm.messenger,
+        priceVnd: vnd || Math.round(usd * RATE_VND),
+        priceUsd: usd || Math.round(vnd / RATE_VND),
+        depositMonths: Number(leaseForm.depositMonths) || 1,
+        paymentDay: Number(leaseForm.paymentDay) || 5,
+        startDate: leaseForm.startDate,
+        endDate: leaseForm.endDate,
+        status: leaseForm.status,
+        notes: leaseForm.notes.trim()
+      };
+      const url = editingLeaseCode ? `/api/leases/${encodeURIComponent(editingLeaseCode)}` : "/api/leases";
+      const method = editingLeaseCode ? "PATCH" : "POST";
+      const r = await fetch(url, {
+        method,
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload)
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được hợp đồng");
+      setLeaseModalOpen(false);
+      showToast(editingLeaseCode ? "Đã cập nhật hợp đồng!" : "Đã tạo hợp đồng & chuyển căn sang Đã thuê!");
+      await loadReport();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setSavingLease(false);
+    }
   };
 
   const handleCheckoutLease = async (lease: Lease) => {
-    if (!window.confirm(`Xác nhận khách ${lease.tenantName} trả phòng ${lease.apartmentCode} và mở trống lại căn hộ trên Web?`)) return;
+    if (!window.confirm(`Xác nhận khách ${lease.tenantName} trả phòng ${lease.apartmentCode} và mở trống lại căn hộ?`)) return;
     const r = await fetch(`/api/leases/${encodeURIComponent(lease.code)}/checkout`, {
       method: "POST",
       headers: authHeaders()
     });
     if (r.ok) {
-      showToast(`🔓 Đã trả phòng & mở trống căn ${lease.apartmentCode}!`);
+      showToast(`Đã trả phòng & mở trống căn ${lease.apartmentCode}!`);
       await loadReport();
     }
   };
 
-  const handleSyncWeb = async () => {
-    showToast("⏳ Đang đồng bộ lên Web Live...");
-    const r = await fetch("/api/studio/sync-web", { method: "POST", headers: authHeaders() });
-    const j = await r.json();
-    if (j.result?.pushed) showToast("🚀 Đã đẩy lên Web Live! Cập nhật sau ~15s.");
-    else if (j.result?.unchanged) showToast("✅ Web Live đã có dữ liệu mới nhất!");
-    else showToast("ℹ️ Hệ thống đang đồng bộ tự động.");
-  };
-
-  const handleDownloadCsv = async (endpoint: string, filename: string) => {
-    const r = await fetch(endpoint, { headers: authHeaders() });
-    if (!r.ok) return showToast("⚠️ Không tải được file Excel.");
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`📊 Đã tải ${filename}`);
-  };
-
-  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>, endpoint: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const csvText = await file.text();
-    const r = await fetch(endpoint, {
-      method: "POST",
-      headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ csvText })
+  const handleDeleteLease = async (lease: Lease) => {
+    if (!window.confirm(`Xóa vĩnh viễn hợp đồng ${lease.code} của ${lease.tenantName}?`)) return;
+    const r = await fetch(`/api/leases/${encodeURIComponent(lease.code)}`, {
+      method: "DELETE",
+      headers: authHeaders()
     });
-    const j = await r.json();
-    if (j.ok) {
-      showToast(`✅ Đã nhập ${j.result?.createdOrUpdated || 0} dòng từ Excel!`);
+    if (r.ok) {
+      setLeaseModalOpen(false);
+      showToast(`Đã xóa hợp đồng ${lease.code}`);
       await loadReport();
-    } else {
-      showToast(`❌ ${j.error || "Lỗi nhập file CSV"}`);
     }
-    e.target.value = "";
   };
 
+  /* ======================= FILTERED LISTS ======================= */
   const filteredApartments = useMemo(() => {
     const list = report?.apartments || [];
     const q = aptSearch.trim().toLowerCase();
@@ -741,7 +1211,7 @@ function StudioApp() {
       if (aptFilter === "rented" && a.status !== "Rented") return false;
       if (aptFilter === "hidden" && !hidden) return false;
       if (!q) return true;
-      return [a.code, titleOf(a), a.building, a.address, a.areaName].some((v) =>
+      return [a.code, titleOf(a), a.building, a.address, a.areaName, areaDisplayLabel(a.areaName)].some((v) =>
         String(v || "").toLowerCase().includes(q)
       );
     });
@@ -749,6 +1219,7 @@ function StudioApp() {
 
   const filteredLeads = useMemo(() => {
     const all = (report?.inquiries || []).filter((i) => i.type !== "owner_listing");
+    const q = leadSearch.trim().toLowerCase();
     return all.filter((i) => {
       const isBooking = ["reservation", "booking"].includes(i.type);
       if (leadAptFilter && String(i.apartmentCode || "").toUpperCase() !== leadAptFilter.toUpperCase()) return false;
@@ -756,14 +1227,33 @@ function StudioApp() {
         if (leadSubTab === "bookings" && !isBooking) return false;
         if (leadSubTab === "viewings" && isBooking) return false;
       }
-      return true;
+      if (!q) return true;
+      return [i.clientName, i.contactHandle, i.code, i.apartmentCode, i.notes, i.messenger].some((v) =>
+        String(v || "").toLowerCase().includes(q)
+      );
     });
-  }, [report, leadSubTab, leadAptFilter]);
+  }, [report, leadSubTab, leadAptFilter, leadSearch]);
 
+  const filteredLeases = useMemo(() => {
+    const list = report?.leases || [];
+    const q = leaseSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((l) =>
+      [l.code, l.tenantName, l.tenantContact, l.apartmentCode, l.building, l.notes].some((v) =>
+        String(v || "").toLowerCase().includes(q)
+      )
+    );
+  }, [report, leaseSearch]);
+
+  const hasBulkBar =
+    (tab === "apartments" && aptSelectMode && selectedApts.length > 0) ||
+    (tab === "leads" && leadSelectMode && selectedLeads.length > 0);
+
+  /* ======================= AUTH VIEWS ======================= */
   if (checkingAuth) {
     return (
       <div className="st-lock-wrap">
-        <div style={{ color: "#e7cfa8", fontWeight: 700, fontSize: 15 }}>Đang mở KIN Estates Studio...</div>
+        <div style={{ color: "#ebd5b0", fontWeight: 700, fontSize: 14.5 }}>Đang mở KIN Studio...</div>
       </div>
     );
   }
@@ -773,27 +1263,27 @@ function StudioApp() {
       <div className="st-lock-wrap">
         <form className="st-lock-card" onSubmit={handleLogin}>
           <div className="st-logo" style={{ margin: "0 auto 14px", width: 52, height: 52, fontSize: 28 }}>K</div>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", color: "#b88c52", textTransform: "uppercase" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", color: "#b38646", textTransform: "uppercase" }}>
             KIN ESTATES STUDIO
           </div>
-          <h1 style={{ margin: "6px 0 6px", fontSize: 20, fontWeight: 800, color: "#14191f" }}>
-            Bảng Điều Khiển Quản Lý
+          <h1 style={{ margin: "6px 0 6px", fontSize: 20, fontWeight: 800, color: "#12171d" }}>
+            Quản Trị Nội Bộ
           </h1>
-          <p style={{ margin: "0 0 18px", fontSize: 13, color: "#5c6672" }}>
-            Khu vực quản trị riêng tư. Nhập mã khóa hoặc mở trực tiếp từ Bot Telegram của anh.
+          <p style={{ margin: "0 0 18px", fontSize: 13, color: "#586270" }}>
+            Nhập mã khóa quản trị hoặc mở trực tiếp từ Bot Telegram của anh.
           </p>
           <input
             type="password"
             className="st-input"
-            placeholder="Nhập mã khóa quản trị..."
+            placeholder="Nhập mã khóa..."
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
-            style={{ textAlign: "center", fontSize: 16, letterSpacing: "0.12em", marginBottom: 12 }}
+            style={{ textAlign: "center", fontSize: 16, letterSpacing: "0.14em", marginBottom: 12 }}
             autoFocus
           />
           {authError && <div style={{ color: "#dc2626", fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>{authError}</div>}
           <button type="submit" className="st-btn st-btn--primary">
-            🔓 Mở Bảng Điều Khiển
+            <Icon.Lock /> Mở Bảng Điều Khiển
           </button>
         </form>
       </div>
@@ -804,7 +1294,7 @@ function StudioApp() {
   const pendingAlertCount = (kpi?.newLeadsCount || 0) + (kpi?.pendingBookingsCount || 0);
 
   return (
-    <div className="st-shell">
+    <div className={`st-shell ${hasBulkBar ? "has-bulk-bar" : ""}`}>
       {toast && <div className="st-toast">{toast}</div>}
 
       {/* Top Sticky Header */}
@@ -812,33 +1302,53 @@ function StudioApp() {
         <div className="st-brand">
           <div className="st-logo">K</div>
           <div>
-            <div className="st-brand-title">KIN ESTATES</div>
-            <div className="st-brand-sub">MOBILE STUDIO & BÁO CÁO</div>
+            <div className="st-brand-title">KIN STUDIO</div>
+            <div className="st-live-pill">
+              <span className="st-live-dot" />
+              Cloud 24/7
+            </div>
           </div>
         </div>
         <div className="st-header-actions">
-          <button type="button" className="st-icon-btn" onClick={() => loadReport()} disabled={loading}>
-            {loading ? "⏳" : "🔄"}
+          <a href="/" target="_blank" rel="noreferrer" className="st-icon-circle" title="Xem Web khách">
+            <Icon.External />
+          </a>
+          <button
+            type="button"
+            className={`st-icon-circle ${loading ? "st-icon-circle--spin" : ""}`}
+            onClick={() => loadReport()}
+            disabled={loading}
+            title="Làm mới dữ liệu"
+          >
+            <Icon.Refresh />
           </button>
-          <button type="button" className="st-icon-btn st-icon-btn--accent" onClick={openCreateEditor}>
-            ＋ Đăng căn
+          <button
+            type="button"
+            className="st-icon-circle"
+            title="Khóa màn hình"
+            onClick={() => {
+              localStorage.removeItem("kin_studio_token");
+              setToken("");
+              setAuthed(false);
+            }}
+          >
+            <Icon.Lock />
           </button>
         </div>
       </header>
 
-      {/* Main Views */}
       <main className="st-content">
-        {/* TAB 1: DETAILED EXECUTIVE REPORT */}
+        {/* ================= TAB 1: DASHBOARD TỔNG QUAN ================= */}
         {tab === "report" && kpi && report && (
           <>
             <section className="st-hero-card">
               <div className="st-hero-label">
-                <span>BÁO CÁO DOANH THU & CÔNG SUẤT</span>
+                <span>DOANH THU ĐANG VẬN HÀNH</span>
                 <span>{new Date(report.generatedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
               <div className="st-hero-revenue">{fmtVnd(kpi.activeRevenueVnd)} / tháng</div>
               <div className="st-hero-sub">
-                ≈ ${kpi.activeRevenueUsd.toLocaleString("en-US")}/tháng từ {kpi.activeLeasesCount} hợp đồng hiệu lực · Tiềm năng căn trống: <b>{fmtVnd(kpi.vacantPotentialVnd)}</b>
+                ${kpi.activeRevenueUsd.toLocaleString("en-US")}/th từ <b>{kpi.activeLeasesCount}</b> hợp đồng · Tiềm năng căn trống: <b>{fmtVnd(kpi.vacantPotentialVnd)}</b>
               </div>
               <div className="st-progress-wrap">
                 <div className="st-progress-head">
@@ -851,7 +1361,23 @@ function StudioApp() {
               </div>
             </section>
 
-            {/* 2x2 Quick KPIs */}
+            {/* Quick 1-Tap CRUD Shortcuts */}
+            <section className="st-quick-actions">
+              <button type="button" className="st-quick-btn st-quick-btn--primary" onClick={openCreateEditor}>
+                <span className="st-quick-icon"><Icon.Plus size={18} /></span>
+                <span>Thêm căn hộ</span>
+              </button>
+              <button type="button" className="st-quick-btn" onClick={openCreateLead}>
+                <span className="st-quick-icon"><Icon.Users /></span>
+                <span>Thêm khách</span>
+              </button>
+              <button type="button" className="st-quick-btn" onClick={() => openCreateLease()}>
+                <span className="st-quick-icon"><Icon.Key /></span>
+                <span>Tạo hợp đồng</span>
+              </button>
+            </section>
+
+            {/* 2x2 Interactive KPI Cards */}
             <section className="st-kpi-grid">
               <button type="button" className="st-kpi-card" onClick={() => { setAptFilter("available"); setTab("apartments"); }}>
                 <div className="st-kpi-top">
@@ -859,13 +1385,13 @@ function StudioApp() {
                   <span className="st-badge st-badge--green">Online</span>
                 </div>
                 <div className="st-kpi-val">{kpi.availableCount}</div>
-                <div className="st-kpi-note">Tổng kho: {kpi.totalApartments} căn ({kpi.hiddenCount} ẩn)</div>
+                <div className="st-kpi-note">Tổng {kpi.totalApartments} căn · {kpi.hiddenCount} đang ẩn</div>
               </button>
 
               <button type="button" className="st-kpi-card" onClick={() => { setAptFilter("rented"); setTab("apartments"); }}>
                 <div className="st-kpi-top">
-                  <span>Đã thuê / Giữ chỗ</span>
-                  <span className="st-badge st-badge--amber">Hoạt động</span>
+                  <span>Thuê & Giữ chỗ</span>
+                  <span className="st-badge st-badge--bronze">Hoạt động</span>
                 </div>
                 <div className="st-kpi-val">{kpi.rentedCount + kpi.reservedCount}</div>
                 <div className="st-kpi-note">{kpi.rentedCount} đã thuê · {kpi.reservedCount} giữ chỗ</div>
@@ -874,69 +1400,53 @@ function StudioApp() {
               <button type="button" className="st-kpi-card" onClick={() => { setLeadAptFilter(""); setTab("leads"); }}>
                 <div className="st-kpi-top">
                   <span>Khách chờ xử lý</span>
-                  {pendingAlertCount > 0 && <span className="st-badge st-badge--red">Mới</span>}
+                  {pendingAlertCount > 0 ? <span className="st-badge st-badge--red">Mới</span> : <span className="st-badge st-badge--gray">Ổn định</span>}
                 </div>
                 <div className="st-kpi-val">{pendingAlertCount}</div>
-                <div className="st-kpi-note">{kpi.newLeadsCount} hẹn xem · {kpi.pendingBookingsCount} giữ chỗ</div>
+                <div className="st-kpi-note">{kpi.totalInquiries} tổng khách quan tâm</div>
               </button>
 
               <button type="button" className="st-kpi-card" onClick={() => setTab("leases")}>
                 <div className="st-kpi-top">
                   <span>HĐ sắp hết hạn</span>
-                  <span className={`st-badge ${kpi.expiringSoonCount > 0 ? "st-badge--red" : "st-badge--green"}`}>45 ngày</span>
+                  <span className={`st-badge ${kpi.expiringSoonCount > 0 ? "st-badge--amber" : "st-badge--green"}`}>45 ngày</span>
                 </div>
                 <div className="st-kpi-val">{kpi.expiringSoonCount}</div>
-                <div className="st-kpi-note">{kpi.activeLeasesCount} hợp đồng đang chạy</div>
+                <div className="st-kpi-note">{kpi.activeLeasesCount} hợp đồng hiệu lực</div>
               </button>
             </section>
 
-            {/* CRM Funnel */}
+            {/* Compact 4-Stage Pipeline */}
             <section className="st-card">
               <div className="st-card-head">
-                <h2 className="st-card-title">📈 Phễu Chăm Sóc Khách Hàng</h2>
-                <span className="st-badge st-badge--navy">{kpi.totalInquiries} yêu cầu</span>
+                <h2 className="st-card-title">Phễu Khách Hàng</h2>
+                <button type="button" className="st-btn-mini" onClick={() => setTab("leads")}>Quản lý →</button>
               </div>
               <div className="st-funnel-grid">
                 <div className="st-funnel-box">
-                  <div className="st-funnel-num">{report.statusFunnel.New || 0}</div>
-                  <div className="st-funnel-lbl">🆕 Mới</div>
+                  <div className="st-funnel-num">{(report.statusFunnel.New || 0) + (report.statusFunnel.Pending || 0)}</div>
+                  <div className="st-funnel-lbl">Mới</div>
                 </div>
                 <div className="st-funnel-box">
                   <div className="st-funnel-num">{report.statusFunnel.Contacted || 0}</div>
-                  <div className="st-funnel-lbl">📞 Đã LH</div>
+                  <div className="st-funnel-lbl">Đã LH</div>
                 </div>
                 <div className="st-funnel-box">
-                  <div className="st-funnel-num">{report.statusFunnel.Viewing_Scheduled || 0}</div>
-                  <div className="st-funnel-lbl">📅 Đã hẹn xem</div>
-                </div>
-                <div className="st-funnel-box">
-                  <div className="st-funnel-num">{report.statusFunnel.Pending || 0}</div>
-                  <div className="st-funnel-lbl">⏳ Chờ giữ chỗ</div>
-                </div>
-                <div className="st-funnel-box">
-                  <div className="st-funnel-num">{report.statusFunnel.Confirmed || 0}</div>
-                  <div className="st-funnel-lbl">🟡 Đang giữ</div>
+                  <div className="st-funnel-num">{(report.statusFunnel.Viewing_Scheduled || 0) + (report.statusFunnel.Confirmed || 0)}</div>
+                  <div className="st-funnel-lbl">Hẹn / Giữ</div>
                 </div>
                 <div className="st-funnel-box">
                   <div className="st-funnel-num">{report.statusFunnel.Rented_Closed || 0}</div>
-                  <div className="st-funnel-lbl">🔑 Đã chốt</div>
+                  <div className="st-funnel-lbl">Đã chốt</div>
                 </div>
               </div>
-              {report.channels.length > 0 && (
-                <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {report.channels.map((ch) => (
-                    <span key={ch.name} className="st-badge st-badge--gray">
-                      {ch.name}: {ch.count}
-                    </span>
-                  ))}
-                </div>
-              )}
             </section>
 
-            {/* Area Breakdown */}
+            {/* Merged Area Breakdown */}
             <section className="st-card">
               <div className="st-card-head">
-                <h2 className="st-card-title">🗺️ Phân Bổ Theo Khu Vực Đà Nẵng</h2>
+                <h2 className="st-card-title">Phân Bổ Theo Khu Vực</h2>
+                <span className="st-badge st-badge--gray">{report.areaBreakdown.length} khu vực</span>
               </div>
               <div className="st-bar-list">
                 {report.areaBreakdown.map((item) => {
@@ -945,8 +1455,8 @@ function StudioApp() {
                     <div key={item.area} className="st-bar-item">
                       <div className="st-bar-row">
                         <span>{item.area}</span>
-                        <span style={{ color: "var(--text-sub)", fontSize: 12 }}>
-                          {item.total} căn ({item.available} trống) · 👥 {item.leads} khách
+                        <span style={{ color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
+                          {item.total} căn ({item.available} trống) · {item.leads} khách
                         </span>
                       </div>
                       <div className="st-bar-track">
@@ -958,11 +1468,11 @@ function StudioApp() {
               </div>
             </section>
 
-            {/* Top Apartments by Demand */}
+            {/* Top Contacted Apartments */}
             <section className="st-card">
               <div className="st-card-head">
-                <h2 className="st-card-title">🔥 Căn Hộ Được Hỏi Nhiều Nhất</h2>
-                <button type="button" className="st-btn-mini" onClick={() => setTab("apartments")}>Xem tất cả →</button>
+                <h2 className="st-card-title">Căn Hộ Quan Tâm Nhất</h2>
+                <button type="button" className="st-btn-mini" onClick={() => setTab("apartments")}>Tất cả →</button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {report.topApartments.slice(0, 4).map((apt) => (
@@ -972,20 +1482,20 @@ function StudioApp() {
                     onClick={() => openEditEditor(apt)}
                   >
                     <img
-                      src={apt.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=70"}
+                      src={apt.images?.[0] || FALLBACK_IMG}
                       alt=""
-                      style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+                      style={{ width: 46, height: 46, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {titleOf(apt)}
                       </div>
                       <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>
-                        {fmtVnd(apt.priceVnd)} · {apt.code}
+                        {fmtVnd(apt.priceVnd)} · {areaDisplayLabel(apt.areaName)}
                       </div>
                     </div>
                     <span className="st-badge st-badge--blue">
-                      👥 {apt.contactSummary?.people || 0} LH
+                      {apt.contactSummary?.people || 0} LH
                     </span>
                   </div>
                 ))}
@@ -994,13 +1504,17 @@ function StudioApp() {
 
             {/* Expiring Leases Alert */}
             {report.expiringSoonLeases.length > 0 && (
-              <section className="st-card" style={{ borderColor: "rgba(217,119,6,0.35)", background: "#fffdf7" }}>
+              <section className="st-card" style={{ borderColor: "rgba(201,115,5,0.32)", background: "#fffdf7" }}>
                 <div className="st-card-head">
-                  <h2 className="st-card-title">⚠️ Hợp Đồng Sắp Hết Hạn</h2>
+                  <h2 className="st-card-title">Hợp Đồng Sắp Hết Hạn</h2>
                   <span className="st-badge st-badge--amber">{report.expiringSoonLeases.length} HĐ</span>
                 </div>
                 {report.expiringSoonLeases.map((l) => (
-                  <div key={l.code} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderTop: "1px solid var(--border)" }}>
+                  <div
+                    key={l.code}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: "1px solid var(--border)", cursor: "pointer" }}
+                    onClick={() => openEditLease(l)}
+                  >
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{l.tenantName} · {l.apartmentCode}</div>
                       <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>Hết hạn: {l.endDate}</div>
@@ -1012,39 +1526,65 @@ function StudioApp() {
                 ))}
               </section>
             )}
-
-            <div className="st-row-2">
-              <button type="button" className="st-btn st-btn--outline" onClick={() => handleDownloadCsv("/api/excel/apartments.csv", "KIN_Estates_CanHo.csv")}>
-                📊 Tải Excel Kho Căn
-              </button>
-              <button type="button" className="st-btn st-btn--primary" onClick={handleSyncWeb}>
-                🚀 Đồng bộ Web Live
-              </button>
-            </div>
           </>
         )}
 
-        {/* TAB 2: APARTMENTS INVENTORY */}
+        {/* ================= TAB 2: CĂN HỘ (CRUD + MULTI-SELECT + KHO ẢNH) ================= */}
         {tab === "apartments" && (
           <>
-            <div className="st-search-box">
-              <span className="st-search-icon">🔍</span>
-              <input
-                type="search"
-                className="st-search-input"
-                placeholder="Tìm mã căn, tên tòa nhà, địa chỉ..."
-                value={aptSearch}
-                onChange={(e) => setAptSearch(e.target.value)}
-              />
+            <div className="st-toolbar">
+              <div className="st-search-box">
+                <span className="st-search-icon"><Icon.Search /></span>
+                <input
+                  type="search"
+                  className="st-search-input"
+                  placeholder="Tìm mã căn, tòa nhà, khu vực..."
+                  value={aptSearch}
+                  onChange={(e) => setAptSearch(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className={`st-tool-pill ${aptSelectMode ? "active" : ""}`}
+                onClick={() => {
+                  setAptSelectMode((v) => !v);
+                  setSelectedApts([]);
+                }}
+              >
+                <Icon.Checklist />
+                <span>{aptSelectMode ? "Xong" : "Chọn"}</span>
+              </button>
+              <button type="button" className="st-tool-pill" onClick={() => openMediaLibrary(false)} title="Kho ảnh Cloud">
+                <Icon.Image />
+                <span>Ảnh</span>
+              </button>
             </div>
+
+            {aptSelectMode && (
+              <div className="st-select-strip">
+                <span>Đã chọn {selectedApts.length}/{filteredApartments.length} căn</span>
+                <div className="st-select-strip-actions">
+                  <button
+                    type="button"
+                    className="st-strip-btn"
+                    onClick={() => {
+                      const allCodes = filteredApartments.map((a) => a.code);
+                      setSelectedApts(selectedApts.length === allCodes.length ? [] : allCodes);
+                    }}
+                  >
+                    {selectedApts.length === filteredApartments.length && filteredApartments.length > 0 ? "Bỏ chọn" : "Chọn tất cả"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="st-chips">
               {[
                 ["all", `Tất cả (${report?.apartments.length || 0})`],
-                ["available", `🟢 Trống (${kpi?.availableCount || 0})`],
-                ["reserved", `🟡 Giữ chỗ (${kpi?.reservedCount || 0})`],
-                ["rented", `🔴 Đã thuê (${kpi?.rentedCount || 0})`],
-                ["hidden", `🙈 Ẩn (${kpi?.hiddenCount || 0})`]
+                ["available", `Trống (${kpi?.availableCount || 0})`],
+                ["reserved", `Giữ chỗ (${kpi?.reservedCount || 0})`],
+                ["rented", `Đã thuê (${kpi?.rentedCount || 0})`],
+                ["hidden", `Đang ẩn (${kpi?.hiddenCount || 0})`]
               ].map(([key, lbl]) => (
                 <button
                   key={key}
@@ -1064,87 +1604,124 @@ function StudioApp() {
                 const isHidden = apt.isVisible === false || apt.status === "Hidden";
                 const isAvail = apt.status === "Available";
                 const people = apt.contactSummary?.people || 0;
+                const isSelected = selectedApts.includes(apt.code);
+
                 return (
-                  <article key={apt.code} className="st-apt-card">
+                  <article
+                    key={apt.code}
+                    className={`st-apt-card ${isSelected ? "selected" : ""}`}
+                    onClick={aptSelectMode ? () => toggleSelectApt(apt.code) : undefined}
+                  >
                     <div className="st-apt-top">
-                      <div className="st-apt-thumb-wrap" onClick={() => openEditEditor(apt)}>
-                        <img
-                          className="st-apt-thumb"
-                          src={apt.images?.[0] || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=70"}
-                          alt={titleOf(apt)}
-                        />
-                        <span className="st-apt-photo-count">📸 {(apt.images || []).length}</span>
+                      {aptSelectMode && (
+                        <button
+                          type="button"
+                          className={`st-check-circle ${isSelected ? "checked" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelectApt(apt.code);
+                          }}
+                        >
+                          {isSelected && <Icon.Check size={13} />}
+                        </button>
+                      )}
+                      <div
+                        className="st-apt-thumb-wrap"
+                        onClick={(e) => {
+                          if (aptSelectMode) return;
+                          e.stopPropagation();
+                          openEditEditor(apt);
+                        }}
+                      >
+                        <img className="st-apt-thumb" src={apt.images?.[0] || FALLBACK_IMG} alt={titleOf(apt)} />
+                        <span className="st-apt-photo-count">
+                          <Icon.Image size={10} /> {(apt.images || []).length}
+                        </span>
                       </div>
                       <div className="st-apt-info">
-                        <h3 className="st-apt-title" onClick={() => openEditEditor(apt)}>{titleOf(apt)}</h3>
+                        <h3
+                          className="st-apt-title"
+                          onClick={(e) => {
+                            if (aptSelectMode) return;
+                            e.stopPropagation();
+                            openEditEditor(apt);
+                          }}
+                        >
+                          {titleOf(apt)}
+                        </h3>
                         <div className="st-apt-price">
                           {fmtVnd(apt.priceVnd)}/th <span style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 600 }}>· ${apt.priceUsd}</span>
                         </div>
                         <div className="st-apt-meta">
-                          {apt.bedrooms ?? "-"} PN · {apt.sizeM2 ?? "-"} m² · 📍 {apt.address || apt.building}
+                          {apt.bedrooms ?? "-"} PN · {apt.sizeM2 ?? "-"} m² · {areaDisplayLabel(apt.areaName)}
                         </div>
                         <div className="st-apt-badges">
                           {isHidden ? (
-                            <span className="st-badge st-badge--gray">🙈 Đang ẩn</span>
+                            <span className="st-badge st-badge--gray">Đang ẩn</span>
                           ) : apt.status === "Rented" ? (
-                            <span className="st-badge st-badge--red">🔴 Đã thuê</span>
+                            <span className="st-badge st-badge--red">Đã thuê</span>
                           ) : apt.status === "Reserved" ? (
-                            <span className="st-badge st-badge--amber">🟡 Giữ chỗ</span>
+                            <span className="st-badge st-badge--amber">Giữ chỗ</span>
                           ) : (
-                            <span className="st-badge st-badge--green">🟢 Đang trống</span>
+                            <span className="st-badge st-badge--green">Còn trống</span>
                           )}
                           <span className="st-badge st-badge--gray">{apt.code}</span>
                           {people > 0 && (
                             <span
                               className="st-badge st-badge--blue"
                               style={{ cursor: "pointer" }}
-                              onClick={() => { setLeadAptFilter(apt.code); setTab("leads"); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLeadAptFilter(apt.code);
+                                setTab("leads");
+                              }}
                             >
-                              🔔 {people} khách LH
+                              {people} khách
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="st-apt-actions">
-                      <button
-                        type="button"
-                        className={`st-btn-mini ${isAvail ? "st-btn-mini--red" : "st-btn-mini--green"}`}
-                        onClick={() =>
-                          quickPatchApt(
-                            apt,
-                            { status: isAvail ? "Rented" : "Available", isVisible: true },
-                            isAvail ? `🔴 Đã đổi ${apt.code} sang Đã thuê` : `🟢 Đã mở trống ${apt.code}`
-                          )
-                        }
-                      >
-                        {isAvail ? "🔴 Thuê" : "🟢 Trống"}
-                      </button>
-                      <button
-                        type="button"
-                        className="st-btn-mini"
-                        onClick={() =>
-                          quickPatchApt(
-                            apt,
-                            { isVisible: isHidden, ...(isHidden && apt.status === "Hidden" ? { status: "Available" } : {}) },
-                            isHidden ? `👁️ Đã hiện ${apt.code} lên Web` : `🙈 Đã ẩn ${apt.code} khỏi Web`
-                          )
-                        }
-                      >
-                        {isHidden ? "👁️ Hiện" : "🙈 Ẩn"}
-                      </button>
-                      <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditEditor(apt)}>
-                        ✏️ Sửa
-                      </button>
-                      <button
-                        type="button"
-                        className="st-btn-mini"
-                        onClick={() => { setLeadAptFilter(apt.code); setTab("leads"); }}
-                      >
-                        👥 ({people})
-                      </button>
-                    </div>
+                    {!aptSelectMode && (
+                      <div className="st-apt-actions">
+                        <button
+                          type="button"
+                          className={`st-btn-mini ${isAvail ? "st-btn-mini--amber" : "st-btn-mini--green"}`}
+                          onClick={() =>
+                            quickPatchApt(
+                              apt,
+                              { status: isAvail ? "Rented" : "Available", isVisible: true },
+                              isAvail ? `Đã chuyển ${apt.code} sang Đã thuê` : `Đã mở trống ${apt.code}`
+                            )
+                          }
+                        >
+                          {isAvail ? "Đã thuê" : "Mở trống"}
+                        </button>
+                        <button
+                          type="button"
+                          className="st-btn-mini"
+                          onClick={() =>
+                            quickPatchApt(
+                              apt,
+                              { isVisible: isHidden, ...(isHidden && apt.status === "Hidden" ? { status: "Available" } : {}) },
+                              isHidden ? `Đã hiện ${apt.code} lên Web` : `Đã ẩn ${apt.code} khỏi Web`
+                            )
+                          }
+                        >
+                          <Icon.Eye off={!isHidden} />
+                          <span>{isHidden ? "Hiện" : "Ẩn"}</span>
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditEditor(apt)}>
+                          <Icon.Edit />
+                          <span>Sửa</span>
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteApt(apt.code)}>
+                          <Icon.Trash />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
+                    )}
                   </article>
                 );
               })
@@ -1152,44 +1729,84 @@ function StudioApp() {
           </>
         )}
 
-        {/* TAB 3: LEADS & BOOKINGS */}
+        {/* ================= TAB 3: KHÁCH HÀNG (FULL CRUD + MULTI-SELECT) ================= */}
         {tab === "leads" && (
           <>
-            {leadAptFilter ? (
-              <div className="st-card" style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700 }}>ĐANG LỌC THEO CĂN HỘ</div>
-                  <div style={{ fontWeight: 800, color: "var(--navy)" }}>🏠 {leadAptFilter}</div>
-                </div>
-                <button type="button" className="st-btn-mini" onClick={() => setLeadAptFilter("")}>✕ Xem tất cả</button>
+            <div className="st-toolbar">
+              <div className="st-search-box">
+                <span className="st-search-icon"><Icon.Search /></span>
+                <input
+                  type="search"
+                  className="st-search-input"
+                  placeholder="Tìm tên khách, SĐT, mã căn..."
+                  value={leadSearch}
+                  onChange={(e) => setLeadSearch(e.target.value)}
+                />
               </div>
-            ) : (
-              <div className="st-row-2">
+              <button
+                type="button"
+                className={`st-tool-pill ${leadSelectMode ? "active" : ""}`}
+                onClick={() => {
+                  setLeadSelectMode((v) => !v);
+                  setSelectedLeads([]);
+                }}
+              >
+                <Icon.Checklist />
+                <span>{leadSelectMode ? "Xong" : "Chọn"}</span>
+              </button>
+            </div>
+
+            {leadSelectMode && (
+              <div className="st-select-strip">
+                <span>Đã chọn {selectedLeads.length}/{filteredLeads.length} khách</span>
                 <button
                   type="button"
-                  className={`st-btn ${leadSubTab === "viewings" ? "st-btn--primary" : "st-btn--outline"}`}
-                  style={{ height: 38 }}
-                  onClick={() => setLeadSubTab("viewings")}
+                  className="st-strip-btn"
+                  onClick={() => {
+                    const allIds = filteredLeads.map((i) => i.code || i._id);
+                    setSelectedLeads(selectedLeads.length === allIds.length ? [] : allIds);
+                  }}
                 >
-                  📅 Hẹn xem & Tư vấn
-                </button>
-                <button
-                  type="button"
-                  className={`st-btn ${leadSubTab === "bookings" ? "st-btn--primary" : "st-btn--outline"}`}
-                  style={{ height: 38 }}
-                  onClick={() => setLeadSubTab("bookings")}
-                >
-                  🟡 Đặt phòng ({(kpi?.pendingBookingsCount || 0) + (kpi?.confirmedBookingsCount || 0)})
+                  {selectedLeads.length === filteredLeads.length && filteredLeads.length > 0 ? "Bỏ chọn" : "Chọn tất cả"}
                 </button>
               </div>
             )}
 
+            {leadAptFilter ? (
+              <div className="st-card" style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 700 }}>ĐANG LỌC THEO CĂN</div>
+                  <div style={{ fontWeight: 800, color: "var(--navy)" }}>{leadAptFilter}</div>
+                </div>
+                <button type="button" className="st-btn-mini" onClick={() => setLeadAptFilter("")}>Xem tất cả</button>
+              </div>
+            ) : (
+              <div className="st-chips">
+                {[
+                  ["all", `Tất cả (${(report?.inquiries || []).filter((i) => i.type !== "owner_listing").length})`],
+                  ["viewings", "Tư vấn & Hẹn xem"],
+                  ["bookings", `Giữ chỗ (${(kpi?.pendingBookingsCount || 0) + (kpi?.confirmedBookingsCount || 0)})`]
+                ].map(([key, lbl]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`st-chip ${leadSubTab === key ? "active" : ""}`}
+                    onClick={() => setLeadSubTab(key as any)}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {filteredLeads.length === 0 ? (
-              <div className="st-empty">Chưa có yêu cầu khách hàng nào trong mục này.</div>
+              <div className="st-empty">Chưa có khách hàng nào trong danh sách.</div>
             ) : (
               filteredLeads.map((inq) => {
+                const leadKey = inq.code || inq._id;
                 const isBooking = ["reservation", "booking"].includes(inq.type);
                 const link = contactHref(inq.contactHandle, inq.messenger);
+                const isSelected = selectedLeads.includes(leadKey);
                 const badgeClass =
                   inq.status === "New" || inq.status === "Pending"
                     ? "st-badge--red"
@@ -1198,30 +1815,53 @@ function StudioApp() {
                     : inq.status === "Rented_Closed"
                     ? "st-badge--green"
                     : "st-badge--gray";
+
                 return (
-                  <article key={inq._id} className="st-item-card">
+                  <article
+                    key={inq._id}
+                    className={`st-item-card ${isSelected ? "selected" : ""}`}
+                    onClick={leadSelectMode ? () => toggleSelectLead(leadKey) : undefined}
+                  >
                     <div className="st-item-head">
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>
-                          {inq.clientName || "Khách hàng"}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>
-                          {inq.code} · {isBooking ? "Yêu cầu giữ chỗ" : "Hẹn xem / Tư vấn"} · Căn <b>{inq.apartmentCode}</b>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
+                        {leadSelectMode && (
+                          <button
+                            type="button"
+                            className={`st-check-circle ${isSelected ? "checked" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectLead(leadKey);
+                            }}
+                          >
+                            {isSelected && <Icon.Check size={13} />}
+                          </button>
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>
+                            {inq.clientName || "Khách hàng"}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>
+                            {inq.code} · {isBooking ? "Đặt giữ chỗ" : "Hẹn xem"} · <b>{inq.apartmentCode}</b>
+                          </div>
                         </div>
                       </div>
-                      <span className={`st-badge ${badgeClass}`}>{inq.status}</span>
+                      <span className={`st-badge ${badgeClass}`}>{statusLabelVi(inq.status)}</span>
                     </div>
 
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                       {link ? (
-                        <a href={link.href} target="_blank" rel="noreferrer" className="st-contact-link">
-                          {link.label}
+                        <a href={link.href} target="_blank" rel="noreferrer" className="st-contact-link" onClick={(e) => e.stopPropagation()}>
+                          <Icon.Phone /> {link.label}
                         </a>
                       ) : (
                         <span className="st-badge st-badge--gray">{inq.contactHandle || "Chưa có SĐT"}</span>
                       )}
-                      {inq.viewingTime && <span className="st-badge st-badge--amber">⏰ Xem: {inq.viewingTime}</span>}
-                      {inq.moveInDate && <span className="st-badge st-badge--gray">📦 Vào: {inq.moveInDate}</span>}
+                      {inq.viewingTime && (
+                        <span className="st-badge st-badge--amber">
+                          <Icon.Calendar /> {inq.viewingTime}
+                        </span>
+                      )}
+                      {inq.moveInDate && <span className="st-badge st-badge--gray">Vào ở: {inq.moveInDate}</span>}
                     </div>
 
                     {inq.notes && (
@@ -1230,46 +1870,34 @@ function StudioApp() {
                       </div>
                     )}
 
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingTop: 6, borderTop: "1px solid var(--border)" }}>
-                      {isBooking ? (
-                        <>
-                          {["New", "Pending"].includes(inq.status) && (
-                            <button type="button" className="st-btn-mini st-btn-mini--green" style={{ flex: 1 }} onClick={() => handleReservationAction(inq, "confirm")}>
-                              ✅ Xác nhận giữ chỗ
-                            </button>
-                          )}
-                          {["New", "Pending", "Confirmed"].includes(inq.status) && (
-                            <button type="button" className="st-btn-mini st-btn-mini--red" style={{ flex: 1 }} onClick={() => handleReservationAction(inq, "cancel")}>
-                              ❌ Hủy giữ chỗ
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {inq.status !== "Contacted" && (
-                            <button type="button" className="st-btn-mini" onClick={() => updateLeadStatus(inq, { status: "Contacted" }, "📞 Đã đánh dấu Đã liên hệ")}>
-                              📞 Đã LH
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="st-btn-mini st-btn-mini--amber"
-                            onClick={() => {
-                              setSchedulingLead(inq);
-                              setScheduleInput("");
-                            }}
-                          >
-                            📅 Chốt giờ xem
+                    {!leadSelectMode && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingTop: 7, borderTop: "1px solid var(--border)" }}>
+                        {isBooking && ["New", "Pending"].includes(inq.status) && (
+                          <button type="button" className="st-btn-mini st-btn-mini--green" style={{ flex: 1 }} onClick={() => handleReservationAction(inq, "confirm")}>
+                            Xác nhận giữ chỗ
                           </button>
-                          <button type="button" className="st-btn-mini st-btn-mini--green" onClick={() => openLeaseModalFromLead(inq)}>
-                            🔑 Chốt thuê
+                        )}
+                        {isBooking && ["New", "Pending", "Confirmed"].includes(inq.status) && (
+                          <button type="button" className="st-btn-mini st-btn-mini--red" style={{ flex: 1 }} onClick={() => handleReservationAction(inq, "cancel")}>
+                            Hủy giữ chỗ
                           </button>
-                          <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteLead(inq)}>
-                            🗑️
+                        )}
+                        {!isBooking && inq.status === "New" && (
+                          <button type="button" className="st-btn-mini" onClick={() => updateLeadStatus(inq, { status: "Contacted" }, "Đã đánh dấu Đã liên hệ")}>
+                            Đã LH
                           </button>
-                        </>
-                      )}
-                    </div>
+                        )}
+                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditLead(inq)}>
+                          <Icon.Edit /> Sửa
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--green" onClick={() => openCreateLease(inq)}>
+                          Chốt thuê
+                        </button>
+                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteLead(inq)}>
+                          <Icon.Trash />
+                        </button>
+                      </div>
+                    )}
                   </article>
                 );
               })
@@ -1277,29 +1905,34 @@ function StudioApp() {
           </>
         )}
 
-        {/* TAB 4: ACTIVE TENANTS & LEASES */}
+        {/* ================= TAB 4: HỢP ĐỒNG (FULL CRUD) ================= */}
         {tab === "leases" && (
           <>
-            <button type="button" className="st-btn st-btn--primary" onClick={() => openLeaseModalFromLead()}>
-              ＋ Tạo Hợp Đồng Khách Thuê Mới
-            </button>
+            <div className="st-search-box">
+              <span className="st-search-icon"><Icon.Search /></span>
+              <input
+                type="search"
+                className="st-search-input"
+                placeholder="Tìm tên khách thuê, mã hợp đồng, mã căn..."
+                value={leaseSearch}
+                onChange={(e) => setLeaseSearch(e.target.value)}
+              />
+            </div>
 
-            {(report?.leases || []).length === 0 ? (
+            {filteredLeases.length === 0 ? (
               <div className="st-empty">Chưa có hợp đồng thuê nào.</div>
             ) : (
-              (report?.leases || []).map((l) => {
+              filteredLeases.map((l) => {
                 const left = daysUntil(l.endDate);
                 const ended = l.status === "Ended";
                 const link = contactHref(l.tenantContact, l.messenger);
                 return (
-                  <article key={l.code} className="st-item-card" style={{ opacity: ended ? 0.65 : 1 }}>
+                  <article key={l.code} className="st-item-card" style={{ opacity: ended ? 0.68 : 1 }}>
                     <div className="st-item-head">
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>
-                          🔑 {l.tenantName}
-                        </div>
+                        <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>{l.tenantName}</div>
                         <div style={{ fontSize: 12, color: "var(--text-sub)" }}>
-                          Căn <b>{l.apartmentCode}</b> · {l.building || l.apartmentTitle}
+                          <b>{l.apartmentCode}</b> · {l.building || l.apartmentTitle}
                         </div>
                       </div>
                       <span className={`st-badge ${ended ? "st-badge--gray" : (left ?? 99) <= 30 ? "st-badge--red" : "st-badge--green"}`}>
@@ -1313,24 +1946,38 @@ function StudioApp() {
                       </span>
                     </div>
 
-                    <div style={{ fontSize: 12.5, display: "flex", flexWrap: "wrap", gap: 8, color: "var(--text)" }}>
-                      <span>💰 <b>${l.priceUsd}/th</b> ({fmtVnd(l.priceVnd || l.priceUsd * RATE_VND)})</span>
-                      <span>📅 {l.startDate} → {l.endDate}</span>
+                    <div style={{ fontSize: 12.5, display: "flex", flexWrap: "wrap", gap: 10, color: "var(--text)" }}>
+                      <span><b>{fmtVnd(l.priceVnd || l.priceUsd * RATE_VND)}/th</b> (${l.priceUsd})</span>
+                      <span style={{ color: "var(--text-sub)" }}>{l.startDate} → {l.endDate}</span>
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid var(--border)" }}>
+                    {l.notes && (
+                      <div style={{ fontSize: 12, color: "var(--text-sub)", background: "var(--surface-soft)", padding: "7px 10px", borderRadius: 10 }}>
+                        {l.notes}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", paddingTop: 7, borderTop: "1px solid var(--border)" }}>
                       {link ? (
                         <a href={link.href} target="_blank" rel="noreferrer" className="st-contact-link">
-                          {link.label}
+                          <Icon.Phone /> {link.label}
                         </a>
                       ) : (
-                        <span className="st-badge st-badge--gray">{l.tenantContact || "N/A"}</span>
+                        <span className="st-badge st-badge--gray">{l.tenantContact || "Chưa có LH"}</span>
                       )}
-                      {!ended && (
-                        <button type="button" className="st-btn-mini st-btn-mini--amber" onClick={() => handleCheckoutLease(l)}>
-                          🔓 Trả phòng & Mở trống
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditLease(l)}>
+                          <Icon.Edit /> Sửa
                         </button>
-                      )}
+                        {!ended && (
+                          <button type="button" className="st-btn-mini st-btn-mini--amber" onClick={() => handleCheckoutLease(l)}>
+                            Trả phòng
+                          </button>
+                        )}
+                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteLease(l)}>
+                          <Icon.Trash />
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );
@@ -1338,117 +1985,296 @@ function StudioApp() {
             )}
           </>
         )}
-
-        {/* TAB 5: TOOLS & EXCEL */}
-        {tab === "tools" && (
-          <>
-            <section className="st-card">
-              <div className="st-card-head">
-                <h2 className="st-card-title">📊 Xuất & Nhập Excel 2 Chiều (.CSV)</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <button type="button" className="st-btn st-btn--outline" onClick={() => handleDownloadCsv("/api/excel/apartments.csv", "KIN_Estates_KhoCanHo.csv")}>
-                  📥 Tải Excel Kho Căn Hộ
-                </button>
-                <button type="button" className="st-btn st-btn--outline" onClick={() => handleDownloadCsv("/api/excel/inquiries.csv", "KIN_Estates_KhachHang.csv")}>
-                  📥 Tải Excel Khách Hẹn Xem & Đặt Phòng
-                </button>
-                <button type="button" className="st-btn st-btn--outline" onClick={() => handleDownloadCsv("/api/excel/leases.csv", "KIN_Estates_HopDongThue.csv")}>
-                  📥 Tải Excel Hợp Đồng Khách Đang Thuê
-                </button>
-                <div className="st-divider" />
-                <label className="st-btn st-btn--bronze" style={{ cursor: "pointer" }}>
-                  📤 Nhập File Excel Cập Nhật Kho Căn (.CSV)
-                  <input type="file" accept=".csv,.txt" hidden onChange={(e) => handleImportCsv(e, "/api/excel/import-apartments")} />
-                </label>
-                <label className="st-btn st-btn--outline" style={{ cursor: "pointer" }}>
-                  📤 Nhập File Excel Hợp Đồng Thuê (.CSV)
-                  <input type="file" accept=".csv,.txt" hidden onChange={(e) => handleImportCsv(e, "/api/excel/import-leases")} />
-                </label>
-              </div>
-            </section>
-
-            <section className="st-card">
-              <div className="st-card-head">
-                <h2 className="st-card-title">⚙️ Trạng Thái Hệ Thống</h2>
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--text-sub)", display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-                <div>• <b>Database:</b> {report?.dbStatus?.mode || "Ready"}</div>
-                <div>• <b>Telegram Bot:</b> {report?.botStatus?.mode || "Ready"}</div>
-                <div>• <b>Tự động dịch:</b> 6 ngôn ngữ (VI / EN / ZH / RU / KO / JA)</div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <button type="button" className="st-btn st-btn--primary" onClick={handleSyncWeb}>
-                  🚀 Đồng Bộ Ngay Lên Website Live
-                </button>
-                <a href="/" target="_blank" rel="noreferrer" className="st-btn st-btn--outline" style={{ textDecoration: "none" }}>
-                  🌐 Xem Trang Web Khách Hàng ↗
-                </a>
-                <button
-                  type="button"
-                  className="st-btn st-btn--danger"
-                  onClick={() => {
-                    localStorage.removeItem("kin_studio_token");
-                    setToken("");
-                    setAuthed(false);
-                  }}
-                >
-                  🔒 Khóa Màn Hình Quản Trị
-                </button>
-              </div>
-            </section>
-          </>
-        )}
       </main>
 
-      {/* Floating Action Button on Apartments tab */}
-      {tab === "apartments" && (
+      {/* FLOATING BULK ACTION BAR — APARTMENTS */}
+      {tab === "apartments" && aptSelectMode && selectedApts.length > 0 && (
+        <div className="st-bulk-bar">
+          <span className="st-bulk-count">Đã chọn {selectedApts.length} căn</span>
+          <div className="st-bulk-btns">
+            <button
+              type="button"
+              className="st-bulk-btn st-bulk-btn--edit"
+              onClick={() => {
+                setBulkAptForm({ status: "", visibility: "", areaName: "", priceMode: "", priceValue: "" });
+                setBulkAptModalOpen(true);
+              }}
+            >
+              <Icon.Edit size={13} /> Sửa hàng loạt
+            </button>
+            <button type="button" className="st-bulk-btn st-bulk-btn--delete" onClick={handleBulkDeleteApts}>
+              <Icon.Trash size={13} /> Xóa
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING BULK ACTION BAR — LEADS */}
+      {tab === "leads" && leadSelectMode && selectedLeads.length > 0 && (
+        <div className="st-bulk-bar">
+          <span className="st-bulk-count">Đã chọn {selectedLeads.length} khách</span>
+          <div className="st-bulk-btns">
+            <button type="button" className="st-bulk-btn st-bulk-btn--edit" onClick={() => setBulkLeadModalOpen(true)}>
+              <Icon.Edit size={13} /> Đổi trạng thái
+            </button>
+            <button type="button" className="st-bulk-btn st-bulk-btn--delete" onClick={handleBulkDeleteLeads}>
+              <Icon.Trash size={13} /> Xóa
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CONTEXT-AWARE FLOATING ACTION BUTTON */}
+      {!hasBulkBar && tab === "apartments" && (
         <button type="button" className="st-fab" onClick={openCreateEditor}>
-          ＋ Đăng căn mới
+          <Icon.Plus size={16} /> Thêm căn
+        </button>
+      )}
+      {!hasBulkBar && tab === "leads" && (
+        <button type="button" className="st-fab" onClick={openCreateLead}>
+          <Icon.Plus size={16} /> Thêm khách
+        </button>
+      )}
+      {!hasBulkBar && tab === "leases" && (
+        <button type="button" className="st-fab" onClick={() => openCreateLease()}>
+          <Icon.Plus size={16} /> Tạo HĐ
         </button>
       )}
 
-      {/* Bottom 5-Tab Mobile Navigation */}
-      <nav className="st-bottom-nav" aria-label="Studio navigation">
+      {/* BOTTOM 4-TAB NAVIGATION */}
+      <nav className="st-bottom-nav" aria-label="Điều hướng quản trị">
         <button type="button" className={`st-nav-item ${tab === "report" ? "active" : ""}`} onClick={() => setTab("report")}>
-          <span className="st-nav-icon">📊</span>
-          <span>Báo cáo</span>
+          <Icon.Chart />
+          <span>Tổng quan</span>
         </button>
         <button type="button" className={`st-nav-item ${tab === "apartments" ? "active" : ""}`} onClick={() => setTab("apartments")}>
-          <span className="st-nav-icon">🏠</span>
+          <Icon.Home />
           <span>Căn hộ</span>
         </button>
         <button type="button" className={`st-nav-item ${tab === "leads" ? "active" : ""}`} onClick={() => setTab("leads")}>
-          <span className="st-nav-icon">👥</span>
-          <span>Khách</span>
+          <Icon.Users />
+          <span>Khách hàng</span>
           {pendingAlertCount > 0 && <span className="st-nav-dot">{pendingAlertCount}</span>}
         </button>
         <button type="button" className={`st-nav-item ${tab === "leases" ? "active" : ""}`} onClick={() => setTab("leases")}>
-          <span className="st-nav-icon">🔑</span>
+          <Icon.Key />
           <span>Hợp đồng</span>
-        </button>
-        <button type="button" className={`st-nav-item ${tab === "tools" ? "active" : ""}`} onClick={() => setTab("tools")}>
-          <span className="st-nav-icon">⚙️</span>
-          <span>Excel</span>
         </button>
       </nav>
 
-      {/* APARTMENT CREATE / EDIT MOBILE BOTTOM SHEET */}
+      {/* ================= MODAL 1: BULK EDIT APARTMENTS ================= */}
+      {bulkAptModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setBulkAptModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">Sửa Hàng Loạt ({selectedApts.length} căn hộ)</h2>
+              <button type="button" className="st-close-btn" onClick={() => setBulkAptModalOpen(false)}>✕</button>
+            </div>
+            <form className="st-sheet-body" onSubmit={handleBulkUpdateApts}>
+              <div style={{ fontSize: 12, color: "var(--text-sub)", background: "var(--surface)", padding: "9px 12px", borderRadius: 12, border: "1px solid var(--border)" }}>
+                Chỉ những mục anh chọn mới thay đổi. Mục để <b>"Giữ nguyên"</b> sẽ không bị ảnh hưởng.
+              </div>
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Trạng thái căn hộ</label>
+                  <select className="st-select" value={bulkAptForm.status} onChange={(e) => setBulkAptForm((p) => ({ ...p, status: e.target.value }))}>
+                    <option value="">— Giữ nguyên —</option>
+                    <option value="Available">Còn trống</option>
+                    <option value="Reserved">Giữ chỗ</option>
+                    <option value="Rented">Đã thuê</option>
+                    <option value="Hidden">Đang ẩn</option>
+                  </select>
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Hiển thị trên Web</label>
+                  <select className="st-select" value={bulkAptForm.visibility} onChange={(e) => setBulkAptForm((p) => ({ ...p, visibility: e.target.value }))}>
+                    <option value="">— Giữ nguyên —</option>
+                    <option value="show">Hiện lên Web</option>
+                    <option value="hide">Ẩn khỏi Web</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Chuyển khu vực</label>
+                <select className="st-select" value={bulkAptForm.areaName} onChange={(e) => setBulkAptForm((p) => ({ ...p, areaName: e.target.value }))}>
+                  <option value="">— Giữ nguyên —</option>
+                  {AREAS.map((a) => (
+                    <option key={a.val} value={a.val}>{a.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Điều chỉnh giá thuê</label>
+                  <select className="st-select" value={bulkAptForm.priceMode} onChange={(e) => setBulkAptForm((p) => ({ ...p, priceMode: e.target.value }))}>
+                    <option value="">— Giữ nguyên —</option>
+                    <option value="fixed">Đặt giá mới (triệu VNĐ)</option>
+                    <option value="percent">Tăng / Giảm theo %</option>
+                    <option value="delta">Cộng / Trừ (triệu VNĐ)</option>
+                  </select>
+                </div>
+                {bulkAptForm.priceMode && (
+                  <div className="st-field">
+                    <label className="st-label">
+                      {bulkAptForm.priceMode === "percent" ? "VD: 5 hoặc -10 (%)" : "VD: 15 hoặc -1.5 (tr)"}
+                    </label>
+                    <input
+                      className="st-input"
+                      inputMode="decimal"
+                      placeholder={bulkAptForm.priceMode === "percent" ? "+5 / -5" : "18"}
+                      value={bulkAptForm.priceValue}
+                      onChange={(e) => setBulkAptForm((p) => ({ ...p, priceValue: e.target.value }))}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="st-btn st-btn--primary" disabled={bulkAptSaving}>
+                {bulkAptSaving ? "Đang cập nhật..." : `Áp dụng cho ${selectedApts.length} căn hộ`}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 2: BULK UPDATE LEADS ================= */}
+      {bulkLeadModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setBulkLeadModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">Đổi Trạng Thái ({selectedLeads.length} khách)</h2>
+              <button type="button" className="st-close-btn" onClick={() => setBulkLeadModalOpen(false)}>✕</button>
+            </div>
+            <form className="st-sheet-body" onSubmit={handleBulkUpdateLeads}>
+              <div className="st-field">
+                <label className="st-label">Trạng thái mới</label>
+                <select className="st-select" value={bulkLeadStatus} onChange={(e) => setBulkLeadStatus(e.target.value)}>
+                  <option value="New">Mới</option>
+                  <option value="Contacted">Đã liên hệ</option>
+                  <option value="Viewing_Scheduled">Đã hẹn xem</option>
+                  <option value="Rented_Closed">Đã chốt thuê</option>
+                  <option value="Cancelled">Đã hủy</option>
+                </select>
+              </div>
+              <button type="submit" className="st-btn st-btn--primary">
+                Cập nhật {selectedLeads.length} khách hàng
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 3: CLOUD PHOTO GALLERY CRUD ================= */}
+      {mediaModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setMediaModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">
+                <Icon.Image size={17} /> {mediaPickerMode ? "Chọn Ảnh Từ Kho Cloud" : `Kho Ảnh Cloud (${mediaItems.length})`}
+              </h2>
+              <button type="button" className="st-close-btn" onClick={() => setMediaModalOpen(false)}>✕</button>
+            </div>
+            <div className="st-sheet-body">
+              <label className="st-btn st-btn--bronze" style={{ cursor: "pointer" }}>
+                <Icon.Plus size={16} /> {uploadingPhoto ? "Đang tải ảnh lên Cloud..." : "Tải thêm ảnh từ điện thoại"}
+                <input type="file" accept="image/*" multiple hidden onChange={(e) => handlePhotoUpload(e, true)} disabled={uploadingPhoto} />
+              </label>
+
+              {mediaLoading ? (
+                <div className="st-empty">Đang tải danh sách ảnh trên Cloud...</div>
+              ) : mediaItems.length === 0 ? (
+                <div className="st-empty">Kho ảnh đang trống.</div>
+              ) : (
+                <div className="st-photo-grid">
+                  {mediaItems.map((item) => {
+                    const alreadyAdded = form.images.includes(item.url);
+                    const previewSrc = `/api/studio/media/${item.id}?token=${encodeURIComponent(token)}`;
+                    return (
+                      <div key={item.id} className="st-media-card">
+                        <div
+                          className="st-media-thumb"
+                          style={{ cursor: mediaPickerMode ? "pointer" : "default" }}
+                          onClick={() => {
+                            if (!mediaPickerMode) return;
+                            if (!alreadyAdded) {
+                              setForm((p) => ({ ...p, images: [...p.images, item.url] }));
+                              showToast("Đã gắn ảnh vào căn hộ!");
+                            } else {
+                              showToast("Ảnh này đã có trong căn hộ.");
+                            }
+                          }}
+                        >
+                          <img src={previewSrc} alt="" loading="lazy" />
+                          {!mediaPickerMode && (
+                            <button type="button" className="st-photo-del" onClick={() => handleDeleteMedia(item)} title="Xóa ảnh">
+                              ×
+                            </button>
+                          )}
+                          {mediaPickerMode && alreadyAdded && (
+                            <span className="st-photo-cover-tag">Đã chọn</span>
+                          )}
+                        </div>
+                        <div className="st-media-foot">
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {item.usedBy.length ? `${item.usedBy.length} căn` : "Chưa gắn"}
+                          </span>
+                          {mediaPickerMode ? (
+                            <button
+                              type="button"
+                              style={{ border: "none", background: "none", color: "var(--bronze-dark)", fontWeight: 800, fontSize: 10.5, cursor: "pointer", padding: 0 }}
+                              onClick={() => {
+                                if (!alreadyAdded) {
+                                  setForm((p) => ({ ...p, images: [...p.images, item.url] }));
+                                  showToast("Đã thêm ảnh!");
+                                }
+                              }}
+                            >
+                              {alreadyAdded ? "✓" : "+ Chọn"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              style={{ border: "none", background: "none", color: "var(--red)", fontWeight: 700, fontSize: 10.5, cursor: "pointer", padding: 0 }}
+                              onClick={() => handleDeleteMedia(item)}
+                            >
+                              Xóa
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 4: APARTMENT CREATE / EDIT ================= */}
       {editorOpen && (
         <div className="st-modal-backdrop" onClick={() => setEditorOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
-              <h2 className="st-sheet-title">{editingCode ? `✏️ Sửa căn ${editingCode}` : "➕ Đăng Căn Hộ Mới"}</h2>
+              <h2 className="st-sheet-title">{editingCode ? `Sửa căn ${editingCode}` : "Đăng Căn Hộ Mới"}</h2>
               <button type="button" className="st-close-btn" onClick={() => setEditorOpen(false)}>✕</button>
             </div>
             <form className="st-sheet-body" onSubmit={handleSaveApartment}>
               <div style={{ background: "var(--green-bg)", color: "var(--green)", fontSize: 12, fontWeight: 700, padding: "8px 12px", borderRadius: 12 }}>
-                🌐 Anh chỉ cần viết Tiếng Việt — lưu xong Web tự dịch đồng bộ 6 ngôn ngữ!
+                Lưu thẳng lên Cloud 24/7 — tự động dịch 6 ngôn ngữ & cập nhật Web ngay lập tức.
               </div>
 
-              {/* Photo Upload Grid */}
+              {/* Photo CRUD Grid */}
               <div className="st-field">
-                <span className="st-label">📸 Bộ ảnh căn hộ ({form.images.length} ảnh — chạm vào ảnh để chọn Ảnh bìa)</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span className="st-label">Bộ ảnh ({form.images.length} — chạm ảnh đặt làm Ảnh bìa)</span>
+                  <button type="button" className="st-btn-mini st-btn-mini--bronze" style={{ height: 28 }} onClick={() => openMediaLibrary(true)}>
+                    <Icon.Image size={12} /> Chọn từ Kho
+                  </button>
+                </div>
                 <div className="st-photo-grid">
                   {form.images.map((src, idx) => (
                     <div
@@ -1460,11 +2286,19 @@ function StudioApp() {
                         const [picked] = copy.splice(idx, 1);
                         copy.unshift(picked);
                         setForm((p) => ({ ...p, images: copy }));
-                        showToast("⭐ Đã đặt làm Ảnh bìa!");
+                        showToast("Đã đặt làm Ảnh bìa!");
                       }}
                     >
                       <img src={src} alt="" />
-                      {idx === 0 && <span className="st-photo-cover-tag">⭐ Ảnh bìa</span>}
+                      <div className="st-photo-order" onClick={(e) => e.stopPropagation()}>
+                        {idx > 0 && (
+                          <button type="button" className="st-photo-move" onClick={() => movePhoto(idx, -1)}>‹</button>
+                        )}
+                        {idx < form.images.length - 1 && (
+                          <button type="button" className="st-photo-move" onClick={() => movePhoto(idx, 1)}>›</button>
+                        )}
+                      </div>
+                      {idx === 0 && <span className="st-photo-cover-tag">Ảnh bìa</span>}
                       <button
                         type="button"
                         className="st-photo-del"
@@ -1478,10 +2312,34 @@ function StudioApp() {
                     </div>
                   ))}
                   <label className="st-photo-add">
-                    <span style={{ fontSize: 20 }}>{uploadingPhoto ? "⏳" : "📷"}</span>
-                    <span>{uploadingPhoto ? "Đang tải..." : "Thêm ảnh ĐT"}</span>
-                    <input type="file" accept="image/*" multiple hidden onChange={handlePhotoUpload} disabled={uploadingPhoto} />
+                    <Icon.Plus size={18} />
+                    <span>{uploadingPhoto ? "Đang tải..." : "Tải ảnh ĐT"}</span>
+                    <input type="file" accept="image/*" multiple hidden onChange={(e) => handlePhotoUpload(e, false)} disabled={uploadingPhoto} />
                   </label>
+                </div>
+
+                {/* Optional paste URL */}
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  <input
+                    className="st-input"
+                    style={{ height: 36, fontSize: 12.5, padding: "0 10px" }}
+                    placeholder="Hoặc dán link ảnh (https://...)"
+                    value={photoUrlInput}
+                    onChange={(e) => setPhotoUrlInput(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="st-btn-mini st-btn-mini--navy"
+                    style={{ height: 36, padding: "0 12px" }}
+                    onClick={() => {
+                      const u = photoUrlInput.trim();
+                      if (!u) return;
+                      setForm((p) => ({ ...p, images: [...p.images, u] }));
+                      setPhotoUrlInput("");
+                    }}
+                  >
+                    Thêm
+                  </button>
                 </div>
               </div>
 
@@ -1499,12 +2357,7 @@ function StudioApp() {
               <div className="st-row-2">
                 <div className="st-field">
                   <label className="st-label">Tòa nhà / Dự án</label>
-                  <input
-                    className="st-input"
-                    placeholder="VD: The Panoma"
-                    value={form.building}
-                    onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))}
-                  />
+                  <input className="st-input" placeholder="VD: The Panoma" value={form.building} onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))} />
                 </div>
                 <div className="st-field">
                   <label className="st-label">Khu vực</label>
@@ -1516,8 +2369,31 @@ function StudioApp() {
                 </div>
               </div>
 
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Trạng thái</label>
+                  <select className="st-select" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
+                    <option value="Available">Còn trống</option>
+                    <option value="Reserved">Giữ chỗ</option>
+                    <option value="Rented">Đã thuê</option>
+                    <option value="Hidden">Đang ẩn</option>
+                  </select>
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Hiển thị Web</label>
+                  <select
+                    className="st-select"
+                    value={form.isVisible ? "yes" : "no"}
+                    onChange={(e) => setForm((p) => ({ ...p, isVisible: e.target.value === "yes" }))}
+                  >
+                    <option value="yes">Đang hiện công khai</option>
+                    <option value="no">Ẩn khỏi Web khách</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="st-field">
-                <label className="st-label">Địa chỉ hiển thị trên bản đồ *</label>
+                <label className="st-label">Địa chỉ hiển thị</label>
                 <input
                   className="st-input"
                   placeholder="VD: 58 Trần Thị Lý, Ngũ Hành Sơn, Đà Nẵng"
@@ -1526,15 +2402,16 @@ function StudioApp() {
                 />
               </div>
 
-              {/* Interactive Map Pin Picker */}
+              {/* Map Picker */}
               <div className="st-field">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className="st-label">
-                    📍 Ghim trên bản đồ {form.hasPin ? `(${form.lat}, ${form.lng})` : "(Chạm bản đồ để thả ghim)"}
+                    Vị trí bản đồ {form.hasPin ? `(${form.lat}, ${form.lng})` : "(Chạm để thả ghim)"}
                   </span>
                   <button
                     type="button"
                     className="st-btn-mini"
+                    style={{ height: 28 }}
                     onClick={() => {
                       navigator.geolocation?.getCurrentPosition(
                         (pos) => {
@@ -1543,19 +2420,19 @@ function StudioApp() {
                           setForm((p) => ({ ...p, lat, lng, hasPin: true }));
                           markerObjRef.current?.setLatLng([lat, lng]);
                           mapObjRef.current?.setView([lat, lng], 16);
-                          showToast("📍 Đã lấy tọa độ GPS hiện tại!");
+                          showToast("Đã lấy tọa độ GPS!");
                         },
-                        () => showToast("Không lấy được GPS — hãy chạm trực tiếp lên bản đồ.")
+                        () => showToast("Không lấy được GPS — chạm trực tiếp lên bản đồ.")
                       );
                     }}
                   >
-                    📍 GPS tôi
+                    <Icon.Pin /> GPS tôi
                   </button>
                 </div>
                 <div ref={mapContainerRef} className="st-map-picker" />
               </div>
 
-              {/* Price VND <-> USD Auto Sync */}
+              {/* Price VND <-> USD */}
               <div className="st-row-2">
                 <div className="st-field">
                   <label className="st-label">Giá thuê (Triệu VNĐ/th)</label>
@@ -1575,7 +2452,7 @@ function StudioApp() {
                   />
                 </div>
                 <div className="st-field">
-                  <label className="st-label">Hoặc USD/tháng</label>
+                  <label className="st-label">USD / tháng</label>
                   <input
                     className="st-input"
                     inputMode="numeric"
@@ -1614,7 +2491,7 @@ function StudioApp() {
                   <input className="st-input" inputMode="numeric" value={form.floor} onChange={(e) => setForm((p) => ({ ...p, floor: e.target.value }))} />
                 </div>
                 <div className="st-field">
-                  <label className="st-label">HĐ tối thiểu (th)</label>
+                  <label className="st-label">HĐ tối thiểu</label>
                   <input className="st-input" inputMode="numeric" value={form.minLeaseMonths} onChange={(e) => setForm((p) => ({ ...p, minLeaseMonths: e.target.value }))} />
                 </div>
                 <div className="st-field">
@@ -1629,7 +2506,7 @@ function StudioApp() {
                   <input className="st-input" value={form.orientation} onChange={(e) => setForm((p) => ({ ...p, orientation: e.target.value }))} />
                 </div>
                 <div className="st-field">
-                  <label className="st-label">Ngày có thể vào ở</label>
+                  <label className="st-label">Ngày vào ở</label>
                   <input type="date" className="st-input" value={form.availableFrom} onChange={(e) => setForm((p) => ({ ...p, availableFrom: e.target.value }))} />
                 </div>
               </div>
@@ -1645,9 +2522,8 @@ function StudioApp() {
                 </div>
               </div>
 
-              {/* Quick Tags */}
               <div className="st-field">
-                <span className="st-label">Tiện ích nổi bật (Chạm để chọn)</span>
+                <span className="st-label">Tiện ích nổi bật</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {QUICK_TAGS.map((tag) => {
                     const on = form.tags.includes(tag);
@@ -1672,7 +2548,7 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">Mô tả chi tiết căn hộ</label>
+                <label className="st-label">Mô tả chi tiết</label>
                 <textarea
                   className="st-textarea"
                   placeholder="Nội thất, ánh sáng, bàn làm việc, tiện ích xung quanh..."
@@ -1682,12 +2558,12 @@ function StudioApp() {
               </div>
 
               <button type="submit" className="st-btn st-btn--primary" disabled={savingApt}>
-                {savingApt ? "⏳ Đang lưu & dịch 6 ngôn ngữ..." : editingCode ? "✅ Lưu Cập Nhật Căn Hộ" : "🚀 Đăng Căn Hộ Lên Website"}
+                {savingApt ? "Đang lưu & dịch 6 ngôn ngữ..." : editingCode ? "Lưu Thay Đổi" : "Đăng Căn Hộ Lên Web"}
               </button>
 
               {editingCode && (
                 <button type="button" className="st-btn st-btn--danger" onClick={() => handleDeleteApt(editingCode)}>
-                  🗑️ Xóa Vĩnh Viễn Căn Hộ Này
+                  <Icon.Trash /> Xóa Vĩnh Viễn Căn Hộ Này
                 </button>
               )}
             </form>
@@ -1695,85 +2571,227 @@ function StudioApp() {
         </div>
       )}
 
-      {/* SCHEDULE VIEWING MODAL */}
-      {schedulingLead && (
-        <div className="st-modal-backdrop" onClick={() => setSchedulingLead(null)}>
+      {/* ================= MODAL 5: CUSTOMER / LEAD CREATE & EDIT ================= */}
+      {leadModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setLeadModalOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
-              <h2 className="st-sheet-title">📅 Chốt Giờ Hẹn Xem Phòng</h2>
-              <button type="button" className="st-close-btn" onClick={() => setSchedulingLead(null)}>✕</button>
+              <h2 className="st-sheet-title">{editingLeadId ? "Sửa Thông Tin Khách Hàng" : "Thêm Khách Hàng Mới"}</h2>
+              <button type="button" className="st-close-btn" onClick={() => setLeadModalOpen(false)}>✕</button>
             </div>
-            <div className="st-sheet-body">
-              <div style={{ fontSize: 13, color: "var(--text-sub)" }}>
-                Khách: <b>{schedulingLead.clientName}</b> · Căn: <b>{schedulingLead.apartmentCode}</b>
-              </div>
+            <form className="st-sheet-body" onSubmit={handleSaveLead}>
               <div className="st-field">
-                <label className="st-label">Chọn ngày & giờ xem</label>
+                <label className="st-label">Tên khách hàng *</label>
                 <input
-                  type="datetime-local"
                   className="st-input"
-                  value={scheduleInput}
-                  onChange={(e) => setScheduleInput(e.target.value)}
+                  placeholder="VD: Anh Minh / David Kim"
+                  value={leadForm.clientName}
+                  onChange={(e) => setLeadForm((p) => ({ ...p, clientName: e.target.value }))}
+                  required
                 />
               </div>
-              <button
-                type="button"
-                className="st-btn st-btn--primary"
-                onClick={async () => {
-                  if (!scheduleInput) return showToast("Hãy chọn ngày giờ xem phòng.");
-                  const formatted = scheduleInput.replace("T", " ");
-                  await updateLeadStatus(schedulingLead, { status: "Viewing_Scheduled", viewingTime: formatted }, "✅ Đã chốt lịch hẹn xem phòng!");
-                  setSchedulingLead(null);
-                }}
-              >
-                ✅ Xác Nhận Lịch Hẹn Xem
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">SĐT / @Telegram / Zalo</label>
+                  <input
+                    className="st-input"
+                    placeholder="0905xxxxxx"
+                    value={leadForm.contactHandle}
+                    onChange={(e) => setLeadForm((p) => ({ ...p, contactHandle: e.target.value }))}
+                  />
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Kênh liên hệ</label>
+                  <select className="st-select" value={leadForm.messenger} onChange={(e) => setLeadForm((p) => ({ ...p, messenger: e.target.value }))}>
+                    <option value="Zalo">Zalo</option>
+                    <option value="Telegram">Telegram</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Điện thoại">Điện thoại</option>
+                    <option value="Website">Website</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Căn hộ quan tâm</label>
+                <select
+                  className="st-select"
+                  value={leadForm.apartmentCode}
+                  onChange={(e) => setLeadForm((p) => ({ ...p, apartmentCode: e.target.value }))}
+                >
+                  <option value="CURATED-SHORTLIST">Tư vấn chung / Chưa chọn căn</option>
+                  {(report?.apartments || []).map((a) => (
+                    <option key={a.code} value={a.code}>
+                      {a.code} — {titleOf(a).slice(0, 38)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Trạng thái</label>
+                  <select className="st-select" value={leadForm.status} onChange={(e) => setLeadForm((p) => ({ ...p, status: e.target.value }))}>
+                    <option value="New">Mới</option>
+                    <option value="Contacted">Đã liên hệ</option>
+                    <option value="Viewing_Scheduled">Đã hẹn xem</option>
+                    <option value="Rented_Closed">Đã chốt thuê</option>
+                    <option value="Cancelled">Đã hủy</option>
+                  </select>
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Ngân sách dự kiến</label>
+                  <input
+                    className="st-input"
+                    placeholder="VD: 15-20tr"
+                    value={leadForm.budgetUsd}
+                    onChange={(e) => setLeadForm((p) => ({ ...p, budgetUsd: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Ngày giờ hẹn xem</label>
+                  <input
+                    type="datetime-local"
+                    className="st-input"
+                    value={leadForm.viewingTime}
+                    onChange={(e) => setLeadForm((p) => ({ ...p, viewingTime: e.target.value }))}
+                  />
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Ngày dự kiến vào ở</label>
+                  <input
+                    type="date"
+                    className="st-input"
+                    value={leadForm.moveInDate}
+                    onChange={(e) => setLeadForm((p) => ({ ...p, moveInDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Ghi chú nhu cầu</label>
+                <textarea
+                  className="st-textarea"
+                  placeholder="Yêu cầu view, thú cưng, thời hạn thuê..."
+                  value={leadForm.notes}
+                  onChange={(e) => setLeadForm((p) => ({ ...p, notes: e.target.value }))}
+                />
+              </div>
+
+              <button type="submit" className="st-btn st-btn--primary" disabled={savingLead}>
+                {savingLead ? "Đang lưu..." : editingLeadId ? "Lưu Cập Nhật Khách" : "Thêm Khách Hàng"}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* CREATE LEASE MODAL */}
+      {/* ================= MODAL 6: LEASE CREATE & EDIT ================= */}
       {leaseModalOpen && (
         <div className="st-modal-backdrop" onClick={() => setLeaseModalOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
-              <h2 className="st-sheet-title">🔑 Tạo Hợp Đồng Khách Thuê</h2>
+              <h2 className="st-sheet-title">{editingLeaseCode ? `Sửa Hợp Đồng ${editingLeaseCode}` : "Tạo Hợp Đồng Khách Thuê"}</h2>
               <button type="button" className="st-close-btn" onClick={() => setLeaseModalOpen(false)}>✕</button>
             </div>
-            <form className="st-sheet-body" onSubmit={handleCreateLease}>
+            <form className="st-sheet-body" onSubmit={handleSaveLease}>
               <div className="st-field">
-                <label className="st-label">Chọn căn hộ *</label>
+                <label className="st-label">Căn hộ *</label>
                 <select
                   className="st-select"
                   value={leaseForm.apartmentCode}
                   onChange={(e) => {
                     const code = e.target.value;
                     const apt = report?.apartments.find((a) => a.code === code);
-                    setLeaseForm((p) => ({ ...p, apartmentCode: code, ...(apt ? { priceUsd: String(apt.priceUsd) } : {}) }));
+                    setLeaseForm((p) => ({
+                      ...p,
+                      apartmentCode: code,
+                      ...(apt
+                        ? {
+                            priceUsd: String(apt.priceUsd),
+                            priceVndTr: (apt.priceVnd / 1_000_000).toFixed(1).replace(/\.0$/, "")
+                          }
+                        : {})
+                    }));
                   }}
                 >
                   {(report?.apartments || []).map((a) => (
                     <option key={a.code} value={a.code}>
-                      {a.code} — {titleOf(a).slice(0, 42)}
+                      {a.code} — {titleOf(a).slice(0, 40)}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div className="st-field">
                 <label className="st-label">Tên khách thuê *</label>
-                <input className="st-input" value={leaseForm.tenantName} onChange={(e) => setLeaseForm((p) => ({ ...p, tenantName: e.target.value }))} required />
+                <input
+                  className="st-input"
+                  value={leaseForm.tenantName}
+                  onChange={(e) => setLeaseForm((p) => ({ ...p, tenantName: e.target.value }))}
+                  required
+                />
               </div>
+
               <div className="st-row-2">
                 <div className="st-field">
                   <label className="st-label">SĐT / Telegram / Zalo</label>
-                  <input className="st-input" value={leaseForm.tenantContact} onChange={(e) => setLeaseForm((p) => ({ ...p, tenantContact: e.target.value }))} />
+                  <input
+                    className="st-input"
+                    value={leaseForm.tenantContact}
+                    onChange={(e) => setLeaseForm((p) => ({ ...p, tenantContact: e.target.value }))}
+                  />
                 </div>
                 <div className="st-field">
-                  <label className="st-label">Giá thuê (USD/th)</label>
-                  <input className="st-input" inputMode="numeric" value={leaseForm.priceUsd} onChange={(e) => setLeaseForm((p) => ({ ...p, priceUsd: e.target.value }))} />
+                  <label className="st-label">Trạng thái HĐ</label>
+                  <select className="st-select" value={leaseForm.status} onChange={(e) => setLeaseForm((p) => ({ ...p, status: e.target.value }))}>
+                    <option value="Active">Đang thuê</option>
+                    <option value="Ended">Đã trả phòng</option>
+                  </select>
                 </div>
               </div>
+
+              <div className="st-row-2">
+                <div className="st-field">
+                  <label className="st-label">Giá thuê (Triệu VNĐ/th)</label>
+                  <input
+                    className="st-input"
+                    inputMode="decimal"
+                    value={leaseForm.priceVndTr}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const num = parseFloat(val.replace(",", "."));
+                      setLeaseForm((p) => ({
+                        ...p,
+                        priceVndTr: val,
+                        ...(num > 0 ? { priceUsd: String(Math.round((num * 1_000_000) / RATE_VND)) } : {})
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="st-field">
+                  <label className="st-label">USD / tháng</label>
+                  <input
+                    className="st-input"
+                    inputMode="numeric"
+                    value={leaseForm.priceUsd}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const num = parseFloat(val);
+                      setLeaseForm((p) => ({
+                        ...p,
+                        priceUsd: val,
+                        ...(num > 0 ? { priceVndTr: ((num * RATE_VND) / 1_000_000).toFixed(1).replace(/\.0$/, "") } : {})
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="st-row-2">
                 <div className="st-field">
                   <label className="st-label">Ngày bắt đầu</label>
@@ -1784,12 +2802,14 @@ function StudioApp() {
                   <input type="date" className="st-input" value={leaseForm.endDate} onChange={(e) => setLeaseForm((p) => ({ ...p, endDate: e.target.value }))} />
                 </div>
               </div>
+
               <div className="st-field">
                 <label className="st-label">Ghi chú (tạm trú NA17, ngày thu tiền...)</label>
                 <textarea className="st-textarea" value={leaseForm.notes} onChange={(e) => setLeaseForm((p) => ({ ...p, notes: e.target.value }))} />
               </div>
-              <button type="submit" className="st-btn st-btn--green">
-                🔑 Lưu Hợp Đồng & Đổi Căn Sang Đã Thuê
+
+              <button type="submit" className="st-btn st-btn--green" disabled={savingLease}>
+                {savingLease ? "Đang lưu..." : editingLeaseCode ? "Lưu Cập Nhật Hợp Đồng" : "Lưu Hợp Đồng & Chuyển Đã Thuê"}
               </button>
             </form>
           </div>
