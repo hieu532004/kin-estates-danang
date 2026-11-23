@@ -1577,7 +1577,7 @@ app.get("*", async (req, res) => {
       if (found && db.isPublicApartment(found)) {
         apartment = found;
       }
-    } else if (pathname === "/" || pathname.replace(/\/+$/, "") === "/apartments") {
+    } else if (pathname === "/" || /^\/(apartments|areas)(\/|$)/i.test(pathname)) {
       apartments = await db.getApartments({ includeHidden: false });
     }
     about = await db.getAboutContent().catch(() => null);

@@ -610,6 +610,47 @@ const FAQ_DATA: { q: Record<Lang, string>; a: Record<Lang, string> }[] = [
   }
 ];
 
+const SEO_AREA_SLUGS: Array<{ slug: string; value: string; vi: string; en: string }> = [
+  { slug: "an-thuong", value: "An Thượng", vi: "An Thượng", en: "An Thuong" },
+  { slug: "bien-my-khe", value: "My Khe Beachfront", vi: "Biển Mỹ Khê", en: "My Khe Beach" },
+  { slug: "ven-song-han", value: "Han Riverfront", vi: "Ven sông Hàn", en: "Han Riverfront" },
+  { slug: "son-tra", value: "Sơn Trà", vi: "Sơn Trà", en: "Son Tra" },
+  { slug: "hai-chau", value: "Hải Châu", vi: "Hải Châu", en: "Hai Chau" },
+  { slug: "ngu-hanh-son", value: "Ngũ Hành Sơn", vi: "Ngũ Hành Sơn", en: "Ngu Hanh Son" },
+  { slug: "hoa-xuan", value: "Hòa Xuân", vi: "Hòa Xuân", en: "Hoa Xuan" },
+  { slug: "cam-le", value: "Cẩm Lệ", vi: "Cẩm Lệ", en: "Cam Le" },
+  { slug: "nam-viet-a", value: "Nam Việt Á", vi: "Nam Việt Á", en: "Nam Viet A" },
+  { slug: "my-an", value: "Mỹ An", vi: "Mỹ An", en: "My An" },
+  { slug: "phuoc-my", value: "Phước Mỹ", vi: "Phước Mỹ", en: "Phuoc My" },
+  { slug: "khue-my", value: "Khuê Mỹ", vi: "Khuê Mỹ", en: "Khue My" },
+  { slug: "thanh-khe", value: "Thanh Khê", vi: "Thanh Khê", en: "Thanh Khe" },
+  { slug: "lien-chieu", value: "Liên Chiểu", vi: "Liên Chiểu", en: "Lien Chieu" },
+  { slug: "hoa-khanh", value: "Hòa Khánh", vi: "Hòa Khánh", en: "Hoa Khanh" },
+  { slug: "fpt-city-hoa-hai", value: "FPT City / Hòa Hải", vi: "FPT City / Hòa Hải", en: "FPT City Hoa Hai" },
+  { slug: "tho-quang", value: "Thọ Quang", vi: "Thọ Quang", en: "Tho Quang" },
+  { slug: "thuan-phuoc", value: "Thuận Phước", vi: "Thuận Phước", en: "Thuan Phuoc" },
+  { slug: "hoa-vang", value: "Hòa Vang", vi: "Hòa Vang", en: "Hoa Vang" }
+];
+
+const findSeoAreaBySlug = (slug?: string | null) => {
+  if (!slug) return null;
+  const s = slug.trim().toLowerCase();
+  return SEO_AREA_SLUGS.find((a) => a.slug === s) || null;
+};
+
+const findSeoAreaByValue = (val?: string | null) => {
+  if (!val) return null;
+  const fold = (v: string) =>
+    String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+  const f = fold(val);
+  return SEO_AREA_SLUGS.find((a) => fold(a.value) === f || fold(a.vi) === f || fold(a.en) === f) || null;
+};
+
+const setMetaTagContent = (selector: string, content: string) => {
+  const el = document.querySelector(selector) as HTMLMetaElement | null;
+  if (el && content) el.setAttribute("content", content);
+};
+
 const trackGaEvent = (eventName: string, params: Record<string, any> = {}) => {
   try {
     const g = (window as any).gtag;
@@ -674,9 +715,14 @@ export const App: React.FC = () => {
   const [compareRightIdx, setCompareRightIdx] = useState<string>("3");
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
 
-  // Catalogue (/apartments) Filters
+  // Catalogue (/apartments & /areas/:slug) Filters
   const [query, setQuery] = useState<string>(() => new URLSearchParams(window.location.search).get("q") || "");
-  const [area, setArea] = useState<string>("all");
+  const [area, setArea] = useState<string>(() => {
+    const m = window.location.pathname.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
+    const matched = m ? findSeoAreaBySlug(m[1]) : null;
+    if (matched) return matched.value;
+    return new URLSearchParams(window.location.search).get("area") || "all";
+  });
   const [bedrooms, setBedrooms] = useState<string>("all");
   const [maxPrice, setMaxPrice] = useState<string>("0");
   const [tag, setTag] = useState<string>("all");
@@ -750,40 +796,143 @@ export const App: React.FC = () => {
     return () => document.removeEventListener("click", onDocClick);
   }, [lang]);
 
-  // Dynamic Client-Side SEO Sync + GA4 SPA Pageview & Apartment View Tracking
+  // Sync area filter when navigating to dedicated /areas/:slug SEO landing pages
+  useEffect(() => {
+    const m = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
+    const matched = m ? findSeoAreaBySlug(m[1]) : null;
+    if (matched && area !== matched.value) {
+      setArea(matched.value);
+    }
+  }, [route]);
+
+  // Dynamic Client-Side SEO Sync (Title, Description, Keywords, OpenGraph, Twitter, Canonical) + GA4 SPA Tracking
   useEffect(() => {
     const cleanPath = route === "/" ? "/" : route.replace(/\/+$/, "");
     const aptMatch = cleanPath.match(/^\/apartments\/([^/]+)$/i);
+    const areaMatch = cleanPath.match(/^\/areas\/([a-z0-9-]+)$/i);
+    const activeAreaSeo = areaMatch ? findSeoAreaBySlug(areaMatch[1]) : null;
     const activeApt = aptMatch
       ? apartments.find((a) => a.code.toUpperCase() === decodeURIComponent(aptMatch[1]).toUpperCase())
       : null;
 
-    let pageTitle = "KIN Estates — Thuê Căn Hộ Đà Nẵng Dài Hạn Tuyển Chọn";
+    let pageTitle = "Cho Thuê Căn Hộ Đà Nẵng Dài Hạn Giá Tốt | KIN Estates 2026";
+    let pageDesc =
+      "Thuê căn hộ chung cư, studio, 1–3PN, penthouse & biệt thự Đà Nẵng dài hạn (3–12+ tháng) ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ Mỹ Khê, An Thượng, Hòa Xuân →";
+    let pageKeywords =
+      "thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng dài hạn, thuê chung cư Đà Nẵng, KIN Estates Đà Nẵng, kinestatesdanang";
+
     if (activeApt) {
-      const t = typeof activeApt.title === "string" ? activeApt.title : activeApt.title?.[lang] || activeApt.title?.vi || activeApt.code;
-      pageTitle = `${t} ($${activeApt.priceUsd}/th) | KIN Estates Đà Nẵng`;
+      const rawTitle =
+        typeof activeApt.title === "string"
+          ? activeApt.title
+          : activeApt.title?.[lang] || activeApt.title?.vi || activeApt.title?.en || activeApt.code;
+      const priceStr = `$${activeApt.priceUsd}/${lang === "vi" ? "tháng" : "mo"}`;
+      const mentionsDn = /đà nẵng|da nang|danang/i.test(rawTitle);
+      pageTitle = mentionsDn
+        ? `${rawTitle} (${priceStr}) | KIN Estates`
+        : `${rawTitle} (${priceStr}) — ${lang === "vi" ? "Đà Nẵng" : "Da Nang"} | KIN Estates`;
+      const noteTxt =
+        typeof activeApt.architecturalNotes === "string"
+          ? activeApt.architecturalNotes
+          : activeApt.architecturalNotes?.[lang] || activeApt.architecturalNotes?.vi || activeApt.architecturalNotes?.en || rawTitle;
+      pageDesc =
+        lang === "vi"
+          ? `Cho thuê căn hộ tại ${activeApt.areaName || "Đà Nẵng"} (${activeApt.bedrooms ?? 1}PN · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`
+          : `For rent in ${activeApt.areaName || "Da Nang"} (${activeApt.bedrooms ?? 1}BR · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`;
+      pageKeywords = `${rawTitle}, ${activeApt.building || ""}, thuê căn hộ ${activeApt.areaName || "Đà Nẵng"} Đà Nẵng, ${activeApt.code}, KIN Estates, kinestatesdanang`;
+    } else if (activeAreaSeo) {
+      pageTitle =
+        lang === "vi"
+          ? `Thuê Căn Hộ ${activeAreaSeo.vi} Đà Nẵng Dài Hạn Giá Tốt | KIN Estates`
+          : `Apartments for Rent in ${activeAreaSeo.en}, Da Nang | KIN Estates`;
+      pageDesc =
+        lang === "vi"
+          ? `Cho thuê căn hộ, studio, chung cư & biệt thự ${activeAreaSeo.vi} Đà Nẵng dài hạn (3–12+ tháng) ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ Đặt lịch xem nhà ngay →`
+          : `Verified long-term apartments, studios & villas in ${activeAreaSeo.en}, Da Nang (3–12+ months) ✓ Direct owner pricing ✓ State EVN rates →`;
+      pageKeywords = `thuê căn hộ ${activeAreaSeo.vi} Đà Nẵng, cho thuê nhà ${activeAreaSeo.vi}, apartments for rent ${activeAreaSeo.en} Da Nang, KIN Estates, kinestatesdanang`;
     } else if (cleanPath === "/apartments") {
-      pageTitle = lang === "vi" ? "Danh Mục Căn Hộ Cho Thuê Tại Đà Nẵng | KIN Estates" : "Da Nang Apartments for Rent — Live Map | KIN Estates";
+      pageTitle =
+        lang === "vi"
+          ? "Thuê Chung Cư & Căn Hộ Đà Nẵng Đang Trống | KIN Estates"
+          : lang === "ko"
+            ? "다낭 실시간 공실 아파트 매물 리스트 & 가격 지도 | KIN Estates"
+            : lang === "zh"
+              ? "岘港在租公寓房源列表与实时价格地图 | KIN Estates"
+              : lang === "ru"
+                ? "Свободные Квартиры в Дананге — Цены на Карте | KIN Estates"
+                : lang === "ja"
+                  ? "ダナン空室賃貸物件一覧＆インタラクティブ地図 | KIN Estates"
+                  : "Available Apartments for Rent in Da Nang + Map | KIN Estates";
+      pageDesc =
+        lang === "vi"
+          ? "Danh sách căn hộ cho thuê Đà Nẵng cập nhật thực tế ✓ Lọc nhanh 19 khu vực (An Thượng, Mỹ Khê, Sơn Trà, Hải Châu, Hòa Xuân, Cẩm Lệ), bản đồ giá & ảnh thật →"
+          : "Browse verified available Da Nang apartments & villas with live map pricing across 19 districts (An Thuong, My Khe, Son Tra, Hai Chau, Hoa Xuan) →";
     } else if (cleanPath === "/areas") {
-      pageTitle = lang === "vi" ? "Các Khu Vực Thuê Căn Hộ Tốt Nhất Đà Nẵng | KIN Estates" : "Best Neighborhoods to Rent in Da Nang | KIN Estates";
+      pageTitle =
+        lang === "vi"
+          ? "19 Khu Vực Thuê Căn Hộ Đà Nẵng Đáng Sống Nhất | KIN Estates"
+          : "Best Neighborhoods to Rent in Da Nang (19 Areas) | KIN Estates";
+      pageDesc =
+        lang === "vi"
+          ? "So sánh giá thuê & nhịp sống 19 khu vực Đà Nẵng: An Thượng, Biển Mỹ Khê, Ven sông Hàn, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê, FPT City."
+          : "Compare Da Nang's top 19 residential districts side by side: An Thuong, My Khe Beach, Han Riverfront, Son Tra, Hai Chau, Hoa Xuan & FPT City →";
     } else if (cleanPath === "/how-to-rent") {
-      pageTitle = lang === "vi" ? "Quy Trình Thuê Căn Hộ Dài Hạn Đà Nẵng | KIN Estates" : "How to Rent an Apartment in Da Nang | KIN Estates";
+      pageTitle =
+        lang === "vi"
+          ? "Quy Trình Thuê Căn Hộ Đà Nẵng & Tạm Trú NA17 | KIN Estates"
+          : "How to Rent an Apartment in Da Nang Safely | KIN Estates";
     } else if (cleanPath === "/guides") {
-      pageTitle = lang === "vi" ? "Cẩm Nang & Chỉ Số Giá Chung Cư Đà Nẵng 2026 | KIN Estates" : "Da Nang Rental Guides & Price Index 2026 | KIN Estates";
+      pageTitle =
+        lang === "vi"
+          ? "Bảng Giá Thuê Chung Cư Đà Nẵng 2026 & Cẩm Nang | KIN Estates"
+          : "Da Nang Condo Rent Price Index & Living Guide 2026 | KIN";
     } else if (cleanPath === "/about") {
-      pageTitle = lang === "vi" ? "Về KIN Estates Đà Nẵng — Ảnh Dẫn Khách & Feedback Thực Tế" : "About KIN Estates Da Nang — Tours & Client Reviews";
+      pageTitle =
+        lang === "vi"
+          ? "Về KIN Estates Đà Nẵng — Dẫn Xem Thực Tế & Đánh Giá 5 Sao"
+          : "About KIN Estates Da Nang — Real Tours & 5★ Client Reviews";
     } else if (cleanPath === "/privacy-policy") {
-      pageTitle = lang === "vi" ? "Chính Sách Bảo Mật & Dữ Liệu | KIN Estates Đà Nẵng" : "Privacy & Data Policy | KIN Estates Da Nang";
+      pageTitle =
+        lang === "vi"
+          ? "Chính Sách Bảo Mật & Xử Lý Dữ Liệu | KIN Estates Đà Nẵng"
+          : "Privacy & Data Protection Policy | KIN Estates Da Nang";
     } else if (lang !== "vi") {
-      pageTitle = "KIN Estates — Long-Term Apartments & Villas for Rent in Da Nang";
+      pageTitle =
+        lang === "ko"
+          ? "다낭 장기 임대 아파트 & 풀빌라 월세 전문 | KIN Estates 2026"
+          : lang === "zh"
+            ? "岘港长租公寓与海景别墅出租 — 房东直租 | KIN Estates 2026"
+            : lang === "ru"
+              ? "Аренда Квартир в Дананге на Долгий Срок | KIN Estates 2026"
+              : lang === "ja"
+                ? "ダナン長期賃貸アパート・高級マンション＆ヴィラ | KIN Estates"
+                : "Da Nang Apartments for Rent — Long-Term | KIN Estates 2026";
+      pageDesc =
+        "Verified long-term apartments, studios, condos & pool villas in Da Nang (3–12+ months) ✓ Direct owner rent ✓ State EVN rates ✓ My Khe, An Thuong, Han River →";
     }
 
+    const canonicalHref = `${window.location.origin}${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`;
     document.title = pageTitle;
     document.documentElement.lang = lang;
 
+    setMetaTagContent('meta[name="description"]', pageDesc);
+    setMetaTagContent('meta[name="keywords"]', pageKeywords);
+    setMetaTagContent('meta[property="og:title"]', pageTitle);
+    setMetaTagContent('meta[property="og:description"]', pageDesc);
+    setMetaTagContent('meta[property="og:url"]', canonicalHref);
+    setMetaTagContent('meta[name="twitter:title"]', pageTitle);
+    setMetaTagContent('meta[name="twitter:description"]', pageDesc);
+    if (activeApt?.images?.[0]) {
+      const absImg = activeApt.images[0].startsWith("/")
+        ? `${window.location.origin}${activeApt.images[0]}`
+        : activeApt.images[0];
+      setMetaTagContent('meta[property="og:image"]', absImg);
+      setMetaTagContent('meta[name="twitter:image"]', absImg);
+    }
+
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (canonical) {
-      canonical.href = `${window.location.origin}${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`;
+      canonical.href = canonicalHref;
     }
 
     trackGaEvent("page_view", {
@@ -1547,6 +1696,12 @@ export const App: React.FC = () => {
     );
   }, [apartments, homeChipFilter, savedCodes]);
 
+  const activeAreaLanding = React.useMemo(() => {
+    const m = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
+    return m ? findSeoAreaBySlug(m[1]) : null;
+  }, [route]);
+  const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding);
+
   const filteredApartments = React.useMemo(() => {
     let list = [...apartments];
     if (area !== "all") {
@@ -1554,7 +1709,8 @@ export const App: React.FC = () => {
         String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
       const target = foldVn(area);
       list = list.filter((a) => {
-        const hay = foldVn(`${a.areaName || ""} ${a.district || ""} ${a.address || ""}`);
+        const titleRaw = typeof a.title === "string" ? a.title : `${a.title?.vi || ""} ${a.title?.en || ""}`;
+        const hay = foldVn(`${a.areaName || ""} ${a.district || ""} ${a.address || ""} ${titleRaw}`);
         if (target === "han riverfront" || target === "ven song han") {
           return hay.includes("han river") || hay.includes("song han");
         }
@@ -1592,7 +1748,7 @@ export const App: React.FC = () => {
     return list;
   }, [apartments, area, bedrooms, maxPrice, tag, query, sort, lang]);
 
-  const expandMapUnits = route === "/apartments" ? filteredApartments : apartments;
+  const expandMapUnits = isCatalogueRoute ? (filteredApartments.length ? filteredApartments : apartments) : apartments;
   const expandMapAptIdx = Math.max(0, expandMapUnits.findIndex((apt) => apt.code === expandMapAptCode));
   const expandDialogApt = expandMapUnits[expandMapAptIdx];
   const detailDialogApt = apartments.find((apt) => apt.code === inquiryApartmentCode);
@@ -1749,10 +1905,10 @@ export const App: React.FC = () => {
     };
   }, [expandMapOpen, expandDialogApt, expandMapUnits, lang, currency]);
 
-  // Catalogue Page Map (/apartments) — Dynamically Switches Map Tile Language & Currency
+  // Catalogue Page Map (/apartments & /areas/:slug) — Dynamically Switches Map Tile Language & Currency
   useEffect(() => {
-    if (route !== "/apartments" || typeof L === "undefined") {
-      if (route !== "/apartments" && catMapRef.current) {
+    if (!isCatalogueRoute || typeof L === "undefined") {
+      if (!isCatalogueRoute && catMapRef.current) {
         catMapRef.current.remove();
         catMapRef.current = null;
       }
@@ -1783,7 +1939,7 @@ export const App: React.FC = () => {
       }).addTo(map);
 
       const bounds: [number, number][] = [];
-      filteredApartments.forEach((apt) => {
+      (filteredApartments.length ? filteredApartments : apartments).forEach((apt) => {
         const point = getExactLocation(apt);
         if (!point) return;
         bounds.push(point);
@@ -2064,7 +2220,21 @@ export const App: React.FC = () => {
             <div className="apt-modern-card__loc">
               {trArea(apt.areaName)} · {apt.building}
             </div>
-            <h3 className="apt-modern-card__title">{title}</h3>
+            <h3 className="apt-modern-card__title">
+              <a
+                href={`/apartments/${encodeURIComponent(apt.code)}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openApartmentDetailModal(apt);
+                  }
+                }}
+              >
+                {title}
+              </a>
+            </h3>
             {apt.address && (
               <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "4px" }}>
                 <span>📍</span>
@@ -2185,13 +2355,19 @@ export const App: React.FC = () => {
             <ul className="kin-nav-tabs">
               {navItems.map((item) => (
                 <li key={item.path}>
-                  <button
-                    type="button"
-                    className={`kin-tab-link ${route === item.path || (item.path === "/apartments" && route.startsWith("/apartments/")) ? "active" : ""}`}
-                    onClick={() => navigate(item.path)}
+                  <a
+                    href={item.path}
+                    style={{ textDecoration: "none" }}
+                    className={`kin-tab-link ${route === item.path || (item.path === "/apartments" && route.startsWith("/apartments/")) || (item.path === "/areas" && route.startsWith("/areas/")) ? "active" : ""}`}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                        e.preventDefault();
+                        navigate(item.path);
+                      }
+                    }}
                   >
                     {item.label}
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -3199,24 +3375,42 @@ export const App: React.FC = () => {
       )}
 
       {/* ====================================================================
-          PAGE 2: CĂN HỘ (/apartments) — 100% 6-LANGUAGE SYNCHRONIZED
+          PAGE 2: CĂN HỘ (/apartments & /areas/:slug) — 100% 6-LANGUAGE SYNCHRONIZED
           ==================================================================== */}
-      {route === "/apartments" && (
+      {isCatalogueRoute && (
         <main className="page-route">
           <div className="page-container">
             <div style={{ marginBottom: "1.75rem" }}>
               <span className="eyebrow-badge">
-                {tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
+                {activeAreaLanding
+                  ? tx(
+                      `KHU VỰC ${activeAreaLanding.vi.toUpperCase()} · ĐÀ NẴNG`,
+                      `${activeAreaLanding.en.toUpperCase()} DISTRICT · DA NANG`,
+                      `岘港 · ${trArea(activeAreaLanding.value)}`,
+                      `ДАНАНГ · ${trArea(activeAreaLanding.value)}`,
+                      `다낭 · ${trArea(activeAreaLanding.value)}`,
+                      `ダナン・${trArea(activeAreaLanding.value)}`
+                    )
+                  : tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
               </span>
               <h1 className="section-heading-serif">
-                {tx(
-                  "Cho thuê căn hộ chung cư Đà Nẵng dài hạn — Tổ ấm theo nhịp sống riêng.",
-                  "Long-Term Apartments & Villas in Da Nang — Curated for Your Rhythm.",
-                  "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
-                  "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
-                  "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
-                  "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
-                )}
+                {activeAreaLanding
+                  ? tx(
+                      `Cho thuê căn hộ ${activeAreaLanding.vi}, Đà Nẵng — Giá trực tiếp chủ nhà.`,
+                      `Apartments & Villas for Rent in ${activeAreaLanding.en}, Da Nang.`,
+                      `岘港${trArea(activeAreaLanding.value)}长租公寓与别墅精选。`,
+                      `Долгосрочная аренда квартир — ${trArea(activeAreaLanding.value)}, Дананг.`,
+                      `다낭 ${trArea(activeAreaLanding.value)} 장기 임대 아파트 & 풀빌라.`,
+                      `ダナン・${trArea(activeAreaLanding.value)}の長期賃貸アパート＆ヴィラ。`
+                    )
+                  : tx(
+                      "Cho thuê căn hộ chung cư Đà Nẵng dài hạn — Tổ ấm theo nhịp sống riêng.",
+                      "Long-Term Apartments & Villas in Da Nang — Curated for Your Rhythm.",
+                      "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
+                      "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
+                      "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
+                      "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
+                    )}
               </h1>
             </div>
 
@@ -3291,7 +3485,16 @@ export const App: React.FC = () => {
                       { value: "Thuận Phước", label: trArea("Thuận Phước") },
                       { value: "Hòa Vang", label: trArea("Hòa Vang") }
                     ]}
-                    onChange={setArea}
+                    onChange={(nextVal) => {
+                      setArea(nextVal);
+                      if (activeAreaLanding) {
+                        if (nextVal === "all") navigate("/apartments");
+                        else {
+                          const nextSeo = findSeoAreaByValue(nextVal);
+                          if (nextSeo) navigate(`/areas/${nextSeo.slug}`);
+                        }
+                      }
+                    }}
                   />
                 </div>
                 <div className="kin-form-field">
@@ -3412,8 +3615,55 @@ export const App: React.FC = () => {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "7fr 5fr", gap: "1.75rem", alignItems: "start" }} className="catalogue-split-grid">
-              <div className="cards-grid">
-                {filteredApartments.map(renderApartmentCard)}
+              <div>
+                {filteredApartments.length > 0 ? (
+                  <div className="cards-grid">
+                    {filteredApartments.map(renderApartmentCard)}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ background: "#FFFFFF", border: "1px solid var(--border-light)", borderRadius: "18px", padding: "1.35rem 1.5rem", marginBottom: "1.25rem", boxShadow: "var(--shadow-soft)" }}>
+                      <strong style={{ display: "block", fontSize: "1rem", marginBottom: "0.35rem", color: "var(--text-primary)" }}>
+                        {tx(
+                          `Hiện chưa có căn trống công khai khớp bộ lọc tại ${area !== "all" ? trArea(area) : "Đà Nẵng"}.`,
+                          `No publicly listed units currently match this filter in ${area !== "all" ? trArea(area) : "Da Nang"}.`,
+                          "当前筛选条件下暂无公开空置房源。",
+                          "По выбранному фильтру сейчас нет открытых вариантов.",
+                          "현재 선택한 조건에 맞는 공개 공실 매물이 없습니다.",
+                          "現在この条件に一致する公開空室物件はありません。"
+                        )}
+                      </strong>
+                      <p style={{ fontSize: "0.86rem", color: "var(--text-secondary)", marginBottom: "0.85rem" }}>
+                        {tx(
+                          "Nhắn trực tiếp Zalo / WhatsApp 0389 711 601 để nhận danh sách căn mới bàn giao hoặc tham khảo các căn đang trống tại Đà Nẵng bên dưới:",
+                          "Message us on Zalo / WhatsApp +84 389 711 601 for off-market availability, or explore nearby available Da Nang residences below:",
+                          "欢迎联系 Zalo / WhatsApp +84 389 711 601 获取最新未公开房源，或浏览下方岘港其他在租公寓：",
+                          "Напишите нам в WhatsApp / Telegram +84 389 711 601 для подбора или посмотрите доступные квартиры в Дананге ниже:",
+                          "Zalo / WhatsApp +84 389 711 601로 문의하시거나 아래 다낭 내 입주 가능 매물을 확인해 보세요:",
+                          "WhatsApp / Zalo (+84 389 711 601) にて未公開物件をご案内可能です。以下のダナン空室物件もご覧ください："
+                        )}
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-luxe btn-luxe--outline"
+                        style={{ padding: "0.45rem 0.95rem", fontSize: "0.8rem" }}
+                        onClick={() => {
+                          setQuery("");
+                          setArea("all");
+                          setBedrooms("all");
+                          setMaxPrice("0");
+                          setTag("all");
+                          if (activeAreaLanding) navigate("/apartments");
+                        }}
+                      >
+                        {tx("Xem tất cả căn hộ Đà Nẵng", "View All Da Nang Apartments", "查看所有岘港公寓", "Все квартиры Дананга", "다낭 전체 매물 보기", "ダナン全物件を見る")}
+                      </button>
+                    </div>
+                    <div className="cards-grid">
+                      {apartments.slice(0, 6).map(renderApartmentCard)}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="kin-cat-map-col-desktop" style={{ position: "sticky", top: "90px", height: "620px", borderRadius: "22px", overflow: "hidden", border: "1px solid var(--border-medium)", boxShadow: "var(--shadow-soft)" }}>
                 <div id="catalogue-page-map" style={{ width: "100%", height: "100%" }} />
@@ -3954,16 +4204,26 @@ export const App: React.FC = () => {
                       <span className="eyebrow-badge">{tx("KHU VỰC", "DISTRICT", "街区", "РАЙОН", "지역", "エリア")} 0{activeDistrictIdx + 1}</span>
                       <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "2rem" }}>{trArea(activeDistrict.name)} — {trField(activeDistrict.subtitle)}</h2>
                     </div>
-                    <button
-                      type="button"
-                      className="btn-luxe btn-luxe--navy"
-                      onClick={() => {
-                        setArea(activeDistrict.name);
-                        navigate("/apartments");
-                      }}
-                    >
-                      <span>{tx(`Xem căn hộ tại ${activeDistrict.name} →`, `View ${trArea(activeDistrict.name)} Units →`, `查看 ${trArea(activeDistrict.name)} 房源 →`, `Квартиры в ${trArea(activeDistrict.name)} →`, `${trArea(activeDistrict.name)} 매물 보기 →`, `${trArea(activeDistrict.name)} の物件を見る →`)}</span>
-                    </button>
+                    {(() => {
+                      const areaSeo = findSeoAreaByValue(activeDistrict.name);
+                      const areaHref = areaSeo ? `/areas/${areaSeo.slug}` : "/apartments";
+                      return (
+                        <a
+                          href={areaHref}
+                          style={{ textDecoration: "none" }}
+                          className="btn-luxe btn-luxe--navy"
+                          onClick={(e) => {
+                            if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                              e.preventDefault();
+                              setArea(activeDistrict.name);
+                              navigate(areaHref);
+                            }
+                          }}
+                        >
+                          <span>{tx(`Xem căn hộ tại ${activeDistrict.name} →`, `View ${trArea(activeDistrict.name)} Units →`, `查看 ${trArea(activeDistrict.name)} 房源 →`, `Квартиры в ${trArea(activeDistrict.name)} →`, `${trArea(activeDistrict.name)} 매물 보기 →`, `${trArea(activeDistrict.name)} の物件を見る →`)}</span>
+                        </a>
+                      );
+                    })()}
                   </div>
 
                   <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
@@ -5661,9 +5921,9 @@ export const App: React.FC = () => {
               {tx("KHÁM PHÁ", "EXPLORE", "探索房源", "НАВИГАЦИЯ", "둘러보기", "探索")}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", fontSize: "0.88rem", color: "rgba(255,255,255,0.82)" }}>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/apartments")}>{tx("Tất cả căn hộ Đà Nẵng", "All Da Nang Apartments", "所有岘港公寓", "Все квартиры Дананга", "다낭 전체 아파트", "ダナン全物件一覧")}</span>
+              <a href="/apartments" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/apartments"); } }}>{tx("Tất cả căn hộ Đà Nẵng", "All Da Nang Apartments", "所有岘港公寓", "Все квартиры Дананга", "다낭 전체 아파트", "ダナン全物件一覧")}</a>
               <span style={{ cursor: "pointer" }} onClick={openMapOverview}>{tx("Bản đồ căn hộ Đà Nẵng", "Interactive Residence Map", "岘港房源地图", "Интерактивная карта", "다낭 아파트 지도", "インタラクティブ地図")}</span>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/areas")}>{tx("Các khu vực Đà Nẵng", "Da Nang Neighborhoods", "岘港核心区域", "Районы Дананга", "다낭 주요 지역", "ダナン主要エリア")}</span>
+              <a href="/areas" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/areas"); } }}>{tx("Các khu vực Đà Nẵng", "Da Nang Neighborhoods", "岘港核心区域", "Районы Дананга", "다낭 주요 지역", "ダナン主要エリア")}</a>
             </div>
           </div>
 
@@ -5672,10 +5932,10 @@ export const App: React.FC = () => {
               {tx("THÔNG TIN TƯ VẤN", "ADVISORY", "租房指南", "ИНФОРМАЦИЯ", "안내 및 가이드", "ご利用案内")}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", fontSize: "0.88rem", color: "rgba(255,255,255,0.82)" }}>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/how-to-rent")}>{tx("Quy trình thuê nhà", "How to Rent", "租房流程", "Процесс аренды", "임대 진행 절차", "賃貸の流れ")}</span>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/guides")}>{tx("Cẩm nang & Chỉ số giá", "Guides & Price Index", "生活指南与价格指数", "Гиды и индекс цен", "생활 가이드 & 가격 지수", "ガイド＆家賃指数")}</span>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")}>{tx("Về KIN Estates & Chủ nhà", "About KIN Estates", "关于 KIN Estates", "О компании KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</span>
-              <span style={{ cursor: "pointer" }} onClick={() => navigate("/privacy-policy")}>{tx("Chính sách bảo mật & dữ liệu", "Privacy & Data Policy", "隐私与数据政策", "Политика конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}</span>
+              <a href="/how-to-rent" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/how-to-rent"); } }}>{tx("Quy trình thuê nhà", "How to Rent", "租房流程", "Процесс аренды", "임대 진행 절차", "賃貸の流れ")}</a>
+              <a href="/guides" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/guides"); } }}>{tx("Cẩm nang & Chỉ số giá", "Guides & Price Index", "生活指南与价格指数", "Гиды и индекс цен", "생활 가이드 & 가격 지수", "ガイド＆家賃指数")}</a>
+              <a href="/about" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/about"); } }}>{tx("Về KIN Estates & Chủ nhà", "About KIN Estates", "关于 KIN Estates", "О компании KIN Estates", "KIN Estates 소개", "KIN Estatesについて")}</a>
+              <a href="/privacy-policy" style={{ color: "inherit", textDecoration: "none" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/privacy-policy"); } }}>{tx("Chính sách bảo mật & dữ liệu", "Privacy & Data Policy", "隐私与数据政策", "Политика конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}</a>
             </div>
           </div>
 
@@ -5690,6 +5950,31 @@ export const App: React.FC = () => {
               </a>
               <span>VI · EN · 中文 · RU · KO · JA</span>
             </div>
+          </div>
+        </div>
+
+        {/* Crawlable 19-Area Da Nang Local SEO Directory Strip */}
+        <div className="page-container" style={{ paddingTop: 0, borderTop: "1px solid rgba(255,255,255,0.09)" }}>
+          <div style={{ paddingTop: "1.1rem", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(245,217,184,0.7)", marginBottom: "0.5rem" }}>
+            {tx("CHO THUÊ CĂN HỘ ĐÀ NẴNG THEO KHU VỰC", "DA NANG APARTMENTS BY NEIGHBORHOOD", "按区域浏览岘港公寓", "АРЕНДА ПО РАЙОНАМ ДАНАНГА", "다낭 지역별 임대 아파트", "エリア別ダナン賃貸物件")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.75rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>
+            {SEO_AREA_SLUGS.map((ar) => (
+              <a
+                key={ar.slug}
+                href={`/areas/${ar.slug}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    setArea(ar.value);
+                    navigate(`/areas/${ar.slug}`);
+                  }
+                }}
+              >
+                {tx(`Căn hộ ${ar.vi}`, `${ar.en} Rentals`, `${trArea(ar.value)}租房`, trArea(ar.value), `${trArea(ar.value)} 임대`, `${trArea(ar.value)}賃貸`)}
+              </a>
+            ))}
           </div>
         </div>
       </footer>
