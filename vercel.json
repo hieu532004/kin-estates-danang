@@ -13,7 +13,15 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/((?!api/|css/|js/|img/|videos/).*)",
+      "source": "/kin-studio",
+      "destination": "/studio-panel.html"
+    },
+    {
+      "source": "/kin-studio/(.*)",
+      "destination": "/studio-panel.html"
+    },
+    {
+      "source": "/((?!api/|css/|js/|img/|videos/|studio-panel\\.html).*)",
       "destination": "/index.html"
     }
   ]

@@ -313,18 +313,24 @@ function commitLocalStore(changes) {
 
 async function initDatabase() {
   loadJsonStore();
-  const uri = process.env.MONGODB_URI;
+  const uri = (process.env.MONGODB_URI || "").trim();
   if (!uri) {
     isNativeMongoConnected = false;
     mongoConnectionMode = "MongoDB Document Persistence Engine (Local JSON-Mongo Hybrid)";
     return;
   }
   try {
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 2200 });
+    const isAtlas = uri.startsWith("mongodb+srv://");
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: isAtlas ? 9000 : 2200,
+        maxPoolSize: 10
+      });
+    }
     isNativeMongoConnected = true;
-    mongoConnectionMode = `Native MongoDB Connected`;
+    mongoConnectionMode = isAtlas ? "MongoDB Atlas Cloud Connected (Live 24/7)" : "Native MongoDB Connected";
     const count = await ApartmentModel.countDocuments();
-    if (count === 0) {
+    if (count === 0 && store.apartments.length > 0) {
       const seedDocs = store.apartments.map(({ _id, ...rest }) => rest);
       await ApartmentModel.insertMany(seedDocs);
     }
@@ -332,7 +338,11 @@ async function initDatabase() {
     if (leaseCount === 0 && store.leases.length > 0) {
       await LeaseModel.insertMany(store.leases.map(({ _id, ...rest }) => rest));
     }
-    console.log("✓ Connected to Native MongoDB");
+    const inqCount = await InquiryModel.countDocuments();
+    if (inqCount === 0 && store.inquiries.length > 0) {
+      await InquiryModel.insertMany(store.inquiries.map(({ _id, ...rest }) => rest));
+    }
+    console.log(`✓ Connected to ${mongoConnectionMode}`);
   } catch (err) {
     isNativeMongoConnected = false;
     mongoConnectionMode = "MongoDB Document Persistence Engine (Local JSON-Mongo Hybrid)";
