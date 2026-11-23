@@ -168,21 +168,62 @@ async function fetchGoogleTranslate(text, targetLang) {
   if (!tl || !text || !text.trim()) return text;
   if (isTestFixtureEnvironment()) return null;
 
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`;
+  const hasViChars = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text);
+  const sl = hasViChars ? "vi" : "auto";
+
+  // Provider 1: Google Translate gtx
   try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`;
     const res = await fetch(url, {
+      method: "GET",
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: AbortSignal.timeout(4500)
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json) && Array.isArray(json[0])) {
+        const translated = json[0].map((part) => (Array.isArray(part) ? part[0] : "")).join("").trim();
+        if (translated && translated !== text) return translated;
+      }
+    }
+  } catch {
+    // Fall through to Provider 2
+  }
+
+  // Provider 2: Google Translate dict-chrome-ex endpoint
+  try {
+    const url2 = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`;
+    const res2 = await fetch(url2, {
       method: "GET",
       headers: { "User-Agent": "Mozilla/5.0" },
       signal: AbortSignal.timeout(4500)
     });
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!Array.isArray(json) || !Array.isArray(json[0])) return null;
-    const translated = json[0].map((part) => (Array.isArray(part) ? part[0] : "")).join("").trim();
-    return translated || null;
+    if (res2.ok) {
+      const json2 = await res2.json();
+      const first = Array.isArray(json2) ? (Array.isArray(json2[0]) ? json2[0][0] : json2[0]) : null;
+      if (typeof first === "string" && first.trim() && first.trim() !== text) return first.trim();
+    }
   } catch {
-    return null;
+    // Fall through to Provider 3
   }
+
+  // Provider 3: MyMemory free translation API fallback (works from all AWS/Vercel datacenter IPs)
+  try {
+    if (text.length <= 480) {
+      const mmPair = `${sl === "auto" ? "vi" : sl}|${tl}`;
+      const url3 = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(mmPair)}`;
+      const res3 = await fetch(url3, { signal: AbortSignal.timeout(4500) });
+      if (res3.ok) {
+        const json3 = await res3.json();
+        const out = String(json3?.responseData?.translatedText || "").trim();
+        if (out && out !== text && !/MYMEMORY WARNING/i.test(out)) return out;
+      }
+    }
+  } catch {
+    // Graceful fallback to original text
+  }
+
+  return null;
 }
 
 async function translateBatch(items, targetLang) {
