@@ -681,6 +681,8 @@ export const App: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<string>("0");
   const [tag, setTag] = useState<string>("all");
   const [sort, setSort] = useState<string>("featured");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
+  const photoTouchStartX = useRef<number | null>(null);
 
   // Lead Form State
   const [leadBudget, setLeadBudget] = useState<string>("900");
@@ -1844,6 +1846,26 @@ export const App: React.FC = () => {
   useEffect(() => {
     setFullscreenPhotoOpen(false);
   }, [detailRouteCode, Boolean(activePhotoSource)]);
+
+  useEffect(() => {
+    if (!fullscreenPhotoOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setFullscreenPhotoOpen(false);
+      } else if (e.key === "ArrowLeft" && detailPhotos.length > 1) {
+        selectPhoto((activePhotoIdx - 1 + detailPhotos.length) % detailPhotos.length);
+      } else if (e.key === "ArrowRight" && detailPhotos.length > 1) {
+        selectPhoto((activePhotoIdx + 1) % detailPhotos.length);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullscreenPhotoOpen, activePhotoIdx, detailPhotos.length, currentDetailApt?.code]);
 
   const openUnitOnMapDialog = (e: React.MouseEvent, apt: Apartment) => {
     e.stopPropagation();
@@ -3198,9 +3220,38 @@ export const App: React.FC = () => {
               </h1>
             </div>
 
-            <div style={{ background: "#FFFFFF", padding: "1.25rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)", marginBottom: "1.75rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginBottom: "1rem" }}>
-                <div className="kin-form-field">
+            <div className="kin-cat-filter-shell">
+              {/* Compact Mobile 1-Row Search + Filter Toggle + Map Bar */}
+              <div className="kin-mobile-filter-bar">
+                <input
+                  type="search"
+                  className="kin-mobile-search-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={tx("Tìm tòa nhà, khu vực...", "Search building, area...", "搜索大楼或区域...", "Поиск здания, района...", "건물명, 지역 검색...", "建物名・エリア検索...")}
+                />
+                <button
+                  type="button"
+                  className={`kin-mobile-filter-btn ${mobileFilterOpen || area !== "all" || bedrooms !== "all" || maxPrice !== "0" || sort !== "featured" ? "active" : ""}`}
+                  onClick={() => setMobileFilterOpen((v) => !v)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="6" x2="20" y2="6" /><line x1="7" y1="12" x2="17" y2="12" /><line x1="10" y1="18" x2="14" y2="18" />
+                  </svg>
+                  <span>{tx("Bộ lọc", "Filters", "筛选", "Фильтр", "필터", "絞込")}</span>
+                  {(() => {
+                    const cnt = [area !== "all", bedrooms !== "all", maxPrice !== "0", sort !== "featured"].filter(Boolean).length;
+                    return cnt > 0 ? <span className="kin-mobile-filter-badge">{cnt}</span> : null;
+                  })()}
+                </button>
+                <button type="button" className="kin-mobile-filter-btn" onClick={openMapOverview} aria-label="Open map">
+                  <IconMap size={14} />
+                  <span>{tx("Bản đồ", "Map", "地图", "Карта", "지도", "地図")}</span>
+                </button>
+              </div>
+
+              <div className={`kin-cat-filter-grid ${mobileFilterOpen ? "is-open" : ""}`}>
+                <div className="kin-form-field kin-desktop-search-field">
                   <label className="astryx-select-label">
                     {tx("TÌM TOÀ NHÀ / KHU VỰC", "SEARCH BUILDING / AREA", "搜索大楼 / 区域", "ПОИСК ЗДАНИЯ / РАЙОНА", "건물명 / 지역 검색", "建物名・エリア検索")}
                   </label>
@@ -3291,7 +3342,35 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+              {mobileFilterOpen && (
+                <div className="kin-mobile-filter-drawer-actions" style={{ display: "none" }}>
+                  <button
+                    type="button"
+                    className="btn-luxe btn-luxe--outline"
+                    style={{ flex: 1, padding: "0.52rem 0.8rem", fontSize: "0.8rem" }}
+                    onClick={() => {
+                      setQuery("");
+                      setArea("all");
+                      setBedrooms("all");
+                      setMaxPrice("0");
+                      setTag("all");
+                      setSort("featured");
+                    }}
+                  >
+                    {tx("Đặt lại", "Reset", "重置", "Сбросить", "초기화", "リセット")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-luxe btn-luxe--navy"
+                    style={{ flex: 2, padding: "0.52rem 0.9rem", fontSize: "0.8rem" }}
+                    onClick={() => setMobileFilterOpen(false)}
+                  >
+                    {tx(`Xem ${filteredApartments.length} căn hộ`, `Show ${filteredApartments.length} homes`, `查看 ${filteredApartments.length} 套房源`, `Показать (${filteredApartments.length})`, `${filteredApartments.length}개 매물 보기`, `${filteredApartments.length}件を表示`)}
+                  </button>
+                </div>
+              )}
+
+              <div className="kin-cat-filter-footer">
                 <div className="chips-track">
                   {["all", "Gần biển", "View sông Hàn", "Bàn làm việc", "Thú cưng", "Điện EVN", "Biệt thự"].map((tChip) => (
                     <button
@@ -3305,7 +3384,7 @@ export const App: React.FC = () => {
                   ))}
                 </div>
 
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div className="kin-cat-filter-actions-desktop" style={{ display: "flex", gap: "0.5rem" }}>
                   <button
                     type="button"
                     className="btn-luxe btn-luxe--outline"
@@ -3336,7 +3415,7 @@ export const App: React.FC = () => {
               <div className="cards-grid">
                 {filteredApartments.map(renderApartmentCard)}
               </div>
-              <div style={{ position: "sticky", top: "90px", height: "620px", borderRadius: "22px", overflow: "hidden", border: "1px solid var(--border-medium)", boxShadow: "var(--shadow-soft)" }}>
+              <div className="kin-cat-map-col-desktop" style={{ position: "sticky", top: "90px", height: "620px", borderRadius: "22px", overflow: "hidden", border: "1px solid var(--border-medium)", boxShadow: "var(--shadow-soft)" }}>
                 <div id="catalogue-page-map" style={{ width: "100%", height: "100%" }} />
               </div>
             </div>
@@ -3391,8 +3470,22 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* 1. APARTMENT PHOTO GALLERY + THUMBNAILS (With Bottom-Left Counter & Bottom-Right Fullscreen Button) */}
-              <div className="apt-detail-gallery-stage">
+              {/* 1. APARTMENT PHOTO GALLERY + THUMBNAILS (Touch-Swipeable + Fullscreen Button) */}
+              <div
+                className="apt-detail-gallery-stage"
+                onTouchStart={(e) => {
+                  photoTouchStartX.current = e.touches[0]?.clientX ?? null;
+                }}
+                onTouchEnd={(e) => {
+                  const startX = photoTouchStartX.current;
+                  const endX = e.changedTouches[0]?.clientX ?? null;
+                  photoTouchStartX.current = null;
+                  if (startX == null || endX == null || detailPhotos.length <= 1) return;
+                  const delta = endX - startX;
+                  if (delta < -42) selectPhoto((activePhotoIdx + 1) % detailPhotos.length);
+                  else if (delta > 42) selectPhoto(activePhotoIdx === 0 ? detailPhotos.length - 1 : activePhotoIdx - 1);
+                }}
+              >
                 <ApartmentPhoto
                   src={activePhotoSource}
                   alt={getLocalized(currentDetailApt.title)}
@@ -3649,30 +3742,95 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Fullscreen Lightbox when clicking "⛶ Toàn màn hình" */}
+            {/* Fullscreen Swipeable Photo Gallery Lightbox ("⛶ Toàn màn hình") */}
             {fullscreenPhotoOpen && activePhotoSource && (
-              <div className="homii-dialog-backdrop" onClick={() => setFullscreenPhotoOpen(false)}>
-                <div style={{ position: "relative", maxWidth: "92vw", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+              <div
+                className="kin-photo-lightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Fullscreen apartment gallery"
+                onClick={() => setFullscreenPhotoOpen(false)}
+              >
+                <div className="kin-plb-top" onClick={(e) => e.stopPropagation()}>
+                  <span className="kin-plb-counter">
+                    {activePhotoIdx + 1} / {detailPhotos.length}
+                  </span>
+                  <span className="kin-plb-title">{getLocalized(currentDetailApt.title)}</span>
                   <button
                     type="button"
-                    className="kin-booking-close-circle"
-                    style={{ top: "-18px", right: "-18px" }}
+                    className="kin-plb-close"
                     onClick={() => setFullscreenPhotoOpen(false)}
                     aria-label="Close fullscreen photo"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <span>{tx("Đóng", "Close", "关闭", "Закрыть", "닫기", "閉じる")}</span>
+                    <span>✕</span>
                   </button>
+                </div>
+
+                <div
+                  className="kin-plb-stage"
+                  onClick={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => {
+                    photoTouchStartX.current = e.touches[0]?.clientX ?? null;
+                  }}
+                  onTouchEnd={(e) => {
+                    const startX = photoTouchStartX.current;
+                    const endX = e.changedTouches[0]?.clientX ?? null;
+                    photoTouchStartX.current = null;
+                    if (startX == null || endX == null || detailPhotos.length <= 1) return;
+                    const delta = endX - startX;
+                    if (delta < -40) selectPhoto((activePhotoIdx + 1) % detailPhotos.length);
+                    else if (delta > 40) selectPhoto(activePhotoIdx === 0 ? detailPhotos.length - 1 : activePhotoIdx - 1);
+                  }}
+                >
+                  {detailPhotos.length > 1 && (
+                    <button
+                      type="button"
+                      className="kin-plb-nav prev"
+                      onClick={() => selectPhoto(activePhotoIdx === 0 ? detailPhotos.length - 1 : activePhotoIdx - 1)}
+                      aria-label="Previous photo"
+                    >
+                      ‹
+                    </button>
+                  )}
+
                   <ApartmentPhoto
                     src={activePhotoSource}
-                    alt={getLocalized(currentDetailApt.title)}
+                    alt={`${getLocalized(currentDetailApt.title)} - ${activePhotoIdx + 1}`}
                     unavailableText={photoUnavailable}
-                    fallbackStyle={{ width: "min(72vw, 560px)", aspectRatio: "16 / 10", borderRadius: "20px" }}
-                    style={{ maxWidth: "92vw", maxHeight: "88vh", borderRadius: "20px", objectFit: "contain", display: "block", boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}
+                    fallbackStyle={{ width: "min(85vw, 560px)", aspectRatio: "16 / 10", borderRadius: "14px" }}
+                    className="kin-plb-img"
                   />
+
+                  {detailPhotos.length > 1 && (
+                    <button
+                      type="button"
+                      className="kin-plb-nav next"
+                      onClick={() => selectPhoto((activePhotoIdx + 1) % detailPhotos.length)}
+                      aria-label="Next photo"
+                    >
+                      ›
+                    </button>
+                  )}
                 </div>
+
+                {detailPhotos.length > 1 && (
+                  <div className="kin-plb-thumbs-bar" onClick={(e) => e.stopPropagation()}>
+                    <div className="kin-plb-thumbs">
+                      {detailPhotos.map((img, i) => (
+                        <button
+                          key={`${img}-${i}`}
+                          type="button"
+                          className={`kin-plb-thumb ${i === activePhotoIdx ? "active" : ""}`}
+                          onClick={() => selectPhoto(i)}
+                          aria-label={`Photo ${i + 1}`}
+                        >
+                          <img src={img} alt="" loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -5126,12 +5284,12 @@ export const App: React.FC = () => {
           DIALOG 1: FULL-SCREEN EXPAND MAP DIALOG ([ ⤢ Mở rộng bản đồ ])
           ==================================================================== */}
       {expandMapOpen && expandDialogApt && (
-        <div className="homii-dialog-backdrop" onClick={() => setExpandMapOpen(false)}>
+        <div className="homii-dialog-backdrop homii-dialog-backdrop--map" onClick={() => setExpandMapOpen(false)}>
           <div className="expand-map-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="expand-map-left">
               <div id="dialog-expand-map" style={{ width: "100%", height: "100%" }} />
-              <div style={{ position: "absolute", top: "14px", left: "14px", zIndex: 500, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", padding: "0.48rem 0.95rem", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, border: "1px solid rgba(213,176,124,0.35)", boxShadow: "0 8px 24px rgba(0,0,0,0.14)" }}>
-                {tx("Cuộn để thu phóng · Chạm vào mức giá trên bản đồ để đổi căn hộ", "Scroll to zoom · Click any price pin on the map to switch residence", "滚动缩放 · 点击地图上的价格标签切换房源", "Крутите для масштаба · Нажмите на цену для смены квартиры", "스크롤하여 확대 · 지도의 가격 핀을 눌러 매물 변경", "スクロールで拡大・地図上の価格ピンをクリックして物件切替")}
+              <div className="expand-map-hint">
+                {tx("Chạm vào mức giá trên bản đồ để đổi căn hộ", "Tap any price pin on the map to switch residence", "点击地图上的价格标签切换房源", "Нажмите на цену на карте для смены квартиры", "지도의 가격 핀을 눌러 매물을 변경하세요", "地図上の価格ピンをタップして物件切替")}
               </div>
             </div>
 
