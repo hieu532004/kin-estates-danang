@@ -334,7 +334,15 @@ function buildLocalBusinessSchema(origin, testimonials = []) {
       { "@type": "Place", name: "My Khe Beach, Da Nang" },
       { "@type": "Place", name: "Han Riverfront, Da Nang" },
       { "@type": "Place", name: "Son Tra, Da Nang" },
-      { "@type": "Place", name: "Hai Chau, Da Nang" }
+      { "@type": "Place", name: "Hai Chau, Da Nang" },
+      { "@type": "Place", name: "Ngu Hanh Son, Da Nang" },
+      { "@type": "Place", name: "Hoa Xuan, Da Nang" },
+      { "@type": "Place", name: "Cam Le, Da Nang" },
+      { "@type": "Place", name: "Thanh Khe, Da Nang" },
+      { "@type": "Place", name: "Lien Chieu, Da Nang" },
+      { "@type": "Place", name: "Nam Viet A, Da Nang" },
+      { "@type": "Place", name: "FPT City Hoa Hai, Da Nang" },
+      { "@type": "Place", name: "Hoa Vang, Da Nang" }
     ],
     availableLanguage: ["Vietnamese", "English", "Chinese", "Russian", "Korean", "Japanese"],
     contactPoint: {
@@ -567,16 +575,65 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
   return { title, description, seoBlock, lang };
 }
 
-function injectSeoIntoHtml(baseHtml, seoHead) {
+function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, apartments = [], about = null }) {
+  const cleanPath = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+  if (apartment) {
+    const t = locVal(apartment.title, lang) || apartment.code;
+    const desc = locVal(apartment.architecturalNotes, lang) || "";
+    const priceVnd = apartment.priceVnd ? `${(Number(apartment.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")} triệu VNĐ/tháng` : "";
+    return `<main style="max-width:960px;margin:24px auto;padding:0 16px;font-family:sans-serif;color:#14191f">` +
+      `<nav><a href="${escapeHtml(origin)}/">KIN Estates Đà Nẵng</a> / <a href="${escapeHtml(origin)}/apartments">Căn hộ Đà Nẵng</a></nav>` +
+      `<h1>${escapeHtml(t)}</h1>` +
+      `<p><strong>${escapeHtml(priceVnd)} ($${escapeHtml(apartment.priceUsd)}/month)</strong> · ${escapeHtml(apartment.bedrooms ?? 1)} PN · ${escapeHtml(apartment.sizeM2 ?? "-")} m² · ${escapeHtml(apartment.areaName || "Đà Nẵng")}</p>` +
+      `<p>${escapeHtml(apartment.address || apartment.building || "Đà Nẵng, Việt Nam")}</p>` +
+      `<p>${escapeHtml(desc)}</p>` +
+      `<p>Liên hệ KIN Estates Đà Nẵng (kinestatesdanang.com): Zalo / WhatsApp 0389 711 601 · Telegram @KIN_Estates</p>` +
+      `</main>`;
+  }
+
+  const avail = (apartments || []).filter((a) => a.status === "Available" && a.isVisible !== false).slice(0, 18);
+  const aptLinks = avail
+    .map((a) => {
+      const t = locVal(a.title, lang) || a.code;
+      return `<li><a href="${escapeHtml(origin)}/apartments/${encodeURIComponent(a.code)}">${escapeHtml(t)} — $${escapeHtml(a.priceUsd)}/tháng (${escapeHtml(a.areaName || "Đà Nẵng")})</a></li>`;
+    })
+    .join("");
+  const fbList = (about?.testimonials || [])
+    .slice(0, 4)
+    .map((f) => `<li><strong>${escapeHtml(f.clientName)}</strong> (${escapeHtml(f.subtitle || "Đà Nẵng")}): ${escapeHtml(locVal(f.quote, lang))}</li>`)
+    .join("");
+
+  return `<main style="max-width:1040px;margin:24px auto;padding:0 16px;font-family:sans-serif;color:#14191f">` +
+    `<header><a href="${escapeHtml(origin)}/">KIN Estates Đà Nẵng (kinestatesdanang.com)</a> · <a href="${escapeHtml(origin)}/apartments">Căn hộ cho thuê Đà Nẵng</a> · <a href="${escapeHtml(origin)}/areas">Khu vực Đà Nẵng</a> · <a href="${escapeHtml(origin)}/how-to-rent">Quy trình thuê nhà</a> · <a href="${escapeHtml(origin)}/guides">Cẩm nang</a> · <a href="${escapeHtml(origin)}/about">Về KIN Estates</a> · <a href="${escapeHtml(origin)}/privacy-policy">Chính sách dữ liệu</a></header>` +
+    `<h1>${escapeHtml(cleanPath === "/about" ? "Về KIN Estates Đà Nẵng — Cho Thuê Căn Hộ Dài Hạn Tuyển Chọn" : "KIN Estates Đà Nẵng (kinestatesdanang.com) — Cho Thuê Căn Hộ, Penthouse & Biệt Thự Dài Hạn Đà Nẵng")}</h1>` +
+    `<p>Chuyên cho thuê căn hộ dài hạn (3–12+ tháng) tại tất cả các khu vực Đà Nẵng: Ven sông Hàn, An Thượng, Biển Mỹ Khê, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Mỹ An, Phước Mỹ, Thanh Khê, Liên Chiểu, Hòa Khánh, FPT City / Hòa Hải, Hòa Vang. Hỗ trợ 6 ngôn ngữ (Việt, Anh, Trung, Nga, Hàn, Nhật). Liên hệ Zalo / WhatsApp: 0389 711 601 · Telegram: @KIN_Estates.</p>` +
+    (aptLinks ? `<section><h2>Căn hộ đang trống tại Đà Nẵng</h2><ul>${aptLinks}</ul></section>` : "") +
+    (fbList ? `<section><h2>Đánh giá của khách hàng về KIN Estates Đà Nẵng</h2><ul>${fbList}</ul></section>` : "") +
+    `</main>`;
+}
+
+function injectSeoIntoHtml(baseHtml, seoHead, ssrBody = "") {
   let html = String(baseHtml || "");
   html = html.replace(/<html lang="[^"]*">/i, `<html lang="${escapeHtml(seoHead.lang)}">`);
   if (/<!-- KIN_SEO_META_START -->[\s\S]*?<!-- KIN_SEO_META_END -->/.test(html)) {
-    return html.replace(
+    html = html.replace(
       /<!-- KIN_SEO_META_START -->[\s\S]*?<!-- KIN_SEO_META_END -->/,
       `<!-- KIN_SEO_META_START -->\n  ${seoHead.seoBlock}\n  <!-- KIN_SEO_META_END -->`
     );
+  } else {
+    html = html.replace(/<title>[\s\S]*?<\/title>\s*<meta name="description"[^>]*>/i, seoHead.seoBlock);
   }
-  return html.replace(/<title>[\s\S]*?<\/title>\s*<meta name="description"[^>]*>/i, seoHead.seoBlock);
+  if (ssrBody) {
+    if (/<!-- KIN_SSR_ROOT_START -->[\s\S]*?<!-- KIN_SSR_ROOT_END -->/.test(html)) {
+      html = html.replace(
+        /<!-- KIN_SSR_ROOT_START -->[\s\S]*?<!-- KIN_SSR_ROOT_END -->/,
+        `<!-- KIN_SSR_ROOT_START -->${ssrBody}<!-- KIN_SSR_ROOT_END -->`
+      );
+    } else if (html.includes('<div id="root"></div>')) {
+      html = html.replace('<div id="root"></div>', `<div id="root">${ssrBody}</div>`);
+    }
+  }
+  return html;
 }
 
 function generateRobotsTxt(origin) {
@@ -709,6 +766,7 @@ module.exports = {
   getSiteOrigin,
   resolveLang,
   buildPageSeoHead,
+  buildSsrRootMarkup,
   injectSeoIntoHtml,
   generateRobotsTxt,
   generateSitemapXml,

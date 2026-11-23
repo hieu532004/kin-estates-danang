@@ -567,12 +567,29 @@ function parsePriceInput(priceInput, priceVndInput) {
 }
 
 function normalizeAreaName(input = "") {
-  const s = String(input || "").toLowerCase();
-  if (s.includes("an thuong") || s.includes("an thượng") || s.includes("my an") || s.includes("mỹ an")) return "An Thuong";
-  if (s.includes("son tra") || s.includes("sơn trà") || s.includes("hiyori") || s.includes("monarchy")) return "Son Tra";
-  if (s.includes("han") || s.includes("hàn") || s.includes("hai chau") || s.includes("hải châu") || s.includes("filmore") || s.includes("panoma")) return "Han Riverfront";
-  if (s.includes("my khe") || s.includes("mỹ khê") || s.includes("beach") || s.includes("biển") || s.includes("võ nguyên giáp")) return "My Khe Beachfront";
-  return input || "An Thuong";
+  const raw = String(input || "").trim();
+  if (!raw) return "An Thuong";
+  const folded = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+  if (folded.includes("hoa xuan")) return "Hòa Xuân";
+  if (folded.includes("cam le")) return "Cẩm Lệ";
+  if (folded.includes("nam viet a")) return "Nam Việt Á";
+  if (folded.includes("fpt") || folded.includes("hoa hai")) return "FPT City / Hòa Hải";
+  if (folded.includes("hoa khanh")) return "Hòa Khánh";
+  if (folded.includes("lien chieu")) return "Liên Chiểu";
+  if (folded.includes("thanh khe")) return "Thanh Khê";
+  if (folded.includes("hoa vang")) return "Hòa Vang";
+  if (folded.includes("ngu hanh son")) return "Ngũ Hành Sơn";
+  if (folded.includes("phuoc my")) return "Phước Mỹ";
+  if (folded.includes("khue my")) return "Khuê Mỹ";
+  if (folded.includes("tho quang")) return "Thọ Quang";
+  if (folded.includes("thuan phuoc")) return "Thuận Phước";
+  if (folded.includes("my an")) return "Mỹ An";
+  if (folded.includes("hai chau")) return "Hải Châu";
+  if (folded.includes("an thuong")) return "An Thuong";
+  if (folded.includes("my khe") || folded.includes("beach") || folded.includes("bien") || folded.includes("vo nguyen giap")) return "My Khe Beachfront";
+  if (folded.includes("son tra") || folded.includes("hiyori") || folded.includes("monarchy")) return "Son Tra";
+  if (folded.includes("han") || folded.includes("filmore") || folded.includes("panoma")) return "Han Riverfront";
+  return raw;
 }
 
 function normalizeApartmentPayload(payload, { sparse = false } = {}) {

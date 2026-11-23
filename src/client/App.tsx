@@ -1267,16 +1267,29 @@ export const App: React.FC = () => {
   };
 
   const trArea = (raw: string | undefined): string => {
-    if (!raw || lang === "vi") return raw || "";
+    if (!raw) return "";
     const map: Record<string, string> = {
-      "Ngũ Hành Sơn": tx("Ngũ Hành Sơn", "Ngu Hanh Son", "五行山郡 (Ngũ Hành Sơn)", "Нгуханьшон", "응우한선 (Ngũ Hành Sơn)", "グーハインソン区"),
-      "Hải Châu": tx("Hải Châu", "Hai Chau", "海洲郡 (Hải Châu)", "Хайтяу", "하이쩌우 (Hải Châu)", "ハイチャウ区"),
-      "Sơn Trà": tx("Sơn Trà", "Son Tra", "山茶郡 (Sơn Trà)", "Шонча", "선짜 (Sơn Trà)", "ソンチャ区"),
+      "Han Riverfront": tx("Ven sông Hàn", "Han Riverfront", "韩江畔", "Набережная реки Хан", "한강변", "ハン川リバーフロント"),
+      "An Thuong": tx("An Thượng", "An Thuong", "安上街区", "Ан Тхыонг", "안트엉", "アントゥオン"),
       "An Thượng": tx("An Thượng", "An Thuong", "安上街区 (An Thượng)", "Ан Тхыонг", "안트엉 (An Thượng)", "アントゥオン地区"),
       "My Khe Beachfront": tx("Biển Mỹ Khê", "My Khe Beachfront", "美溪海滨", "Пляж Ми Кхе", "미케비치 해변", "ミーケービーチ"),
-      "An Thuong": tx("An Thượng", "An Thuong", "安上街区", "Ан Тхыонг", "안트엉", "アントゥオン"),
       "Son Tra": tx("Sơn Trà", "Son Tra", "山茶郡", "Шонча", "선짜", "ソンチャ"),
-      "Han Riverfront": tx("Bờ sông Hàn", "Han Riverfront", "韩江畔", "Набережная реки Хан", "한강변", "ハン川リバーフロント")
+      "Sơn Trà": tx("Sơn Trà", "Son Tra", "山茶郡 (Sơn Trà)", "Шонча", "선짜 (Sơn Trà)", "ソンチャ区"),
+      "Hải Châu": tx("Hải Châu", "Hai Chau", "海洲郡 (Hải Châu)", "Хайтяу", "하이쩌우 (Hải Châu)", "ハイチャウ区"),
+      "Ngũ Hành Sơn": tx("Ngũ Hành Sơn", "Ngu Hanh Son", "五行山郡 (Ngũ Hành Sơn)", "Нгуханьшон", "응우한선 (Ngũ Hành Sơn)", "グーハインソン区"),
+      "Mỹ An": tx("Mỹ An", "My An", "美安坊 (Mỹ An)", "Ми Ан", "미안 (Mỹ An)", "ミーアン"),
+      "Phước Mỹ": tx("Phước Mỹ", "Phuoc My", "福美坊 (Phước Mỹ)", "Фыок Ми", "프억미 (Phước Mỹ)", "フックミー"),
+      "Khuê Mỹ": tx("Khuê Mỹ", "Khue My", "奎美坊 (Khuê Mỹ)", "Кхуэ Ми", "쿠에미 (Khuê Mỹ)", "クエミー"),
+      "Nam Việt Á": tx("Nam Việt Á", "Nam Viet A", "南越亚区 (Nam Việt Á)", "Нам Вьет А", "남비엣아 (Nam Việt Á)", "ナムベトアー"),
+      "Hòa Xuân": tx("Hòa Xuân", "Hoa Xuan", "和春区 (Hòa Xuân)", "Хоа Суан", "호아쑤언 (Hòa Xuân)", "ホアスアン"),
+      "Cẩm Lệ": tx("Cẩm Lệ", "Cam Le", "锦丽郡 (Cẩm Lệ)", "Кам Ле", "깜레 (Cẩm Lệ)", "カムレー区"),
+      "Thanh Khê": tx("Thanh Khê", "Thanh Khe", "清溪郡 (Thanh Khê)", "Тхань Кхе", "탄케 (Thanh Khê)", "タンケー区"),
+      "Liên Chiểu": tx("Liên Chiểu", "Lien Chieu", "莲沼郡 (Liên Chiểu)", "Лиен Тиеу", "리엔찌에우 (Liên Chiểu)", "リエンチエウ区"),
+      "Hòa Khánh": tx("Hòa Khánh", "Hoa Khanh", "和庆区 (Hòa Khánh)", "Хоа Кхань", "호아칸 (Hòa Khánh)", "ホアカン"),
+      "FPT City / Hòa Hải": tx("FPT City / Hòa Hải", "FPT City / Hoa Hai", "FPT 科技城 / 和海", "FPT City / Хоа Хай", "FPT 시티 / 호아하이", "FPTシティ / ホアハイ"),
+      "Thọ Quang": tx("Thọ Quang", "Tho Quang", "寿光坊 (Thọ Quang)", "Тхо Куанг", "토꽝 (Thọ Quang)", "トークアン"),
+      "Thuận Phước": tx("Thuận Phước", "Thuan Phuoc", "顺福坊 (Thuận Phước)", "Тхуан Фыок", "투언프억 (Thuận Phước)", "トゥアンフック"),
+      "Hòa Vang": tx("Hòa Vang", "Hoa Vang", "和荣县 (Hòa Vang)", "Хоа Ванг", "호아방 (Hòa Vang)", "ホアヴァン")
     };
     return map[raw] || raw;
   };
@@ -1535,7 +1548,19 @@ export const App: React.FC = () => {
   const filteredApartments = React.useMemo(() => {
     let list = [...apartments];
     if (area !== "all") {
-      list = list.filter((a) => (a.areaName || "").toLowerCase().includes(area.toLowerCase()));
+      const foldVn = (v: string) =>
+        String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+      const target = foldVn(area);
+      list = list.filter((a) => {
+        const hay = foldVn(`${a.areaName || ""} ${a.district || ""} ${a.address || ""}`);
+        if (target === "han riverfront" || target === "ven song han") {
+          return hay.includes("han river") || hay.includes("song han");
+        }
+        if (target === "my khe beachfront" || target === "bien my khe") {
+          return hay.includes("my khe");
+        }
+        return hay.includes(target);
+      });
     }
     if (bedrooms !== "all") {
       const br = Number(bedrooms);
@@ -3194,11 +3219,26 @@ export const App: React.FC = () => {
                   <CustomSelect
                     value={area}
                     options={[
-                      { value: "all", label: tx("Tất cả khu vực", "All Districts", "所有区域", "Все районы", "모든 지역", "すべてのエリア") },
+                      { value: "all", label: tx("Tất cả khu vực Đà Nẵng", "All Da Nang Districts", "岘港所有区域", "Все районы Дананга", "다낭 전체 지역", "ダナン全エリア") },
+                      { value: "Han Riverfront", label: trArea("Han Riverfront") },
                       { value: "An Thượng", label: trArea("An Thượng") },
-                      { value: "Ngũ Hành Sơn", label: `${trArea("Ngũ Hành Sơn")} (The Panoma)` },
-                      { value: "Hải Châu", label: `${trArea("Hải Châu")} (The Filmore)` },
-                      { value: "Sơn Trà", label: `${trArea("Sơn Trà")} (Hiyori / Monarchy)` }
+                      { value: "My Khe Beachfront", label: trArea("My Khe Beachfront") },
+                      { value: "Sơn Trà", label: trArea("Sơn Trà") },
+                      { value: "Hải Châu", label: trArea("Hải Châu") },
+                      { value: "Ngũ Hành Sơn", label: trArea("Ngũ Hành Sơn") },
+                      { value: "Mỹ An", label: trArea("Mỹ An") },
+                      { value: "Phước Mỹ", label: trArea("Phước Mỹ") },
+                      { value: "Khuê Mỹ", label: trArea("Khuê Mỹ") },
+                      { value: "Nam Việt Á", label: trArea("Nam Việt Á") },
+                      { value: "Hòa Xuân", label: trArea("Hòa Xuân") },
+                      { value: "Cẩm Lệ", label: trArea("Cẩm Lệ") },
+                      { value: "Thanh Khê", label: trArea("Thanh Khê") },
+                      { value: "Liên Chiểu", label: trArea("Liên Chiểu") },
+                      { value: "Hòa Khánh", label: trArea("Hòa Khánh") },
+                      { value: "FPT City / Hòa Hải", label: trArea("FPT City / Hòa Hải") },
+                      { value: "Thọ Quang", label: trArea("Thọ Quang") },
+                      { value: "Thuận Phước", label: trArea("Thuận Phước") },
+                      { value: "Hòa Vang", label: trArea("Hòa Vang") }
                     ]}
                     onChange={setArea}
                   />
@@ -4815,10 +4855,25 @@ export const App: React.FC = () => {
                   <div className="kin-input-group">
                     <label>{tx("Khu vực", "Area")}</label>
                     <select name="areaName" defaultValue="An Thuong">
-                      <option value="An Thuong">An Thượng (Mỹ Khê)</option>
+                      <option value="Han Riverfront">Ven sông Hàn</option>
+                      <option value="An Thuong">An Thượng</option>
+                      <option value="My Khe Beachfront">Biển Mỹ Khê</option>
                       <option value="Son Tra">Sơn Trà</option>
-                      <option value="Han Riverfront">Bờ Sông Hàn / Hải Châu</option>
-                      <option value="My Khe Beachfront">Mặt Biển Mỹ Khê</option>
+                      <option value="Hải Châu">Hải Châu</option>
+                      <option value="Ngũ Hành Sơn">Ngũ Hành Sơn</option>
+                      <option value="Mỹ An">Mỹ An</option>
+                      <option value="Phước Mỹ">Phước Mỹ</option>
+                      <option value="Khuê Mỹ">Khuê Mỹ</option>
+                      <option value="Nam Việt Á">Nam Việt Á</option>
+                      <option value="Hòa Xuân">Hòa Xuân</option>
+                      <option value="Cẩm Lệ">Cẩm Lệ</option>
+                      <option value="Thanh Khê">Thanh Khê</option>
+                      <option value="Liên Chiểu">Liên Chiểu</option>
+                      <option value="Hòa Khánh">Hòa Khánh</option>
+                      <option value="FPT City / Hòa Hải">FPT City / Hòa Hải</option>
+                      <option value="Thọ Quang">Thọ Quang</option>
+                      <option value="Thuận Phước">Thuận Phước</option>
+                      <option value="Hòa Vang">Hòa Vang</option>
                     </select>
                   </div>
                   <div className="kin-input-group">

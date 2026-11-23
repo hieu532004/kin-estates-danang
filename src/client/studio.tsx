@@ -163,7 +163,21 @@ const AREAS = [
   { val: "An Thuong", label: "An Thượng" },
   { val: "My Khe Beachfront", label: "Biển Mỹ Khê" },
   { val: "Son Tra", label: "Sơn Trà" },
-  { val: "Hải Châu", label: "Hải Châu" }
+  { val: "Hải Châu", label: "Hải Châu" },
+  { val: "Ngũ Hành Sơn", label: "Ngũ Hành Sơn" },
+  { val: "Mỹ An", label: "Mỹ An" },
+  { val: "Phước Mỹ", label: "Phước Mỹ" },
+  { val: "Khuê Mỹ", label: "Khuê Mỹ" },
+  { val: "Nam Việt Á", label: "Nam Việt Á" },
+  { val: "Hòa Xuân", label: "Hòa Xuân" },
+  { val: "Cẩm Lệ", label: "Cẩm Lệ" },
+  { val: "Thanh Khê", label: "Thanh Khê" },
+  { val: "Liên Chiểu", label: "Liên Chiểu" },
+  { val: "Hòa Khánh", label: "Hòa Khánh" },
+  { val: "FPT City / Hòa Hải", label: "FPT City / Hòa Hải" },
+  { val: "Thọ Quang", label: "Thọ Quang" },
+  { val: "Thuận Phước", label: "Thuận Phước" },
+  { val: "Hòa Vang", label: "Hòa Vang" }
 ];
 const QUICK_TAGS = [
   "View sông Hàn",
@@ -326,12 +340,28 @@ function notesOf(apt: Apartment): string {
 
 function normalizeAreaValue(raw?: string): string {
   const s = String(raw || "").trim();
-  const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (!s) return "Han Riverfront";
+  const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+  if (folded.includes("hoa xuan")) return "Hòa Xuân";
+  if (folded.includes("cam le")) return "Cẩm Lệ";
+  if (folded.includes("nam viet a")) return "Nam Việt Á";
+  if (folded.includes("fpt") || folded.includes("hoa hai")) return "FPT City / Hòa Hải";
+  if (folded.includes("hoa khanh")) return "Hòa Khánh";
+  if (folded.includes("lien chieu")) return "Liên Chiểu";
+  if (folded.includes("thanh khe")) return "Thanh Khê";
+  if (folded.includes("hoa vang")) return "Hòa Vang";
+  if (folded.includes("ngu hanh son")) return "Ngũ Hành Sơn";
+  if (folded.includes("phuoc my")) return "Phước Mỹ";
+  if (folded.includes("khue my")) return "Khuê Mỹ";
+  if (folded.includes("tho quang")) return "Thọ Quang";
+  if (folded.includes("thuan phuoc")) return "Thuận Phước";
+  if (folded.includes("my an")) return "Mỹ An";
   if (folded.includes("an thuong")) return "An Thuong";
   if (folded.includes("my khe")) return "My Khe Beachfront";
   if (folded.includes("son tra")) return "Son Tra";
   if (folded.includes("hai chau")) return "Hải Châu";
-  return "Han Riverfront";
+  if (folded.includes("han river") || folded.includes("song han")) return "Han Riverfront";
+  return AREAS.some((a) => a.val === s) ? s : "Han Riverfront";
 }
 
 function areaDisplayLabel(raw?: string): string {

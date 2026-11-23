@@ -929,7 +929,20 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
     const normalizeAreaLabel = (rawArea) => {
       const s = String(rawArea || "").trim();
       if (!s) return "Khác";
-      const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const folded = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+      if (folded.includes("hoa xuan")) return "Hòa Xuân";
+      if (folded.includes("cam le")) return "Cẩm Lệ";
+      if (folded.includes("nam viet a")) return "Nam Việt Á";
+      if (folded.includes("fpt") || folded.includes("hoa hai")) return "FPT City / Hòa Hải";
+      if (folded.includes("hoa khanh")) return "Hòa Khánh";
+      if (folded.includes("lien chieu")) return "Liên Chiểu";
+      if (folded.includes("thanh khe")) return "Thanh Khê";
+      if (folded.includes("hoa vang")) return "Hòa Vang";
+      if (folded.includes("phuoc my")) return "Phước Mỹ";
+      if (folded.includes("khue my")) return "Khuê Mỹ";
+      if (folded.includes("tho quang")) return "Thọ Quang";
+      if (folded.includes("thuan phuoc")) return "Thuận Phước";
+      if (folded.includes("my an")) return "Mỹ An";
       if (folded.includes("an thuong")) return "An Thượng";
       if (folded.includes("han river") || folded.includes("song han")) return "Ven sông Hàn";
       if (folded.includes("my khe")) return "Biển Mỹ Khê";
@@ -1570,7 +1583,8 @@ app.get("*", async (req, res) => {
     about = await db.getAboutContent().catch(() => null);
 
     const seoHead = seoService.buildPageSeoHead({ origin, pathname, lang, apartment, apartments, about });
-    const html = seoService.injectSeoIntoHtml(baseHtml, seoHead);
+    const ssrBody = seoService.buildSsrRootMarkup({ origin, pathname, lang, apartment, apartments, about });
+    const html = seoService.injectSeoIntoHtml(baseHtml, seoHead, ssrBody);
     res.set({
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300"
