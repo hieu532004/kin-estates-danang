@@ -347,11 +347,18 @@ async function processTelegramCommand(rawText, meta = {}) {
   }
 
   if (lower === "/tools") {
-    return { reply: "⚙️ Công cụ quản lý & Đồng bộ Web", parseMode: null, buttons: [
-      [{ text: "🚀 Đồng bộ lên Web Live", callback_data: "/sync_web" }],
-      [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
-      [{ text: "📊 Xuất / Nhập Excel", callback_data: "/excel" }, { text: "🏠 Về Menu", callback_data: "/menu" }]
-    ] };
+    const studioUrl = publicStudioUrl();
+    return {
+      reply: "⚙️ Công cụ quản lý · Cloud 24/7\n(Dữ liệu tự động cập nhật trực tiếp lên Website)",
+      parseMode: null,
+      buttons: [
+        [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
+        [
+          ...(studioUrl ? [{ text: "📱 Mở KIN Studio", web_app: { url: studioUrl } }] : []),
+          { text: "🏠 Về Menu", callback_data: "/menu" }
+        ]
+      ]
+    };
   }
 
   if (lower === "/sync_web") {
