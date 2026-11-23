@@ -204,9 +204,10 @@ async function pushListing(event, apartment) {
 
 function savedListing(apartment, message) {
   const rows = managementButtons(apartment.code);
-  if (apartment.isVisible !== false && process.env.PUBLIC_SITE_URL) {
+  const siteBase = process.env.PUBLIC_SITE_URL || (process.env.VERCEL ? "https://kin-estates-danang.vercel.app" : "");
+  if (apartment.isVisible !== false && siteBase) {
     try {
-      const link = new URL(`/apartments/${encodeURIComponent(apartment.code)}`, process.env.PUBLIC_SITE_URL);
+      const link = new URL(`/apartments/${encodeURIComponent(apartment.code)}`, siteBase);
       if (link.protocol === "https:" || link.protocol === "http:") rows.unshift([{ text: "Mở trên website", url: link.href }]);
     } catch {
       // The site URL is optional.

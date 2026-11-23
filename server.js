@@ -148,6 +148,35 @@ app.use((err, req, res, next) => {
 });
 app.use(express.static(path.join(__dirname, "public")));
 
+function createRateLimiter({ windowMs, max }) {
+  const buckets = new Map();
+  return (req, res, next) => {
+    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+    if (!ip || LOCAL_ADDRESS.has(ip) || String(process.env.PUBLIC_SITE_URL || "").includes(".invalid")) {
+      return next();
+    }
+    const now = Date.now();
+    if (buckets.size > 2000) {
+      for (const [k, v] of buckets) {
+        if (v.resetAt <= now) buckets.delete(k);
+      }
+    }
+    let entry = buckets.get(ip);
+    if (!entry || entry.resetAt <= now) {
+      entry = { count: 0, resetAt: now + windowMs };
+      buckets.set(ip, entry);
+    }
+    entry.count++;
+    if (entry.count > max) {
+      return res.status(429).json({ ok: false, error: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút." });
+    }
+    next();
+  };
+}
+
+const inquiryRateLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30 });
+const studioAuthRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 15 });
+
 let dbInitialization;
 function ensureInitialized() {
   if (!dbInitialization) {
@@ -161,14 +190,29 @@ function ensureInitialized() {
   return dbInitialization;
 }
 
-// Middleware to ensure DB is initialized on every API call (including Vercel Serverless cold starts)
+// Middleware to ensure DB is initialized & connected on every API call (including Vercel Serverless cold/warm starts)
 app.use("/api", async (req, res, next) => {
   try {
     await ensureInitialized();
+    if (process.env.MONGODB_URI) {
+      await db.ensureMongoConnection();
+    }
     next();
   } catch (err) {
     next(err);
   }
+});
+
+app.get("/api/health", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const st = db.getDbStatus();
+  res.json({
+    ok: true,
+    uptimeSec: Math.round(process.uptime()),
+    databaseConnected: st.isNativeMongoConnected,
+    databaseMode: st.mongoConnectionMode,
+    telegramConnected: telegramService.getBotStatus().connected
+  });
 });
 
 // 1. System & Architecture Status
@@ -215,11 +259,18 @@ const handleGetApartments = async (req, res) => {
     const targetLang = String(req.query.lang || "").trim().toLowerCase();
     if (translationService.TARGET_LANGS.includes(targetLang)) {
       apartments = await Promise.all(
-        apartments.map((apt) => translationService.translateApartmentForLanguage(apt, targetLang))
+        apartments.map(async (apt) => {
+          const translated = await translationService.translateApartmentForLanguage(apt, targetLang);
+          if (translated !== apt) {
+            void db.persistApartmentLanguageCache(apt.code, targetLang, translated);
+          }
+          return translated;
+        })
       );
     }
     res.vary("Authorization");
     if (admin) res.set("Cache-Control", "no-store");
+    else res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
     res.json({
       ok: true,
       count: apartments.length,
@@ -238,13 +289,18 @@ app.get("/api/apartments/:id", async (req, res) => {
   const admin = isAdmin(req);
   res.vary("Authorization");
   if (admin) res.set("Cache-Control", "no-store");
+  else res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
   let apt = await db.getApartmentByCodeOrId(req.params.id);
   if (!apt || (!db.isPublicApartment(apt) && !admin)) {
     return res.status(404).json({ ok: false, error: "Apartment not found" });
   }
   const targetLang = String(req.query.lang || "").trim().toLowerCase();
   if (translationService.TARGET_LANGS.includes(targetLang)) {
-    apt = await translationService.translateApartmentForLanguage(apt, targetLang);
+    const translated = await translationService.translateApartmentForLanguage(apt, targetLang);
+    if (translated !== apt) {
+      void db.persistApartmentLanguageCache(apt.code, targetLang, translated);
+      apt = translated;
+    }
   }
   res.json({ ok: true, apartment: admin ? apt : publicApartment(apt) });
 });
@@ -314,7 +370,7 @@ app.get("/api/inquiries", requireAdmin, async (req, res) => {
   res.json({ ok: true, count: inquiries.length, inquiries });
 });
 
-app.post("/api/inquiries", async (req, res) => {
+app.post("/api/inquiries", inquiryRateLimit, async (req, res) => {
   try {
     const result = await createPublicInquiry(req.body, req.headers);
     const inquiry = result?.inquiry || result;
@@ -803,7 +859,7 @@ app.post("/api/excel/import-leases", requireAdmin, async (req, res) => {
 });
 
 // 8. Private Mobile Management Studio & Executive Analytics API (Zero public exposure)
-app.post("/api/studio/auth", async (req, res) => {
+app.post("/api/studio/auth", studioAuthRateLimit, async (req, res) => {
   res.set("Cache-Control", "no-store");
   const { passcode, initData } = req.body || {};
   if (initData && verifyTelegramWebAppInitData(initData)) {

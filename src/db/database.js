@@ -81,6 +81,9 @@ const ApartmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+ApartmentSchema.index({ isVisible: 1, status: 1, featured: -1, createdAt: -1 });
+ApartmentSchema.index({ areaName: 1, priceUsd: 1 });
+ApartmentSchema.index({ images: 1 });
 
 // 2. Mongoose Schema: Inquiries / Customer Leads / Viewing Schedule / Landlord Submissions
 const InquirySchema = new mongoose.Schema(
@@ -113,6 +116,9 @@ const InquirySchema = new mongoose.Schema(
 InquirySchema.index({ viewingSlotKey: 1 }, {
   unique: true, partialFilterExpression: { viewingSlotKey: { $type: "string" } }
 });
+InquirySchema.index({ createdAt: -1 });
+InquirySchema.index({ apartmentCode: 1, createdAt: -1 });
+InquirySchema.index({ type: 1, status: 1 });
 
 // 3. Mongoose Schema: Leases / Active Tenants (Quản lý khách đang thuê căn nào & thời hạn)
 const LeaseSchema = new mongoose.Schema(
@@ -138,6 +144,8 @@ const LeaseSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+LeaseSchema.index({ status: 1, endDate: 1 });
+LeaseSchema.index({ apartmentCode: 1 });
 
 const ApartmentModel = mongoose.models.Apartment || mongoose.model("Apartment", ApartmentSchema);
 const InquiryModel = mongoose.models.Inquiry || mongoose.model("Inquiry", InquirySchema);
@@ -285,6 +293,7 @@ function loadJsonStore() {
 }
 
 function saveJsonStore(snapshot = store, { strict = false } = {}) {
+  if (process.env.VERCEL && !strict) return;
   const directory = path.dirname(STORE_PATH);
   const settings = { ...snapshot.settings };
   if (process.env.TELEGRAM_BOT_TOKEN) delete settings.telegramBotToken;
@@ -347,6 +356,31 @@ async function initDatabase() {
     isNativeMongoConnected = false;
     mongoConnectionMode = "MongoDB Document Persistence Engine (Local JSON-Mongo Hybrid)";
     console.log("ℹ Running with Persistent Mongo-JSON Document Store");
+  }
+}
+
+async function ensureMongoConnection() {
+  const uri = (process.env.MONGODB_URI || "").trim();
+  if (!uri) return false;
+  if (mongoose.connection.readyState === 1) {
+    isNativeMongoConnected = true;
+    return true;
+  }
+  await initDatabase();
+  return isNativeMongoConnected;
+}
+
+async function persistApartmentLanguageCache(code, lang, translatedApt) {
+  if (!isNativeMongoConnected || !code || !lang || !translatedApt) return;
+  const update = {};
+  if (translatedApt.title?.[lang]) update[`title.${lang}`] = translatedApt.title[lang];
+  if (translatedApt.architecturalNotes?.[lang]) update[`architecturalNotes.${lang}`] = translatedApt.architecturalNotes[lang];
+  if (translatedApt.translations?.[lang]) update[`translations.${lang}`] = translatedApt.translations[lang];
+  if (Object.keys(update).length === 0) return;
+  try {
+    await ApartmentModel.updateOne({ code }, { $set: update });
+  } catch {
+    // Non-blocking background translation cache write
   }
 }
 
@@ -1628,6 +1662,8 @@ function getDbStatus() {
 
 module.exports = {
   initDatabase,
+  ensureMongoConnection,
+  persistApartmentLanguageCache,
   getApartments,
   isPublicApartment,
   hasPublicApartmentPhoto,
