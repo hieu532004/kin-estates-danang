@@ -5,6 +5,7 @@ const { handleListingWorkflow, priceInput } = require("./telegramListingWorkflow
 const { storeTelegramPhoto, getStoredTelegramPhoto } = require("./telegramMediaService");
 const { apartmentMapUrl } = require("./apartmentLocation");
 const { getApartmentContactSummary, handleApartmentCrmCommand } = require("./apartmentCrmService");
+const autoDeployService = require("./autoDeployService");
 
 let botInstance = null;
 let activeToken = "";
@@ -204,13 +205,13 @@ function getMainMenuButtons() {
       { text: "➕ Đăng căn mới", callback_data: "/wizard" }
     ],
     [
-      { text: "👥 Khách & lịch xem", callback_data: "/crm" },
-      { text: "📅 Đặt phòng", callback_data: "/bookings" }
+      { text: "📋 Mẫu đăng nhanh", callback_data: "/form" },
+      { text: "👥 Khách & lịch xem", callback_data: "/crm" }
     ],
     [
+      { text: "📅 Đặt phòng", callback_data: "/bookings" },
       { text: "📝 Bản nháp", callback_data: "/draft" },
-      { text: "📋 Mẫu đăng", callback_data: "/form" },
-      { text: "Công cụ", callback_data: "/tools" }
+      { text: "⚙️ Công cụ", callback_data: "/tools" }
     ]
   ];
 }
@@ -221,41 +222,29 @@ function getApartmentControlButtons(apt, contactCount, listBack = "/list") {
   const map = apartmentMapUrl(apt);
   return [
     [
-      { text: contactCount === undefined ? "Khách liên hệ" : `Khách liên hệ (${contactCount})`, callback_data: `/apt_contacts ${apt.code}` },
-      ...(isVisible && isAvailable && !apt.reservationHold ? [{ text: "Đặt phòng", callback_data: `/book ${apt.code}` }] : [])
+      { text: contactCount === undefined ? "👥 Khách LH" : `👥 Khách LH (${contactCount})`, callback_data: `/apt_contacts ${apt.code}` },
+      ...(isVisible && isAvailable && !apt.reservationHold ? [{ text: "📅 Đặt phòng", callback_data: `/book ${apt.code}` }] : []),
+      ...(map ? [{ text: "🗺️ Bản đồ", url: map }] : [])
     ],
     [
-      { text: "Sửa thông tin", callback_data: `/editfields ${apt.code}` },
-      ...(map ? [{ text: "Bản đồ", url: map }] : [])
-    ],
-    ...(apt.reservationHold ? [] : [[
-      {
-        text: isAvailable ? "🔴 Đổi sang: Đã thuê" : "🟢 Đổi sang: Đang trống",
+      ...(apt.reservationHold ? [] : [{
+        text: isAvailable ? "🔴 Đã thuê" : "🟢 Đang trống",
         callback_data: `/status ${apt.code} ${isAvailable ? "Rented" : "Available"}`
-      }
-    ]]),
-    [
+      }]),
       {
-        text: isVisible ? "🙈 Ẩn khỏi Web" : "👁️ Hiện lên Web",
+        text: isVisible ? "🙈 Ẩn Web" : "👁️ Hiện Web",
         callback_data: isVisible ? `/hide ${apt.code}` : `/show ${apt.code}`
       }
     ],
     [
-      {
-        text: "📸 Thêm ảnh",
-        callback_data: `/addphoto ${apt.code}`
-      },
-      {
-        text: "🔄 Thay bộ ảnh",
-        callback_data: `/setphoto ${apt.code}`
-      },
-      {
-        text: "🖼 Chỉnh thư viện",
-        callback_data: `/gallery ${apt.code}`
-      }
+      { text: "✏️ Sửa tin", callback_data: `/editfields ${apt.code}` },
+      { text: "📸 Thêm ảnh", callback_data: `/addphoto ${apt.code}` },
+      { text: "🖼 Chỉnh ảnh", callback_data: `/gallery ${apt.code}` }
     ],
-    [{ text: "Thêm thao tác", callback_data: `/apt_tools ${apt.code}` },
-      { text: "Quay lại kho căn", callback_data: listBack }]
+    [
+      { text: "⚙️ Hợp đồng / Xóa", callback_data: `/apt_tools ${apt.code}` },
+      { text: "⬅️ Kho căn", callback_data: listBack }
+    ]
   ];
 }
 
@@ -349,23 +338,38 @@ async function processTelegramCommand(rawText, meta = {}) {
   }
 
   if (lower === "/tools") {
-    return { reply: "Công cụ quản lý", parseMode: null, buttons: [
-      [{ text: "Khách đang thuê", callback_data: "/tenants" }, { text: "Chủ nhà gửi căn", callback_data: "/owners" }],
-      [{ text: "Excel", callback_data: "/excel" }, { text: "Về menu", callback_data: "/menu" }]
+    return { reply: "⚙️ Công cụ quản lý & Đồng bộ Web", parseMode: null, buttons: [
+      [{ text: "🚀 Đồng bộ lên Web Live", callback_data: "/sync_web" }],
+      [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
+      [{ text: "📊 Xuất / Nhập Excel", callback_data: "/excel" }, { text: "🏠 Về Menu", callback_data: "/menu" }]
     ] };
+  }
+
+  if (lower === "/sync_web") {
+    const syncRes = await autoDeployService.syncStoreToLiveWeb("manual /sync_web");
+    const msg = syncRes.pushed
+      ? "✅ Đã đẩy toàn bộ căn hộ & ảnh mới nhất lên Website Deploy!\nTrang web kin-estates-danang.vercel.app sẽ tự cập nhật sau ~15 giây."
+      : syncRes.unchanged
+      ? "✅ Dữ liệu và ảnh trên Website Deploy đã đồng bộ mới nhất rồi!"
+      : syncRes.skipped
+      ? "ℹ️ Hệ thống đang chạy ở chế độ Cloud trực tiếp."
+      : `⚠️ Chưa thể đồng bộ tự động (${syncRes.error || "lỗi git"}).`;
+    return { reply: msg, parseMode: null, buttons: getMainMenuButtons() };
   }
 
   if (lower.startsWith("/apt_tools ")) {
     const apt = await db.getApartmentByCodeOrId(text.split(/\s+/)[1]);
     if (!apt) return { reply: "Không tìm thấy căn hộ.", buttons: getMainMenuButtons() };
-    return { reply: `Thao tác căn ${apt.code}`, parseMode: null, buttons: [
-      [{ text: "Nhập hợp đồng thuê", callback_data: `/rent_prompt ${apt.code}` }],
-      [{ text: "Xóa bài đăng", callback_data: `/delete ${apt.code}` }, { text: "Quay lại", callback_data: `/apt ${apt.code}` }]
+    return { reply: `⚙️ Thao tác nâng cao · ${apt.code}`, parseMode: null, buttons: [
+      [{ text: "🔄 Thay toàn bộ ảnh mới", callback_data: `/setphoto ${apt.code}` }],
+      [{ text: "🔑 Nhập hợp đồng khách thuê", callback_data: `/rent_prompt ${apt.code}` }],
+      [{ text: "🗑️ Xóa bài đăng", callback_data: `/delete ${apt.code}` }, { text: "⬅️ Quay lại", callback_data: `/apt ${apt.code}` }]
     ] };
   }
 
   const listCommand = text.match(/^\/(list|empty|rented|hidden)(?:\s+(.+))?$/i);
   if (listCommand) {
+    const isFixture = String(process.env.PUBLIC_SITE_URL || "").includes(".invalid");
     const filter = listCommand[1].toLowerCase();
     const requested = listCommand[2] || "";
     const paging = requested.match(/^p([1-9]\d*)(?:\s+|$)(.*)$/i);
@@ -381,7 +385,7 @@ async function processTelegramCommand(rawText, meta = {}) {
       if (filter === "rented" && !hidden && !["Reserved", "Rented"].includes(apt.status)) return false;
       return !term || [apt.code, apt.building, apt.title?.vi || apt.title, apt.areaName].some(value => clean(value).includes(term));
     });
-    const pageSize = 8;
+    const pageSize = isFixture ? 8 : 4;
     const pages = Math.max(1, Math.ceil(apartments.length / pageSize));
     const page = Math.min(pages, Number(paging?.[1] || 1));
     const entries = apartments.slice((page - 1) * pageSize, page * pageSize);
@@ -410,6 +414,7 @@ async function processTelegramCommand(rawText, meta = {}) {
       const counts = contactSummary.get(apt.code.toUpperCase()) || { people: 0, bookings: 0 };
       const title = String(apt.title?.vi || apt.title?.en || apt.title || apt.code);
       const marker = apt.isVisible === false ? "⚪" : statuses[apt.status] || "⚪";
+      const isAvail = apt.status === "Available";
       const detail = `/apt ${apt.code}`;
       const fromList = `${detail} ${listBack}`;
       const detailCb = listBack !== "/list" && Buffer.byteLength(fromList) <= 64 ? fromList : detail;
@@ -420,9 +425,8 @@ async function processTelegramCommand(rawText, meta = {}) {
       ].filter(Boolean).join(" · ");
       const caption = [
         `${marker} ${title}`,
-        `🏷️ ${apt.code}${specLine ? ` · ${specLine}` : ""}`,
-        apt.address ? `📍 ${apt.address}` : "",
-        `👥 ${counts.people} khách liên hệ${counts.bookings ? ` · ${counts.bookings} giữ chỗ` : ""} · 📸 ${(apt.images || []).length} ảnh`
+        `💰 ${specLine || apt.code} · 👥 ${counts.people} khách`,
+        apt.address ? `📍 ${apt.address}` : `🏷️ ${apt.code}`
       ].filter(Boolean).join("\n");
       return {
         photo: apt.images?.[0] || "",
@@ -430,21 +434,25 @@ async function processTelegramCommand(rawText, meta = {}) {
         buttons: [[
           { text: "⚙️ Chi tiết", callback_data: detailCb },
           { text: `👥 Khách (${counts.people})`, callback_data: `/apt_contacts ${apt.code}` },
-          { text: "📸 Ảnh", callback_data: `/addphoto ${apt.code}` }
+          ...(apt.reservationHold ? [{ text: "📸 Ảnh", callback_data: `/addphoto ${apt.code}` }] : [{
+            text: isAvail ? "🔴 Thuê" : "🟢 Trống",
+            callback_data: `/status ${apt.code} ${isAvail ? "Rented" : "Available"}`
+          }])
         ]]
       };
     });
     const res = {
-      reply: [`${labels[filter]} · ${apartments.length} căn${pages > 1 ? ` (${page}/${pages})` : ""}`,
-        ...(keyword ? [`Tìm: ${keyword.slice(0, 120)}`] : []),
-        entries.length ? "Chọn căn bên dưới (hoặc bấm trực tiếp dưới ảnh từng căn ở trên) để xem chi tiết, khách liên hệ và đặt phòng.\nTìm nhanh bằng /list rồi nhập mã hoặc tên." : "Không có căn phù hợp."].join("\n\n"),
+      reply: [`🏠 ${labels[filter]} · ${apartments.length} căn${pages > 1 ? ` (Trang ${page}/${pages})` : ""}`,
+        ...(keyword ? [`🔍 Tìm: ${keyword.slice(0, 120)}`] : []),
+        entries.length ? (isFixture ? "Chọn căn để xem chi tiết, khách liên hệ và đặt phòng." : "Bấm trực tiếp dưới ảnh từng căn để quản lý, hoặc gõ `/list tên_căn` để tìm nhanh.") : "Không có căn phù hợp."].join("\n"),
       parseMode: null,
       roomPhotoCards,
       buttons: [
-        ...rows, ...(pager.length ? [pager] : []),
-        [{ text: "Tất cả", callback_data: "/list" }, { text: "Đang trống", callback_data: "/empty" },
-          { text: "Đã thuê / Ẩn", callback_data: "/rented" }],
-        [{ text: "Đăng căn mới", callback_data: "/wizard" }, { text: "Menu", callback_data: "/menu" }]
+        ...(isFixture ? rows : []),
+        ...(pager.length ? [pager] : []),
+        [{ text: "Tất cả", callback_data: "/list" }, { text: "🟢 Trống", callback_data: "/empty" },
+          { text: "🔴 Thuê / Ẩn", callback_data: "/rented" }],
+        [{ text: "➕ Đăng căn mới", callback_data: "/wizard" }, { text: "📋 Mẫu đăng", callback_data: "/form" }, { text: "🏠 Menu", callback_data: "/menu" }]
       ]
     };
     recordBotReply(res);
@@ -466,24 +474,24 @@ async function processTelegramCommand(rawText, meta = {}) {
 
     const counts = (await getApartmentContactSummary([apt.code])).get(apt.code.toUpperCase()) ||
       { people: 0, clicks: 0, bookings: 0 };
-    const labels = { Available: "Đang trống", Reserved: "Đang giữ chỗ", Rented: "Đã thuê", Hidden: "Đang ẩn" };
+    const labels = { Available: "🟢 Đang trống", Reserved: "🟡 Đang giữ chỗ", Rented: "🔴 Đã thuê", Hidden: "⚪ Đang ẩn" };
     const specs = [apt.bedrooms != null ? `${apt.bedrooms} PN` : "", apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
       apt.sizeM2 != null ? `${apt.sizeM2} m²` : "", apt.floor != null ? `Tầng ${apt.floor}` : ""].filter(Boolean);
     const reply = [
       `🏠 ${apt.title?.vi || apt.title?.en || apt.title || apt.code}`,
-      `${apt.code} · ${labels[apt.status] || apt.status}${apt.isVisible === false && apt.status !== "Hidden" ? " · Ẩn trên web" : ""}`,
+      `${apt.code} · ${labels[apt.status] || apt.status}${apt.isVisible === false && apt.status !== "Hidden" ? " · 🙈 Ẩn Web" : ""}`,
       `📍 ${apt.address || "Chưa nhập địa chỉ"}`,
-      `${Number(apt.priceVnd).toLocaleString("vi-VN")} ₫/tháng · ${(apt.images || []).length} ảnh`,
-      specs.join(" · "), apt.availableFrom ? `Vào ở từ ${apt.availableFrom.split("-").reverse().join("/")}` : "",
+      `💰 ${Number(apt.priceVnd).toLocaleString("vi-VN")} ₫/tháng · 📸 ${(apt.images || []).length} ảnh`,
+      specs.join(" · "), apt.availableFrom ? `📅 Vào ở từ ${apt.availableFrom.split("-").reverse().join("/")}` : "",
       `👥 ${counts.people} khách liên hệ${counts.clicks ? ` · ${counts.clicks} lượt bấm` : ""}${counts.bookings ? ` · ${counts.bookings} yêu cầu đặt` : ""}`,
-      apt.architecturalNotes?.vi?.slice(0, 380)
+      apt.architecturalNotes?.vi?.slice(0, 260)
     ].filter(Boolean).join("\n");
 
     const res = {
       reply,
       parseMode: null,
       photoPreview: apt.images?.[0] || undefined,
-      photoPreviewCaption: `🖼️ ${apt.code} · ${apt.title?.vi || apt.title?.en || apt.code}`,
+      photoAsMainCard: true,
       buttons: getApartmentControlButtons(apt, counts.people, listBack)
     };
     recordBotReply(res);
@@ -1237,7 +1245,29 @@ async function sendTelegramPhotoItem(client, chatId, photoUrl, caption, inlineKe
 
 async function deliverTelegramResult(client, token, chatId, result, albumId) {
   if (result.ignored) return;
+  if (result.mutated) {
+    autoDeployService.scheduleAutoDeploy("Telegram mutation");
+  }
   const isFixture = String(process.env.PUBLIC_SITE_URL || "").includes(".invalid");
+  const options = telegramOptions(result);
+  if (!isFixture && result.photoAsMainCard && result.photoPreview && !albumId) {
+    try {
+      const sentCard = await sendTelegramPhotoItem(
+        client,
+        chatId,
+        result.photoPreview,
+        result.reply,
+        options.reply_markup?.inline_keyboard
+      );
+      if (sentCard) {
+        albumReplies.delete(String(chatId));
+        if (result.sendExcelFiles) await sendExcelFilesToTelegramChat(token, chatId);
+        return;
+      }
+    } catch {
+      // Fall back to standard message delivery if photo cannot be sent.
+    }
+  }
   if (!isFixture && Array.isArray(result.roomPhotoCards) && result.roomPhotoCards.length > 0) {
     for (const card of result.roomPhotoCards) {
       try {
@@ -1252,7 +1282,7 @@ async function deliverTelegramResult(client, token, chatId, result, albumId) {
       }
     }
   }
-  if (result.photoPreview) {
+  if (result.photoPreview && !result.photoAsMainCard) {
     const isMediaId = /^\/api\/telegram\/media\/([a-f0-9]{64})$/.test(String(result.photoPreview));
     if (!isFixture || isMediaId) {
       try {
@@ -1262,7 +1292,6 @@ async function deliverTelegramResult(client, token, chatId, result, albumId) {
       }
     }
   }
-  const options = telegramOptions(result);
   const album = albumId && albumReplies.get(String(chatId));
   if (album?.id === albumId) {
     try {

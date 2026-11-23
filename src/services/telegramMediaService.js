@@ -265,11 +265,12 @@ async function storeTelegramPhoto(token, { file_id, file_unique_id } = {}) {
 
 async function getStoredTelegramPhoto(mediaId) {
   if (!MEDIA_ID.test(mediaId)) return null;
-  const files = checkedCollection("telegram_media");
+  const files = db.getTelegramCollection("telegram_media");
   if (files) {
     const file = await files.findOne({ _id: mediaId });
-    if (!file) return null;
-    return { bytes: Buffer.from(file.bytes.value()), contentType: file.contentType };
+    if (file) {
+      return { bytes: Buffer.from(file.bytes.value()), contentType: file.contentType };
+    }
   }
   const bytes = await readLocal("photos", mediaId);
   const contentType = bytes && rasterType(bytes);
