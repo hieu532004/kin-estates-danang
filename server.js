@@ -1223,6 +1223,7 @@ app.get("/api/studio/media", requireAdmin, async (req, res) => {
     }
     for (const t of about.testimonials || []) {
       if (t.image) markUse(t.image, { code: "FEEDBACK", title: `Feedback: ${t.clientName}` });
+      if (t.avatar) markUse(t.avatar, { code: "AVATAR", title: `Avatar: ${t.clientName}` });
     }
     const items = photos.map((p) => ({
       ...p,
@@ -1394,7 +1395,7 @@ app.delete("/api/studio/about/photos/:id", requireAdmin, async (req, res) => {
 app.post("/api/studio/about/testimonials", requireAdmin, async (req, res) => {
   try {
     const current = await db.getAboutContent();
-    const { clientName, subtitle, rating, quote, image } = req.body || {};
+    const { clientName, subtitle, rating, quote, image, avatar } = req.body || {};
     if (!String(clientName || "").trim()) return res.status(400).json({ ok: false, error: "Vui lòng nhập tên khách hàng." });
     if (!String(quote || "").trim() && !String(image || "").trim()) {
       return res.status(400).json({ ok: false, error: "Vui lòng nhập nội dung nhận xét hoặc tải ảnh feedback." });
@@ -1406,6 +1407,7 @@ app.post("/api/studio/about/testimonials", requireAdmin, async (req, res) => {
       subtitle: String(subtitle || "Khách thuê KIN Estates Đà Nẵng").trim(),
       rating: Math.max(1, Math.min(5, Number(rating) || 5)),
       quote: translatedQuote,
+      avatar: String(avatar || "").trim(),
       image: String(image || "").trim(),
       createdAt: new Date().toISOString()
     };
@@ -1425,11 +1427,12 @@ app.patch("/api/studio/about/testimonials/:id", requireAdmin, async (req, res) =
     if (idx < 0) return res.status(404).json({ ok: false, error: "Không tìm thấy feedback." });
 
     const target = { ...list[idx] };
-    const { clientName, subtitle, rating, quote, image } = req.body || {};
+    const { clientName, subtitle, rating, quote, image, avatar } = req.body || {};
     if (typeof clientName === "string" && clientName.trim()) target.clientName = clientName.trim();
     if (typeof subtitle === "string") target.subtitle = subtitle.trim();
     if (rating !== undefined) target.rating = Math.max(1, Math.min(5, Number(rating) || 5));
     if (typeof image === "string") target.image = image.trim();
+    if (typeof avatar === "string") target.avatar = avatar.trim();
     if (typeof quote === "string") target.quote = await translateTextAllLangs(quote);
     list[idx] = target;
 

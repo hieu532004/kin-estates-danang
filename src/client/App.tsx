@@ -645,9 +645,13 @@ export const App: React.FC = () => {
     founderName?: string;
     founderQuote?: Record<string, string>;
     clientTourPhotos?: Array<{ id: string; image: string; caption?: Record<string, string> | string; tag?: string; date?: string }>;
-    testimonials?: Array<{ id: string; clientName: string; subtitle?: string; rating?: number; quote?: Record<string, string> | string; image?: string }>;
+    testimonials?: Array<{ id: string; clientName: string; subtitle?: string; rating?: number; avatar?: string; quote?: Record<string, string> | string; image?: string }>;
   } | null>(null);
   const [aboutLightbox, setAboutLightbox] = useState<{ src: string; caption?: string; sub?: string } | null>(null);
+  const [fbSlideIdx, setFbSlideIdx] = useState<number>(0);
+  const [fbPaused, setFbPaused] = useState<boolean>(false);
+  const [fbIsMobile, setFbIsMobile] = useState<boolean>(() => typeof window !== "undefined" && window.innerWidth <= 820);
+  const tourSliderRef = useRef<HTMLDivElement>(null);
   const [detailPageOtherFilter, setDetailPageOtherFilter] = useState<string>("all");
 
   // Home Section 01 & 02 State
@@ -702,6 +706,49 @@ export const App: React.FC = () => {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+
+  useEffect(() => {
+    const onResize = () => setFbIsMobile(window.innerWidth <= 820);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Auto-playing Customer Feedback Carousel on /about
+  useEffect(() => {
+    const total = aboutContent?.testimonials?.length || 0;
+    const visible = fbIsMobile ? 1 : 2;
+    const maxIdx = Math.max(0, total - visible);
+    if (fbSlideIdx > maxIdx) setFbSlideIdx(0);
+    if (route.replace(/\/+$/, "") !== "/about" || fbPaused || maxIdx === 0) return;
+    const timer = window.setInterval(() => {
+      setFbSlideIdx((prev) => (prev >= maxIdx ? 0 : prev + 1));
+    }, 4800);
+    return () => window.clearInterval(timer);
+  }, [route, fbPaused, fbIsMobile, aboutContent?.testimonials?.length, fbSlideIdx]);
+
+  // Smooth Scroll-Reveal Observer for /about sections
+  useEffect(() => {
+    if (route.replace(/\/+$/, "") !== "/about") return;
+    const nodes = Array.from(document.querySelectorAll(".kin-reveal"));
+    if (!nodes.length) return;
+    if (typeof IntersectionObserver === "undefined") {
+      nodes.forEach((n) => n.classList.add("is-visible"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -30px 0px" }
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [route, aboutContent]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -4151,7 +4198,7 @@ export const App: React.FC = () => {
       )}
 
       {/* ====================================================================
-          PAGE 6: VỀ CHÚNG TÔI (/about) — EDITORIAL + ADMIN-MANAGED GALLERY & FEEDBACK
+          PAGE 6: VỀ CHÚNG TÔI (/about) — MODERN ANIMATED EDITORIAL + SLIDERS & AVATARS
           ==================================================================== */}
       {route.replace(/\/+$/, "") === "/about" && (() => {
         const locText = (v?: Record<string, string> | string) => {
@@ -4162,16 +4209,26 @@ export const App: React.FC = () => {
         const heroPhoto = aboutContent?.heroImage || "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85";
         const tourPhotos = aboutContent?.clientTourPhotos || [];
         const testimonials = aboutContent?.testimonials || [];
+        const visibleFb = fbIsMobile ? 1 : 2;
+        const maxFbIdx = Math.max(0, testimonials.length - visibleFb);
+        const safeFbIdx = Math.min(fbSlideIdx, maxFbIdx);
+        const fbTransform = fbIsMobile
+          ? `translateX(calc(-${safeFbIdx} * (100% + 1.25rem)))`
+          : `translateX(calc(-${safeFbIdx} * (50% + 0.625rem)))`;
         const liveAvail = apartments.filter((a) => a.status === "Available");
         const pricesUsd = liveAvail.map((a) => Number(a.priceUsd || 0)).filter((n) => n > 0);
         const minUsd = pricesUsd.length ? Math.min(...pricesUsd) : 450;
         const maxUsd = pricesUsd.length ? Math.max(...pricesUsd) : 2000;
+        const scrollTours = (dir: -1 | 1) => {
+          tourSliderRef.current?.scrollBy({ left: dir * 380, behavior: "smooth" });
+        };
+
         return (
         <main className="page-route">
           <div className="page-container">
-            {/* Editorial Hero */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "2.5rem", alignItems: "center", marginBottom: "3.25rem" }}>
-              <div>
+            {/* Editorial Animated Hero */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "2.5rem", alignItems: "center", marginBottom: "2.5rem" }}>
+              <div className="kin-reveal is-visible">
                 <span className="eyebrow-badge">
                   {tx("VỀ KIN ESTATES — ĐÀ NẴNG", "ABOUT KIN ESTATES — DA NANG", "关于 KIN ESTATES — 岘港", "О KIN ESTATES — ДАНАНГ", "KIN ESTATES 소개 — 다낭", "KIN ESTATESについて — ダナン")}
                 </span>
@@ -4215,20 +4272,64 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              <div
-                style={{ borderRadius: "22px", overflow: "hidden", boxShadow: "var(--shadow-elevated)", cursor: "pointer" }}
-                onClick={() => setAboutLightbox({ src: heroPhoto, caption: aboutContent?.founderName || "KIN Estates Đà Nẵng" })}
-              >
-                <img
-                  src={heroPhoto}
-                  alt="KIN Estates Da Nang"
-                  style={{ width: "100%", height: "410px", objectFit: "cover", display: "block" }}
-                />
+              {/* Hero Photo + Floating Glass Trust Cards */}
+              <div className="kin-about-hero-visual kin-reveal is-visible kin-reveal-delay-1">
+                <div
+                  className="kin-about-hero-frame"
+                  onClick={() => setAboutLightbox({ src: heroPhoto, caption: aboutContent?.founderName || "KIN Estates Đà Nẵng" })}
+                >
+                  <img src={heroPhoto} alt="KIN Estates Da Nang" />
+                  <div className="kin-hero-float-top">
+                    <span className="kin-hero-float-dot" />
+                    <span>{tx("Dẫn xem trực tiếp tại Đà Nẵng", "In-Person Tours · Da Nang", "岘港实地陪同看房", "Личные просмотры в Дананге", "다낭 현지 직접 투어", "ダナン現地直接ご案内")}</span>
+                  </div>
+                  <div className="kin-hero-float-bottom">
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+                      <div className="kin-avatar-stack">
+                        {testimonials.slice(0, 4).map((t) =>
+                          t.avatar ? (
+                            <img key={t.id} src={t.avatar} alt={t.clientName} />
+                          ) : (
+                            <span key={t.id} className="kin-avatar-stack-fallback">
+                              {(t.clientName || "K").charAt(0).toUpperCase()}
+                            </span>
+                          )
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 800, color: "#F5DFBE" }}>★★★★★ 5.0 / 5.0</div>
+                        <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)" }}>
+                          {tx("Cư dân quốc tế & Việt Nam tin chọn", "Trusted by expat & local residents", "深受中外长租客户信赖", "Нам доверяют арендаторы", "다낭 거주 고객 추천", "世界中の入居者から高評価")}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 3 Architectural Approach Pillars (Local Knowledge · Clear Approach) */}
-            <div style={{ marginBottom: "1rem" }}>
+            {/* 4-Card Animated Metrics Strip */}
+            <div className="kin-about-metrics kin-reveal">
+              <div className="kin-about-metric">
+                <div className="kin-about-metric__num">100%</div>
+                <div className="kin-about-metric__lbl">{tx("Căn hộ kiểm định thực tế", "Physically audited homes", "100% 实地核验房源", "100% проверенные квартиры", "100% 현장 실사 매물", "100%現地実地確認済")}</div>
+              </div>
+              <div className="kin-about-metric">
+                <div className="kin-about-metric__num">6</div>
+                <div className="kin-about-metric__lbl">{tx("Ngôn ngữ tư vấn trực tiếp", "Languages supported", "6 种语言直接服务", "Языков поддержки", "6개 국어 전담 지원", "6ヶ国語ダイレクト対応")}</div>
+              </div>
+              <div className="kin-about-metric">
+                <div className="kin-about-metric__num">24h</div>
+                <div className="kin-about-metric__lbl">{tx("Lên danh sách & hẹn xem", "Shortlist & tour setup", "24小时内推荐并约看", "Подборка за 24 часа", "24시간 내 맞춤 추천", "24時間以内に厳選提案")}</div>
+              </div>
+              <div className="kin-about-metric">
+                <div className="kin-about-metric__num">3–12+</div>
+                <div className="kin-about-metric__lbl">{tx("Tháng · Chuyên thuê dài hạn", "Months · Long stays only", "月 · 专注长租", "Месяцев · Долгосрочно", "개월 · 장기 임대 전문", "ヶ月・長期賃貸専門")}</div>
+              </div>
+            </div>
+
+            {/* 3 Architectural Approach Pillars */}
+            <div className="kin-reveal" style={{ marginBottom: "1rem" }}>
               <span className="eyebrow-badge">
                 {tx("AM HIỂU ĐỊA PHƯƠNG · CÁCH LÀM MINH BẠCH", "LOCAL KNOWLEDGE · A CLEAR APPROACH", "深耕本地 · 透明方式", "МЕСТНАЯ ЭКСПЕРТИЗА · ПРОЗРАЧНЫЙ ПОДХОД", "현지 전문성 · 투명한 방식", "現地の知見・明快なアプローチ")}
               </span>
@@ -4237,55 +4338,81 @@ export const App: React.FC = () => {
               </h2>
             </div>
             <div className="kin-about-pillars">
-              <div className="kin-about-pillar">
+              <div className="kin-about-pillar kin-reveal">
+                <div className="kin-pillar-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                  </svg>
+                </div>
                 <h3>{tx("Chú trọng từng chi tiết", "Attention to detail", "关注每一处细节", "Внимание к деталям", "세심한 디테일", "細部へのこだわり")}</h3>
                 <p>{tx("Tình trạng nội thất, vị trí, ánh sáng, độ ồn và mọi điều khoản điện nước được trao đổi rõ ràng trước khi bạn quyết định.", "Condition, location, daylight, noise level, and rental terms are discussed clearly before you decide.", "在您做决定前，明确沟通房屋状况、地段采光及所有租赁条款。", "Состояние квартиры, локация и все условия аренды обсуждаются заранее.", "집의 상태, 위치, 채광 및 모든 계약 조건을 결정 전에 투명하게 안내합니다.", "設備状況、立地、採光、契約条件をご決定前に明確にお伝えします。")}</p>
               </div>
-              <div className="kin-about-pillar">
+              <div className="kin-about-pillar kin-reveal kin-reveal-delay-1">
+                <div className="kin-pillar-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
                 <h3>{tx("Tư vấn chân thành, không ép chốt", "Clear conversations", "坦诚沟通，绝不催单", "Честный диалог без давления", "부담 없는 솔직한 상담", "押し売りのない誠実なご案内")}</h3>
                 <p>{tx("Chúng tôi phân tích thẳng thắn ưu & nhược điểm từng tòa nhà và trả lời trung thực mọi thắc mắc mà không tạo áp lực.", "We explain your options honestly — both strengths and trade-offs — and answer every question without pressure.", "客观分析每栋楼的优缺点，诚实回答您的疑问，不施加任何压力。", "Объясняем плюсы и минусы каждого варианта и отвечаем на вопросы без давления.", "각 건물의 장단점을 솔직히 설명드리고 압박 없이 모든 질문에 답해드립니다.", "各物件のメリット・注意点を率直にお伝えし、無理な勧誘はいたしません。")}</p>
               </div>
-              <div className="kin-about-pillar">
+              <div className="kin-about-pillar kin-reveal kin-reveal-delay-2">
+                <div className="kin-pillar-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </div>
                 <h3>{tx("Đồng hành an cư trọn vẹn", "Help settling in", "全程协助安居", "Помощь с заселением", "완벽한 정착 지원", "安心の入居サポート")}</h3>
                 <p>{tx("Sắp xếp lịch xem trực tiếp, ký hợp đồng song ngữ, lập biên bản bàn giao có ảnh & chỉ số đồng hồ và hỗ trợ đăng ký tạm trú.", "We coordinate viewings, bilingual contracts, photo handover reports with meter readings, and residency registration.", "安排实地看房、双语合同、带照片与水电表读数的交房清单，并协助办理暂住登记。", "Организуем просмотры, двуязычный договор, акт приёмки с фото и регистрацию tạm trú.", "현장 투어, 이중언어 계약, 사진·계량기 인수인계서 및 공안 거주 등록까지 지원합니다.", "内覧手配、バイリンガル契約、写真付き引渡し確認、滞在登録まで一貫対応します。")}</p>
               </div>
             </div>
 
-            {/* OUR CLIENTS — ADMIN-MANAGED CLIENT TOUR PHOTOS GALLERY */}
+            {/* OUR CLIENTS — INTERACTIVE CLIENT TOUR PHOTO SLIDER */}
             {tourPhotos.length > 0 && (
-              <section style={{ marginBottom: "1rem" }}>
-                <span className="eyebrow-badge">
-                  {tx("KHÁCH HÀNG CỦA CHÚNG TÔI", "OUR CLIENTS", "我们的客户", "НАШИ КЛИЕНТЫ", "우리의 고객들", "お客様との歩み")}
-                </span>
-                <h2 className="section-heading-serif" style={{ marginBottom: "0.45rem" }}>
-                  {tx("Chúng tôi gặp gỡ và dẫn xem nhà trực tiếp.", "We meet in person.", "我们亲自见面并带您看房。", "Мы встречаемся лично.", "직접 만나 현장 투어를 진행합니다.", "現地で直接お会いしてご案内します。")}
-                </h2>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.94rem", marginBottom: "1.35rem", maxWidth: "680px" }}>
-                  {tx(
-                    "Đội ngũ KIN Estates trực tiếp đi xem nhà, kiểm tra thực tế và bàn giao chìa khóa cùng khách hàng tại Đà Nẵng. Dưới đây là những khoảnh khắc thực tế cùng các cư dân của chúng tôi.",
-                    "Our Da Nang advisors personally inspect homes, host in-person tours, and hand over keys alongside our clients. Here are real moments with our residents.",
-                    "KIN Estates 团队在岘港亲自陪同看房与交接钥匙。以下是我们与客户的真实瞬间。",
-                    "Команда KIN Estates лично проводит просмотры и передаёт ключи в Дананге. Вот реальные фото с нашими клиентами.",
-                    "KIN Estates 팀이 다낭 현지에서 직접 투어와 키 전달을 진행합니다. 고객님들과 함께한 실제 현장 사진입니다.",
-                    "KIN Estatesチームがダナン現地で直接内覧・鍵の引き渡しを行っています。お客様との実際の風景です。"
-                  )}
-                </p>
+              <section className="kin-reveal" style={{ marginBottom: "0.75rem" }}>
+                <div className="kin-carousel-head">
+                  <div>
+                    <span className="eyebrow-badge">
+                      {tx("KHÁCH HÀNG CỦA CHÚNG TÔI", "OUR CLIENTS", "我们的客户", "НАШИ КЛИЕНТЫ", "우리의 고객들", "お客様との歩み")}
+                    </span>
+                    <h2 className="section-heading-serif" style={{ marginBottom: "0.35rem" }}>
+                      {tx("Chúng tôi gặp gỡ và dẫn xem nhà trực tiếp.", "We meet in person.", "我们亲自见面并带您看房。", "Мы встречаемся лично.", "직접 만나 현장 투어를 진행합니다.", "現地で直接お会いしてご案内します。")}
+                    </h2>
+                    <p style={{ color: "var(--text-secondary)", fontSize: "0.93rem", margin: 0, maxWidth: "620px" }}>
+                      {tx(
+                        "Khoảnh khắc thực tế cùng các cư dân tại Đà Nẵng — từ buổi đi xem nhà đầu tiên cho đến lúc nhận chìa khóa.",
+                        "Real moments with our residents in Da Nang — from the first apartment tour to key handover day.",
+                        "与岘港客户的真实瞬间——从首次看房到交付钥匙。",
+                        "Реальные моменты с нашими клиентами в Дананге — от первого просмотра до ключей.",
+                        "첫 투어부터 입주 키 전달까지 다낭 고객님들과 함께한 실제 현장 사진입니다.",
+                        "最初の内覧から鍵の引き渡しまで、ダナンのお客様との実際の風景です。"
+                      )}
+                    </p>
+                  </div>
+                  <div className="kin-carousel-nav">
+                    <button type="button" className="kin-carousel-btn" onClick={() => scrollTours(-1)} aria-label="Previous photo">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    <button type="button" className="kin-carousel-btn" onClick={() => scrollTours(1)} aria-label="Next photo">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                    </button>
+                  </div>
+                </div>
 
-                <div className="kin-tour-grid">
+                <div ref={tourSliderRef} className="kin-tour-slider">
                   {tourPhotos.map((item) => {
                     const cap = locText(item.caption);
                     return (
                       <article
                         key={item.id}
-                        className="kin-tour-card"
+                        className="kin-tour-slide"
                         onClick={() => setAboutLightbox({ src: item.image, caption: cap, sub: item.tag || item.date })}
                       >
                         <div className="kin-tour-card__img-wrap">
                           <img src={item.image} alt={cap || "KIN Estates client tour"} loading="lazy" />
                           {(item.tag || item.date) && (
-                            <span className="kin-tour-card__tag">
-                              {item.tag || item.date}
-                            </span>
+                            <span className="kin-tour-card__tag">{item.tag || item.date}</span>
                           )}
                         </div>
                         {cap && <div className="kin-tour-card__body">{cap}</div>}
@@ -4296,49 +4423,107 @@ export const App: React.FC = () => {
               </section>
             )}
 
-            {/* CLIENT FEEDBACK — ADMIN-MANAGED TESTIMONIALS & PROOF SCREENSHOTS */}
+            {/* CLIENT FEEDBACK — AUTO-SLIDING CAROUSEL WITH CLIENT AVATARS */}
             {testimonials.length > 0 && (
-              <section style={{ marginBottom: "1rem" }}>
-                <span className="eyebrow-badge">
-                  {tx("ĐÁNH GIÁ & FEEDBACK THỰC TẾ", "CLIENT FEEDBACK & REVIEWS", "客户真实评价", "ОТЗЫВЫ КЛИЕНТОВ", "고객 실제 후기", "お客様の声・レビュー")}
-                </span>
-                <h2 className="section-heading-serif" style={{ marginBottom: "1.25rem" }}>
-                  {tx("Khách hàng nói gì sau khi nhận nhà cùng KIN Estates?", "What our residents say after moving in.", "入住后的客户真实反馈。", "Что говорят клиенты после заселения.", "입주 후 고객님들이 전해주신 이야기.", "ご入居いただいたお客様の声。")}
-                </h2>
-                <div className="kin-feedback-grid">
-                  {testimonials.map((fb) => {
-                    const quoteText = locText(fb.quote);
-                    const stars = "★".repeat(Math.max(1, Math.min(5, Number(fb.rating) || 5)));
-                    return (
-                      <article key={fb.id} className="kin-feedback-card">
-                        <div className="kin-feedback-stars" aria-label={`${fb.rating || 5} stars`}>{stars}</div>
-                        {quoteText && <p className="kin-feedback-quote">“{quoteText}”</p>}
-                        {fb.image && (
-                          <div
-                            className="kin-feedback-proof"
-                            onClick={() => setAboutLightbox({ src: fb.image!, caption: quoteText, sub: `${fb.clientName}${fb.subtitle ? ` · ${fb.subtitle}` : ""}` })}
-                          >
-                            <img src={fb.image} alt={`Feedback from ${fb.clientName}`} loading="lazy" />
-                          </div>
-                        )}
-                        <div className="kin-feedback-author">
-                          <div>
-                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text-primary)" }}>{fb.clientName}</div>
-                            {fb.subtitle && <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{fb.subtitle}</div>}
-                          </div>
-                          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--accent-bronze-dark)", background: "#FAF3E8", padding: "0.22rem 0.6rem", borderRadius: "999px" }}>
-                            {tx("Đã xác thực", "Verified", "已核实", "Проверено", "인증됨", "確認済")}
-                          </span>
-                        </div>
-                      </article>
-                    );
-                  })}
+              <section
+                className={`kin-fb-carousel-wrap kin-reveal ${fbPaused ? "is-paused" : ""}`}
+                onMouseEnter={() => setFbPaused(true)}
+                onMouseLeave={() => setFbPaused(false)}
+                onTouchStart={() => setFbPaused(true)}
+                onTouchEnd={() => window.setTimeout(() => setFbPaused(false), 3000)}
+              >
+                <div className="kin-carousel-head">
+                  <div>
+                    <span className="eyebrow-badge">
+                      {tx("ĐÁNH GIÁ & FEEDBACK THỰC TẾ", "CLIENT FEEDBACK & REVIEWS", "客户真实评价", "ОТЗЫВЫ КЛИЕНТОВ", "고객 실제 후기", "お客様の声・レビュー")}
+                    </span>
+                    <h2 className="section-heading-serif" style={{ marginBottom: 0 }}>
+                      {tx("Khách hàng nói gì sau khi nhận nhà cùng KIN Estates?", "What our residents say after moving in.", "入住后的客户真实反馈。", "Что говорят клиенты после заселения.", "입주 후 고객님들이 전해주신 이야기.", "ご入居いただいたお客様の声。")}
+                    </h2>
+                  </div>
+                  {maxFbIdx > 0 && (
+                    <div className="kin-carousel-nav">
+                      <button
+                        type="button"
+                        className="kin-carousel-btn"
+                        aria-label="Previous review"
+                        onClick={() => setFbSlideIdx((prev) => (prev <= 0 ? maxFbIdx : prev - 1))}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="kin-carousel-btn"
+                        aria-label="Next review"
+                        onClick={() => setFbSlideIdx((prev) => (prev >= maxFbIdx ? 0 : prev + 1))}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                <div className="kin-fb-viewport">
+                  <div className="kin-fb-track" style={{ transform: fbTransform }}>
+                    {testimonials.map((fb) => {
+                      const quoteText = locText(fb.quote);
+                      const stars = "★".repeat(Math.max(1, Math.min(5, Number(fb.rating) || 5)));
+                      const initial = (fb.clientName || "K").trim().charAt(0).toUpperCase();
+                      return (
+                        <article key={fb.id} className="kin-fb-slide">
+                          <span className="kin-fb-watermark" aria-hidden="true">“</span>
+                          <div className="kin-fb-header">
+                            <div className="kin-fb-avatar-ring">
+                              {fb.avatar ? (
+                                <img className="kin-fb-avatar-img" src={fb.avatar} alt={fb.clientName} loading="lazy" />
+                              ) : (
+                                <div className="kin-fb-avatar-initial">{initial}</div>
+                              )}
+                              <span className="kin-fb-verified-dot" title="Verified Resident">✓</span>
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 800, fontSize: "0.96rem", color: "var(--text-primary)" }}>{fb.clientName}</div>
+                              {fb.subtitle && <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{fb.subtitle}</div>}
+                              <div className="kin-feedback-stars" style={{ marginTop: "0.18rem" }} aria-label={`${fb.rating || 5} stars`}>
+                                {stars}
+                              </div>
+                            </div>
+                          </div>
+
+                          {quoteText && <p className="kin-feedback-quote">“{quoteText}”</p>}
+
+                          {fb.image && (
+                            <div
+                              className="kin-feedback-proof"
+                              onClick={() => setAboutLightbox({ src: fb.image!, caption: quoteText, sub: `${fb.clientName}${fb.subtitle ? ` · ${fb.subtitle}` : ""}` })}
+                            >
+                              <img src={fb.image} alt={`Feedback from ${fb.clientName}`} loading="lazy" />
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {maxFbIdx > 0 && (
+                  <div className="kin-fb-dots" role="tablist" aria-label="Feedback slides">
+                    {Array.from({ length: maxFbIdx + 1 }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`kin-fb-dot ${safeFbIdx === idx ? "active" : ""}`}
+                        onClick={() => setFbSlideIdx(idx)}
+                        aria-label={`Slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 
-            {/* Founder / Team Quote */}
-            <div className="kin-about-quote-box">
+            {/* Founder / Team Quote with Ambient Glow */}
+            <div className="kin-about-quote-box kin-reveal">
               <blockquote>“{locText(aboutContent?.founderQuote) || tx("Tìm một căn hộ không chỉ là chọn bốn bức tường đẹp — mà là có một người bản địa đáng tin cậy đồng hành cùng bạn từ buổi xem nhà đầu tiên cho đến suốt thời gian an cư tại Đà Nẵng.", "Finding a home is about more than choosing the right space — it's about having reliable local people by your side from the first viewing to everyday life in Da Nang.")}”</blockquote>
               <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "#E6C89C", letterSpacing: "0.06em" }}>
                 — {aboutContent?.founderName || "KIN Estates Đà Nẵng"}
@@ -4346,11 +4531,11 @@ export const App: React.FC = () => {
             </div>
 
             {/* Your Habits Become Questions at the Viewing */}
-            <h2 className="section-heading-serif" style={{ marginBottom: "1.25rem" }}>
+            <h2 className="section-heading-serif kin-reveal" style={{ marginBottom: "1.25rem" }}>
               {tx("Thói quen của bạn trở thành câu hỏi khi đi xem nhà", "Your habits become questions at the viewing", "您的日常习惯，就是我们看房时的核验清单", "Ваши привычки становятся вопросами на просмотре", "당신의 라이프스타일이 현장 투어의 기준이 됩니다", "あなたの習慣が内覧時のチェック基準になります")}
             </h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.25rem", marginBottom: "3rem" }}>
-              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+              <div className="kin-about-pillar kin-reveal" style={{ padding: "1.65rem" }}>
                 <span className="eyebrow-badge">{tx("01 · LÀM VIỆC TẠI NHÀ", "01 · WORKING FROM HOME", "01 · 远程办公", "01 · УДАЛЕННАЯ РАБОТА", "01 · 재택근무", "01 · リモートワーク")}</span>
                 <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
                   {tx("Góc làm việc & Đường truyền", "Where does your workday happen?", "办公空间与光纤网络", "Где проходит ваш рабочий день?", "업무 공간 & 인터넷 환경", "ワークスペース＆光回線")}
@@ -4359,7 +4544,7 @@ export const App: React.FC = () => {
                   {tx("Kiểm tra diện tích bàn làm việc, ánh sáng tự nhiên không chói màn hình, vị trí ổ cắm và tốc độ mạng ngay trong căn phòng bạn sẽ dùng.", "Check desk space, daylight, sockets, and fiber Wi-Fi speed in the exact room you will actually work in.", "实地检查书桌空间、自然采光、插座位置以及实际办公房间的光纤速度。", "Проверяем стол, свет, розетки и скорость интернета именно в той комнате, где вы будете работать.", "실제 업무할 방의 책상 공간, 채광, 콘센트, 광랜 속도를 직접 확인합니다.", "実際に仕事をする部屋のデスク環境・採光・コンセント・Wi-Fi速度を確認します。")}
                 </p>
               </div>
-              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+              <div className="kin-about-pillar kin-reveal kin-reveal-delay-1" style={{ padding: "1.65rem" }}>
                 <span className="eyebrow-badge">{tx("02 · CHUYỂN ĐẾN CÙNG GIA ĐÌNH", "02 · MOVING TOGETHER", "02 · 家庭同住", "02 · ПЕРЕЕЗД ВМЕСТЕ", "02 · 가족·동반 이주", "02 · ご家族での移住")}</span>
                 <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
                   {tx("Bếp, Tủ đồ & Lộ trình mỗi ngày", "What does each person need?", "厨房、收纳与日常动线", "Что важно каждому члену семьи?", "수납·동선 & 생활 인프라", "収納・間取り・生活導線")}
@@ -4368,7 +4553,7 @@ export const App: React.FC = () => {
                   {tx("So sánh kích thước phòng ngủ, hệ tủ lưu trữ cho hợp đồng dài hạn, thang máy, bếp nấu và khoảng cách đến trường học hay siêu thị.", "Compare bedroom sizes, storage for long stays, lift access, kitchens, and daily routes to schools and markets.", "对比卧室空间、长租储物衣柜、电梯与厨房配置以及日常通勤路线。", "Сравниваем спальни, места хранения, лифты и удобство ежедневных маршрутов для каждого.", "침실 구성, 장기 거주 수납공간, 엘리베이터, 국제학교·마트 동선까지 비교합니다.", "寝室・収納・エレベーター・学校やスーパーへの導線を丁寧に比較します。")}
                 </p>
               </div>
-              <div style={{ background: "#FFFFFF", padding: "1.65rem", borderRadius: "18px", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
+              <div className="kin-about-pillar kin-reveal kin-reveal-delay-2" style={{ padding: "1.65rem" }}>
                 <span className="eyebrow-badge">{tx("03 · CÓ THÚ CƯNG ĐI CÙNG", "03 · BRINGING A PET", "03 · 携带宠物", "03 · С ПИТОМЦЕМ", "03 · 반려동물 동반", "03 · ペットと暮らす")}</span>
                 <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", marginBottom: "0.45rem" }}>
                   {tx("Quy định tòa nhà & Hợp đồng", "What are the building rules?", "大楼规定与合同条款", "Какие правила в этом доме?", "건물 규정 & 계약서 명시", "管理規約と契約条項")}
@@ -4379,14 +4564,14 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* 5-Step How Renting Works + Live Inventory Snapshot */}
-            <div style={{ marginBottom: "1rem" }}>
+            {/* 5-Step How Renting Works */}
+            <div className="kin-reveal" style={{ marginBottom: "1rem" }}>
               <span className="eyebrow-badge">{tx("QUY TRÌNH THUÊ NHÀ", "HOW RENTING WORKS", "租房流程", "КАК ПРОХОДИТ АРЕНДА", "임대 진행 절차", "ご契約までの流れ")}</span>
               <h2 className="section-heading-serif" style={{ marginBottom: "1.15rem" }}>
                 {tx("5 bước đơn giản từ tin nhắn đầu tiên đến lúc nhận chìa khóa", "5 clear steps from your first message to receiving the keys", "从第一条消息到拿到钥匙的5个清晰步骤", "5 простых шагов от первого сообщения до ключей", "첫 문의부터 입주 키 수령까지 5단계", "最初のご相談から鍵のお渡しまで5ステップ")}
               </h2>
             </div>
-            <div className="kin-about-steps">
+            <div className="kin-about-steps kin-reveal">
               {[
                 { n: "01", vi: "Chia sẻ ngân sách, khu vực, số phòng ngủ và ngày dự kiến vào ở.", en: "Tell us your budget, preferred area, bedrooms, lease length, and move-in date." },
                 { n: "02", vi: "Nhận danh sách căn hộ tuyển chọn thực tế trong vòng 24 giờ.", en: "Receive a curated shortlist of verified available homes within 24 hours." },
@@ -4402,7 +4587,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Live Catalogue & Direct Contact Strip */}
-            <div style={{ background: "#FFFFFF", border: "1px solid var(--border-light)", borderRadius: "20px", padding: "1.65rem 1.75rem", marginBottom: "2.5rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1.25rem", boxShadow: "var(--shadow-soft)" }}>
+            <div className="kin-reveal" style={{ background: "#FFFFFF", border: "1px solid var(--border-light)", borderRadius: "20px", padding: "1.65rem 1.75rem", marginBottom: "2.5rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1.25rem", boxShadow: "var(--shadow-soft)" }}>
               <div style={{ maxWidth: "520px" }}>
                 <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", color: "var(--accent-bronze-dark)", textTransform: "uppercase", marginBottom: "0.35rem" }}>
                   {tx("DỮ LIỆU TRỰC TIẾP · CHỈ CHO THUÊ DÀI HẠN (3+ THÁNG)", "LIVE CATALOGUE · LONG STAYS ONLY (3+ MONTHS)", "实时房源 · 专注3个月以上长租", "АКТУАЛЬНЫЙ КАТАЛОГ · ОТ 3 МЕСЯЦЕВ", "실시간 매물 · 3개월 이상 장기 전용", "最新物件・3ヶ月以上の長期専門")}

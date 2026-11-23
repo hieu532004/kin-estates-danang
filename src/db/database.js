@@ -1655,6 +1655,7 @@ const DEFAULT_ABOUT_CONTENT = {
       clientName: "Alex & Sarah",
       subtitle: "The Panoma 2 · Hợp đồng 12 tháng",
       rating: 5,
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=80",
       quote: {
         vi: "Đội ngũ KIN Estates cực kỳ tận tâm. Chúng tôi chỉ gửi nhu cầu qua Telegram, hôm sau đã đi xem 4 căn đúng ý, ký hợp đồng song ngữ rõ ràng và được hỗ trợ đăng ký tạm trú ngay trong ngày.",
         en: "The KIN Estates team made moving to Da Nang effortless. We messaged on Telegram, toured 4 spot-on apartments the very next day, signed a clear bilingual lease, and had our residency registration done the same afternoon.",
@@ -1671,6 +1672,7 @@ const DEFAULT_ABOUT_CONTENT = {
       clientName: "Min-Jun Park",
       subtitle: "The Filmore Đà Nẵng · Hợp đồng 6 tháng",
       rating: 5,
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&q=80",
       quote: {
         vi: "Ảnh trên web sao ngoài đời đúng y như vậy, không bị báo giá ảo hay dẫn đi xem căn không liên quan. Đặc biệt các bạn đo sẵn tốc độ Wi-Fi và kiểm tra ánh sáng bàn làm việc rất kỹ.",
         en: "Every photo matched reality — zero fake listings or wasted viewings. They even checked the fiber Wi-Fi speed and desk lighting beforehand since I work remotely full-time.",
@@ -1681,6 +1683,40 @@ const DEFAULT_ABOUT_CONTENT = {
       },
       image: "",
       createdAt: "2026-11-14T09:00:00.000Z"
+    },
+    {
+      id: "fb-default-3",
+      clientName: "Elena Volkov",
+      subtitle: "An Thượng Beachside · Hợp đồng 12 tháng",
+      rating: 5,
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=240&q=80",
+      quote: {
+        vi: "Tôi chuyển đến Đà Nẵng cùng chú mèo nhỏ và rất lo khoản chủ nhà không đồng ý. KIN Estates đã đàm phán trực tiếp với chủ căn hộ, ghi rõ điều khoản thú cưng trong hợp đồng và hỗ trợ lắp thêm lưới ban công an toàn.",
+        en: "I relocated to Da Nang with my cat and worried about pet policies. KIN Estates negotiated directly with the owner, wrote clear pet approval into our lease, and even arranged balcony safety netting.",
+        zh: "我带着猫咪搬到岘港，原本很担心房东不同意。KIN Estates 直接与房东沟通，把养宠条款写进合同，还贴心帮忙安装了阳台防护网。",
+        ru: "Я переехала в Дананг с кошкой и переживала из-за правил дома. KIN Estates договорились с владельцем, прописали разрешение в договоре и помогли установить сетку на балкон.",
+        ko: "반려묘와 함께 다낭으로 이주해서 걱정이 많았는데, KIN Estates가 집주인과 직접 협의해 계약서에 명시해 주고 발코니 안전망 설치까지 도와주었습니다.",
+        ja: "愛猫と一緒にダナンへ移住するため不安でしたが、オーナーとの交渉から契約書への明記、バルコニーの安全ネット手配まで親身に対応してくれました。"
+      },
+      image: "",
+      createdAt: "2026-11-17T09:00:00.000Z"
+    },
+    {
+      id: "fb-default-4",
+      clientName: "Kenji Takahashi",
+      subtitle: "Hiyori Garden Tower · Hợp đồng 12 tháng",
+      rating: 5,
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&q=80",
+      quote: {
+        vi: "Rất thích cách làm việc chuyên nghiệp và minh bạch tiền điện nước EVN. Lúc nhận nhà có biên bản chụp ảnh chi tiết từng món đồ nên tôi hoàn toàn yên tâm khi thuê dài hạn.",
+        en: "Loved the transparent workflow and official EVN electricity rates. Move-in came with a detailed photo inventory report, giving me complete peace of mind for a full-year lease.",
+        zh: "非常欣赏他们专业透明的流程和国家标准电价。入住时提供详细的拍照交接清单，让我长租一年非常安心。",
+        ru: "Понравилась полная прозрачность и оплата электричества по гостарифу EVN. При заезде составили подробный фото-акт приёмки.",
+        ko: "투명한 진행과 국가 표준 전기요금(EVN) 안내가 인상적이었습니다. 입주 시 꼼꼼한 사진 인수인계서 덕분에 1년 장기 계약도 안심하고 진행했어요.",
+        ja: "透明性の高い対応とEVN公式電気料金の説明がとても安心できました。入居時の写真付きチェックリストも丁寧で長期滞在に最適です。"
+      },
+      image: "",
+      createdAt: "2026-11-20T09:00:00.000Z"
     }
   ],
   updatedAt: "2026-11-23T00:00:00.000Z"
@@ -1727,7 +1763,7 @@ async function hasPublicSiteMedia(urls) {
   const about = await getAboutContent();
   if (targets.has(about.heroImage)) return true;
   if ((about.clientTourPhotos || []).some((p) => targets.has(p.image))) return true;
-  if ((about.testimonials || []).some((t) => targets.has(t.image))) return true;
+  if ((about.testimonials || []).some((t) => targets.has(t.image) || targets.has(t.avatar))) return true;
   return false;
 }
 
@@ -1745,11 +1781,16 @@ async function removeSiteMediaUrl(url) {
     changed = true;
   }
   const nextReviews = (about.testimonials || []).map((t) => {
-    if (t.image === url) {
+    const next = { ...t };
+    if (next.image === url) {
       changed = true;
-      return { ...t, image: "" };
+      next.image = "";
     }
-    return t;
+    if (next.avatar === url) {
+      changed = true;
+      next.avatar = "";
+    }
+    return next;
   });
   if (changed) {
     about.testimonials = nextReviews;

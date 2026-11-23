@@ -110,6 +110,7 @@ interface AboutTestimonial {
   clientName: string;
   subtitle?: string;
   rating?: number;
+  avatar?: string;
   quote?: Record<string, string> | string;
   image?: string;
   createdAt?: string;
@@ -467,6 +468,7 @@ function StudioApp() {
     clientName: "",
     subtitle: "",
     rating: 5,
+    avatar: "",
     quote: "",
     image: ""
   });
@@ -1390,6 +1392,7 @@ function StudioApp() {
         clientName: item.clientName || "",
         subtitle: item.subtitle || "",
         rating: item.rating || 5,
+        avatar: item.avatar || "",
         quote: viText(item.quote),
         image: item.image || ""
       });
@@ -1399,6 +1402,7 @@ function StudioApp() {
         clientName: "",
         subtitle: "",
         rating: 5,
+        avatar: "",
         quote: "",
         image: ""
       });
@@ -2333,9 +2337,18 @@ function StudioApp() {
                   (report?.aboutContent?.testimonials || []).map((fb) => (
                     <article key={fb.id} className="st-item-card">
                       <div className="st-item-head">
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>{fb.clientName}</div>
-                          <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>{fb.subtitle}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          {fb.avatar ? (
+                            <img src={fb.avatar} alt="" style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--bronze)" }} />
+                          ) : (
+                            <div style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--navy)", color: "var(--bronze-light)", display: "grid", placeItems: "center", fontWeight: 800 }}>
+                              {(fb.clientName || "K").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>{fb.clientName}</div>
+                            <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>{fb.subtitle}</div>
+                          </div>
                         </div>
                         <span style={{ color: "#c7923e", fontSize: 12.5, fontWeight: 800 }}>
                           {"★".repeat(Math.max(1, Math.min(5, Number(fb.rating) || 5)))}
@@ -3386,7 +3399,51 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">Ảnh khách / Ảnh chụp màn hình feedback (Tùy chọn)</label>
+                <label className="st-label">Ảnh Avatar khách hàng (Hiển thị tròn trên slide)</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {fbForm.avatar ? (
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <img src={fbForm.avatar} alt="" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--bronze)" }} />
+                      <button
+                        type="button"
+                        className="st-photo-del"
+                        style={{ top: -4, right: -4, width: 20, height: 20, fontSize: 11 }}
+                        onClick={() => setFbForm((p) => ({ ...p, avatar: "" }))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--navy)", color: "var(--bronze-light)", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+                      {(fbForm.clientName || "K").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <label className="st-btn st-btn--outline" style={{ cursor: "pointer", height: 40 }}>
+                    <Icon.Image size={15} /> {uploadingAbout ? "Đang tải..." : fbForm.avatar ? "Đổi Avatar khách" : "Tải Avatar khách từ ĐT"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      disabled={uploadingAbout}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingAbout(true);
+                        try {
+                          const u = await uploadSingleImage(file);
+                          if (u) setFbForm((p) => ({ ...p, avatar: u }));
+                        } finally {
+                          setUploadingAbout(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Ảnh chụp màn hình feedback / Ảnh bàn giao (Tùy chọn)</label>
                 {fbForm.image && (
                   <div style={{ position: "relative" }}>
                     <img

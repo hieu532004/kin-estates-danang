@@ -4064,3 +4064,534 @@ select:focus {
     padding: 1.5rem 1.35rem;
   }
 }
+
+
+/* ============================================================================
+   MODERN KINETIC ANIMATIONS & INTERACTIVE SLIDERS FOR /about
+   ============================================================================ */
+@keyframes kinRevealUp {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kinFloatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes kinOrbDrift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(-18px, 14px) scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+@keyframes kinProgressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.kin-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1), transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kin-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.kin-reveal-delay-1 { transition-delay: 0.08s; }
+.kin-reveal-delay-2 { transition-delay: 0.16s; }
+.kin-reveal-delay-3 { transition-delay: 0.24s; }
+
+/* Animated Hero Visual Frame + Floating Glass Cards */
+.kin-about-hero-visual {
+  position: relative;
+  border-radius: 26px;
+  overflow: visible;
+}
+
+.kin-about-hero-frame {
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 24px 54px rgba(18, 23, 29, 0.16);
+  position: relative;
+  cursor: pointer;
+  border: 1px solid rgba(168, 124, 81, 0.2);
+}
+
+.kin-about-hero-frame img {
+  width: 100%;
+  height: 430px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kin-about-hero-frame:hover img {
+  transform: scale(1.045);
+}
+
+.kin-about-hero-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 20, 26, 0.04) 40%, rgba(16, 20, 26, 0.42) 100%);
+  pointer-events: none;
+}
+
+.kin-hero-float-top {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #14191f;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 10px 26px rgba(18, 23, 29, 0.14);
+  animation: kinFloatSlow 5.5s ease-in-out infinite;
+}
+
+.kin-hero-float-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+}
+
+.kin-hero-float-bottom {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  background: rgba(18, 23, 29, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(235, 213, 176, 0.28);
+  border-radius: 18px;
+  padding: 0.78rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #fff;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.26);
+}
+
+.kin-avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.kin-avatar-stack img,
+.kin-avatar-stack-fallback {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #181e26;
+  margin-left: -10px;
+  background: linear-gradient(135deg, #c99b56, #8f6731);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.kin-avatar-stack > :first-child {
+  margin-left: 0;
+}
+
+/* Metrics Strip */
+.kin-about-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 3.25rem;
+}
+
+.kin-about-metric {
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  padding: 1.15rem 1.2rem;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.kin-about-metric:hover {
+  transform: translateY(-4px);
+  border-color: rgba(179, 134, 70, 0.42);
+  box-shadow: 0 14px 30px rgba(18, 23, 29, 0.08);
+}
+
+.kin-about-metric__num {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.05;
+  margin-bottom: 0.25rem;
+}
+
+.kin-about-metric__lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Upgraded Pillars with Icon Well & Hover Accent */
+.kin-about-pillar {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease, border-color 0.32s ease;
+}
+
+.kin-about-pillar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #161b22, #c99b56);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kin-about-pillar:hover {
+  transform: translateY(-5px);
+  border-color: rgba(179, 134, 70, 0.36);
+  box-shadow: 0 18px 36px rgba(18, 23, 29, 0.09);
+}
+
+.kin-about-pillar:hover::before {
+  transform: scaleX(1);
+}
+
+.kin-pillar-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #faf3e8, #f2e4cc);
+  color: #8f6731;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.9rem;
+  border: 1px solid rgba(179, 134, 70, 0.22);
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.kin-about-pillar:hover .kin-pillar-icon {
+  transform: scale(1.08) rotate(-3deg);
+  background: #14191f;
+  color: #ebd5b0;
+}
+
+/* Section Header with Carousel Nav Controls */
+.kin-carousel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.35rem;
+}
+
+.kin-carousel-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kin-carousel-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(18, 23, 29, 0.14);
+  background: #FFFFFF;
+  color: #14191f;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(18, 23, 29, 0.06);
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kin-carousel-btn:hover {
+  background: #14191f;
+  color: #ebd5b0;
+  border-color: #14191f;
+  transform: translateY(-2px);
+}
+
+.kin-carousel-btn:active {
+  transform: scale(0.93);
+}
+
+/* Interactive Client Tour Photo Slider */
+.kin-tour-slider {
+  display: flex;
+  gap: 1.15rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 4px 2px 14px;
+  margin-bottom: 2.75rem;
+  scrollbar-width: none;
+}
+
+.kin-tour-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.kin-tour-slide {
+  flex: 0 0 min(360px, 84vw);
+  scroll-snap-align: start;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.34s ease, border-color 0.34s ease;
+}
+
+.kin-tour-slide:hover {
+  transform: translateY(-6px);
+  border-color: rgba(179, 134, 70, 0.4);
+  box-shadow: 0 22px 44px rgba(18, 23, 29, 0.13);
+}
+
+.kin-tour-slide .kin-tour-card__img-wrap {
+  aspect-ratio: 16/11;
+}
+
+.kin-tour-slide:hover .kin-tour-card__img-wrap img {
+  transform: scale(1.06);
+}
+
+/* Auto-Playing Customer Feedback Carousel + Client Avatars */
+.kin-fb-carousel-wrap {
+  position: relative;
+  margin-bottom: 3.25rem;
+}
+
+.kin-fb-viewport {
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 6px 2px 12px;
+}
+
+.kin-fb-track {
+  display: flex;
+  gap: 1.25rem;
+  transition: transform 0.68s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.kin-fb-slide {
+  flex: 0 0 calc((100% - 1.25rem) / 2);
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 23, 29, 0.08);
+  border-radius: 22px;
+  padding: 1.6rem 1.65rem;
+  box-shadow: 0 10px 28px rgba(18, 23, 29, 0.055);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.kin-fb-slide:hover {
+  transform: translateY(-4px);
+  border-color: rgba(179, 134, 70, 0.42);
+  box-shadow: 0 18px 40px rgba(18, 23, 29, 0.1);
+}
+
+.kin-fb-watermark {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  font-family: var(--font-serif);
+  font-size: 4.4rem;
+  line-height: 1;
+  color: rgba(179, 134, 70, 0.12);
+  pointer-events: none;
+  user-select: none;
+}
+
+.kin-fb-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.kin-fb-avatar-ring {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  padding: 2.5px;
+  background: linear-gradient(135deg, #d7b178, #8c622e);
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(179, 134, 70, 0.22);
+}
+
+.kin-fb-avatar-img,
+.kin-fb-avatar-initial {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  border: 2px solid #FFFFFF;
+  background: linear-gradient(145deg, #1b232e, #2f3c4c);
+  color: #f3dbb6;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.kin-fb-verified-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0d9466;
+  color: #fff;
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.kin-fb-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.kin-fb-dot {
+  height: 7px;
+  width: 7px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(18, 23, 29, 0.16);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: width 0.34s cubic-bezier(0.22, 1, 0.36, 1), background 0.34s ease;
+}
+
+.kin-fb-dot.active {
+  width: 34px;
+  background: rgba(179, 134, 70, 0.25);
+}
+
+.kin-fb-dot.active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #b38646, #14191f);
+  transform-origin: left;
+  animation: kinProgressFill 4.8s linear forwards;
+}
+
+.kin-fb-carousel-wrap.is-paused .kin-fb-dot.active::after {
+  animation-play-state: paused;
+}
+
+/* Ambient Glow on Founder Quote Box */
+.kin-about-quote-box::before {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -50px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(213, 176, 124, 0.28) 0%, transparent 70%);
+  pointer-events: none;
+  animation: kinOrbDrift 8s ease-in-out infinite;
+}
+
+/* Interactive Steps Timeline */
+.kin-about-step {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.kin-about-step:hover {
+  transform: translateY(-4px);
+  border-color: rgba(179, 134, 70, 0.42);
+  box-shadow: 0 14px 30px rgba(18, 23, 29, 0.08);
+}
+
+@media (max-width: 820px) {
+  .kin-about-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kin-fb-slide {
+    flex: 0 0 100%;
+  }
+  .kin-about-hero-frame img {
+    height: 330px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kin-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .kin-hero-float-top,
+  .kin-about-quote-box::before,
+  .kin-fb-dot.active::after {
+    animation: none;
+  }
+}
