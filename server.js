@@ -1,4 +1,5 @@
 require("dotenv").config();
+const fs = require("node:fs");
 const path = require("path");
 const { createHmac, timingSafeEqual } = require("node:crypto");
 const express = require("express");
@@ -20,6 +21,7 @@ const {
 const sheetsService = require("./src/services/googleSheetsService");
 const translationService = require("./src/services/translationService");
 const autoDeployService = require("./src/services/autoDeployService");
+const seoService = require("./src/services/seoService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -152,7 +154,7 @@ app.use((err, req, res, next) => {
   if (!err.type || !String(err.type).startsWith("entity.")) return next(err);
   res.status(err.status || 400).json({ ok: false, error: "Invalid request body" });
 });
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), { index: false }));
 
 function createRateLimiter({ windowMs, max }) {
   const buckets = new Map();
@@ -1473,9 +1475,92 @@ app.get(["/kin-studio", "/kin-studio/*"], (req, res) => {
   res.sendFile(path.join(__dirname, "public", "studio-panel.html"));
 });
 
-// SPA Fallback
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// Technical SEO & AI Search (GEO): robots.txt, Dynamic MongoDB sitemap.xml, llms.txt
+app.get("/robots.txt", (req, res) => {
+  const origin = seoService.getSiteOrigin(req);
+  res.set({
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+  });
+  res.send(seoService.generateRobotsTxt(origin));
+});
+
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    await ensureInitialized();
+    await db.ensureMongoConnection();
+    const origin = seoService.getSiteOrigin(req);
+    const apartments = await db.getApartments({ includeHidden: false });
+    res.set({
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+    });
+    res.send(seoService.generateSitemapXml(origin, apartments));
+  } catch {
+    res.status(500).type("text/plain").send("Unable to generate sitemap");
+  }
+});
+
+app.get("/llms.txt", async (req, res) => {
+  try {
+    await ensureInitialized();
+    await db.ensureMongoConnection();
+    const origin = seoService.getSiteOrigin(req);
+    const apartments = await db.getApartments({ includeHidden: false });
+    res.set({
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+    });
+    res.send(seoService.generateLlmsTxt(origin, apartments));
+  } catch {
+    res.status(500).type("text/plain").send("Unable to generate llms.txt");
+  }
+});
+
+let cachedIndexHtml = null;
+function loadBaseIndexHtml() {
+  if (!cachedIndexHtml || !process.env.VERCEL) {
+    cachedIndexHtml = fs.readFileSync(path.join(__dirname, "public", "index.html"), "utf8");
+  }
+  return cachedIndexHtml;
+}
+
+// SPA Fallback with Server-Side Dynamic SEO Meta, 6-Language Hreflang, OpenGraph & JSON-LD Injection
+app.get("*", async (req, res) => {
+  try {
+    const baseHtml = loadBaseIndexHtml();
+    await ensureInitialized();
+    await db.ensureMongoConnection();
+    const origin = seoService.getSiteOrigin(req);
+    const lang = seoService.resolveLang(req.query.lang);
+    const pathname = req.path || "/";
+    const aptMatch = pathname.match(/^\/apartments\/([^/]+)\/?$/i);
+
+    let apartment = null;
+    let apartments = [];
+    let about = null;
+
+    if (aptMatch) {
+      const code = decodeURIComponent(aptMatch[1]);
+      const found = await db.getApartmentByCodeOrId(code);
+      if (found && db.isPublicApartment(found)) {
+        apartment = found;
+      }
+    } else if (pathname === "/" || pathname.replace(/\/+$/, "") === "/apartments") {
+      apartments = await db.getApartments({ includeHidden: false });
+    }
+    about = await db.getAboutContent().catch(() => null);
+
+    const seoHead = seoService.buildPageSeoHead({ origin, pathname, lang, apartment, apartments, about });
+    const html = seoService.injectSeoIntoHtml(baseHtml, seoHead);
+    res.set({
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300"
+    });
+    res.send(html);
+  } catch {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  }
 });
 
 async function startServer() {

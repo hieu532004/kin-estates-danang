@@ -610,9 +610,21 @@ const FAQ_DATA: { q: Record<Lang, string>; a: Record<Lang, string> }[] = [
   }
 ];
 
+const trackGaEvent = (eventName: string, params: Record<string, any> = {}) => {
+  try {
+    const g = (window as any).gtag;
+    if (typeof g === "function") g("event", eventName, params);
+  } catch {
+    // Ignore analytics errors
+  }
+};
+
 export const App: React.FC = () => {
   const [route, setRoute] = useState<string>(window.location.pathname || "/");
-  const [lang, setLang] = useState<Lang>("vi");
+  const [lang, setLang] = useState<Lang>(() => {
+    const p = new URLSearchParams(window.location.search).get("lang")?.toLowerCase();
+    return p && ["vi", "en", "zh", "ru", "ko", "ja"].includes(p) ? (p as Lang) : "vi";
+  });
   const [currency, setCurrency] = useState<Currency>("USD");
   const [langMenuOpen, setLangMenuOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -663,7 +675,7 @@ export const App: React.FC = () => {
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
 
   // Catalogue (/apartments) Filters
-  const [query, setQuery] = useState<string>("");
+  const [query, setQuery] = useState<string>(() => new URLSearchParams(window.location.search).get("q") || "");
   const [area, setArea] = useState<string>("all");
   const [bedrooms, setBedrooms] = useState<string>("all");
   const [maxPrice, setMaxPrice] = useState<string>("0");
@@ -712,6 +724,81 @@ export const App: React.FC = () => {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Track Direct Contact Clicks (Zalo, WhatsApp, Telegram, Phone) in Google Analytics 4
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a) return;
+      const href = a.getAttribute("href") || "";
+      let channel = "";
+      if (href.includes("zalo.me")) channel = "zalo";
+      else if (href.includes("wa.me")) channel = "whatsapp";
+      else if (href.includes("t.me/")) channel = "telegram";
+      else if (href.startsWith("tel:")) channel = "phone";
+      if (channel) {
+        trackGaEvent("contact_click", {
+          contact_channel: channel,
+          page_path: window.location.pathname,
+          language: lang
+        });
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [lang]);
+
+  // Dynamic Client-Side SEO Sync + GA4 SPA Pageview & Apartment View Tracking
+  useEffect(() => {
+    const cleanPath = route === "/" ? "/" : route.replace(/\/+$/, "");
+    const aptMatch = cleanPath.match(/^\/apartments\/([^/]+)$/i);
+    const activeApt = aptMatch
+      ? apartments.find((a) => a.code.toUpperCase() === decodeURIComponent(aptMatch[1]).toUpperCase())
+      : null;
+
+    let pageTitle = "KIN Estates — Thuê Căn Hộ Đà Nẵng Dài Hạn Tuyển Chọn";
+    if (activeApt) {
+      const t = typeof activeApt.title === "string" ? activeApt.title : activeApt.title?.[lang] || activeApt.title?.vi || activeApt.code;
+      pageTitle = `${t} ($${activeApt.priceUsd}/th) | KIN Estates Đà Nẵng`;
+    } else if (cleanPath === "/apartments") {
+      pageTitle = lang === "vi" ? "Danh Mục Căn Hộ Cho Thuê Tại Đà Nẵng | KIN Estates" : "Da Nang Apartments for Rent — Live Map | KIN Estates";
+    } else if (cleanPath === "/areas") {
+      pageTitle = lang === "vi" ? "Các Khu Vực Thuê Căn Hộ Tốt Nhất Đà Nẵng | KIN Estates" : "Best Neighborhoods to Rent in Da Nang | KIN Estates";
+    } else if (cleanPath === "/how-to-rent") {
+      pageTitle = lang === "vi" ? "Quy Trình Thuê Căn Hộ Dài Hạn Đà Nẵng | KIN Estates" : "How to Rent an Apartment in Da Nang | KIN Estates";
+    } else if (cleanPath === "/guides") {
+      pageTitle = lang === "vi" ? "Cẩm Nang & Chỉ Số Giá Chung Cư Đà Nẵng 2026 | KIN Estates" : "Da Nang Rental Guides & Price Index 2026 | KIN Estates";
+    } else if (cleanPath === "/about") {
+      pageTitle = lang === "vi" ? "Về KIN Estates Đà Nẵng — Ảnh Dẫn Khách & Feedback Thực Tế" : "About KIN Estates Da Nang — Tours & Client Reviews";
+    } else if (cleanPath === "/privacy-policy") {
+      pageTitle = lang === "vi" ? "Chính Sách Bảo Mật & Dữ Liệu | KIN Estates Đà Nẵng" : "Privacy & Data Policy | KIN Estates Da Nang";
+    } else if (lang !== "vi") {
+      pageTitle = "KIN Estates — Long-Term Apartments & Villas for Rent in Da Nang";
+    }
+
+    document.title = pageTitle;
+    document.documentElement.lang = lang;
+
+    const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (canonical) {
+      canonical.href = `${window.location.origin}${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`;
+    }
+
+    trackGaEvent("page_view", {
+      page_title: pageTitle,
+      page_path: `${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`,
+      page_location: window.location.href,
+      language: lang
+    });
+
+    if (activeApt) {
+      trackGaEvent("view_item", {
+        currency: "USD",
+        value: Number(activeApt.priceUsd || 0),
+        items: [{ item_id: activeApt.code, item_name: pageTitle, item_category: activeApt.areaName || "Da Nang" }]
+      });
+    }
+  }, [route, lang, apartments]);
 
   // Auto-playing Customer Feedback Carousel on /about
   useEffect(() => {
@@ -820,10 +907,12 @@ export const App: React.FC = () => {
   }, [lang]);
 
   const navigate = (path: string) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState({ path }, "", path);
+    const suffix = lang !== "vi" && !path.includes("?") ? `?lang=${lang}` : "";
+    const target = `${path}${suffix}`;
+    if (`${window.location.pathname}${window.location.search}` !== target) {
+      window.history.pushState({ path }, "", target);
     }
-    setRoute(path);
+    setRoute(path.split("?")[0] || "/");
     setMobileMenuOpen(false);
     setBookingFeedback("");
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -1833,6 +1922,13 @@ export const App: React.FC = () => {
         return;
       }
       if (!res.ok || (await res.json())?.ok !== true) throw new Error("Inquiry failed");
+      trackGaEvent("generate_lead", {
+        lead_type: payload.type,
+        apartment_code: payload.apartmentCode,
+        currency: "USD",
+        value: customApt ? Number(customApt.priceUsd || 0) : Number(leadBudget || 0),
+        language: lang
+      });
       if (customApt) {
         setApartmentInquiryState("received");
       } else {
@@ -2082,6 +2178,9 @@ export const App: React.FC = () => {
                       onClick={() => {
                         setLang(item.code);
                         setLangMenuOpen(false);
+                        const nextUrl = item.code === "vi" ? window.location.pathname : `${window.location.pathname}?lang=${item.code}`;
+                        window.history.replaceState({}, "", nextUrl);
+                        trackGaEvent("select_language", { language: item.code, page_path: window.location.pathname });
                       }}
                     >
                       <div>
