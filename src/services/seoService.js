@@ -1,12 +1,12 @@
 const SUPPORTED_LANGS = ["vi", "en", "zh", "ru", "ko", "ja"];
-const DEFAULT_SITE_URL = "https://kin-estates-danang.vercel.app";
+const DEFAULT_SITE_URL = "https://www.kinestatesdanang.com";
 const DEFAULT_OG_IMAGE = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85";
 
 function getSiteOrigin(req) {
   const envUrl = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/+$/, "");
   if (envUrl && /^https?:\/\//i.test(envUrl) && !envUrl.includes(".invalid")) return envUrl;
-  const host = req?.get?.("x-forwarded-host") || req?.get?.("host");
-  if (host && !/localhost|127\.0\.0\.1/i.test(host)) {
+  const host = String(req?.get?.("x-forwarded-host") || req?.get?.("host") || "").trim();
+  if (host && !/localhost|127\.0\.0\.1|\.vercel\.app$/i.test(host)) {
     const proto = req?.get?.("x-forwarded-proto") || "https";
     return `${proto}://${host}`.replace(/\/+$/, "");
   }
