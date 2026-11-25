@@ -646,6 +646,165 @@ const findSeoAreaByValue = (val?: string | null) => {
   return SEO_AREA_SLUGS.find((a) => fold(a.value) === f || fold(a.vi) === f || fold(a.en) === f) || null;
 };
 
+const SEO_PROPERTY_TYPES: Array<{
+  slug: string;
+  bedrooms?: string;
+  tag?: string;
+  isBuy?: boolean;
+  vi: string;
+  en: string;
+  h1Vi: string;
+  h1En: string;
+  descVi: string;
+  descEn: string;
+}> = [
+  { slug: "studio", bedrooms: "1", vi: "Căn hộ Studio", en: "Studio Apartments", h1Vi: "Cho thuê căn hộ Studio Đà Nẵng — Đầy đủ nội thất, giá chủ nhà", h1En: "Studio Apartments for Rent in Da Nang — Furnished & Direct Owner Pricing", descVi: "Cho thuê căn hộ Studio Đà Nẵng đẹp, ban công thoáng, gần biển Mỹ Khê, An Thượng, Sơn Trà, Hòa Xuân ✓ Giá trực tiếp chủ nhà từ 7tr/tháng →", descEn: "Furnished studio apartments for rent in Da Nang near My Khe Beach, An Thuong, Han River & Hoa Xuan ✓ From $300/mo →" },
+  { slug: "1-phong-ngu", bedrooms: "1", vi: "Căn hộ 1 phòng ngủ", en: "1-Bedroom Apartments", h1Vi: "Cho thuê căn hộ 1 phòng ngủ (1PN) Đà Nẵng — Riêng tư & hiện đại", h1En: "1-Bedroom Apartments for Rent in Da Nang — Separate Living & Kitchen", descVi: "Tổng hợp căn hộ 1PN cho thuê dài hạn Đà Nẵng: phòng khách riêng, bếp nấu, máy giặt, điện EVN ✓ Mỹ Khê, An Thượng, The Filmore, The Panoma →", descEn: "Curated 1-bedroom long-term apartments in Da Nang with separate living room, kitchen & fiber Wi-Fi →" },
+  { slug: "2-phong-ngu", bedrooms: "2", vi: "Căn hộ 2 phòng ngủ", en: "2-Bedroom Condos", h1Vi: "Cho thuê căn hộ 2 phòng ngủ (2PN) Đà Nẵng — Hiyori, Monarchy, The Panoma, The Filmore", h1En: "2-Bedroom Condos & Apartments for Rent in Da Nang", descVi: "Cho thuê chung cư 2PN Đà Nẵng tại The Filmore, The Panoma, Hiyori, Monarchy, Azura ✓ View sông Hàn & biển Mỹ Khê ✓ Giá trực tiếp chủ nhà →", descEn: "Spacious 2-bedroom condos in Da Nang's top towers (Filmore, Panoma, Hiyori, Monarchy, Azura) ✓ EVN rates →" },
+  { slug: "3-phong-ngu", bedrooms: "3", vi: "Căn hộ 3 phòng ngủ", en: "3-Bedroom Family Condos", h1Vi: "Cho thuê căn hộ 3 phòng ngủ (3PN) Đà Nẵng — Rộng rãi cho gia đình & chuyên gia", h1En: "3-Bedroom Family Condos & Residences for Rent in Da Nang", descVi: "Cho thuê căn hộ 3PN rộng 95–150m² tại Đà Nẵng cho gia đình & chuyên gia ✓ Hồ bơi, gym, gần trường quốc tế & biển Mỹ Khê →", descEn: "Spacious 3-bedroom family condos (95–150m²) in Da Nang near international schools, pools & beach →" },
+  { slug: "biet-thu-villa", tag: "Biệt thự", vi: "Biệt thự & Villa hồ bơi", en: "Private Pool Villas", h1Vi: "Cho thuê Biệt thự & Villa hồ bơi riêng tại Đà Nẵng — Dài hạn 3–12+ tháng", h1En: "Private Pool Villas & Garden Residences for Rent in Da Nang", descVi: "Cho thuê biệt thự hồ bơi riêng & villa sân vườn Đà Nẵng (3–5PN) tại Nam Việt Á, Euro Village, Đảo Xanh, Sơn Trà, Mỹ Khê, Hòa Xuân →", descEn: "Private saltwater pool villas & garden homes (3–5BR) for long-term rent in Da Nang: Nam Viet A, Euro Village, Son Tra & Hoa Xuan →" },
+  { slug: "nha-nguyen-can", vi: "Nhà nguyên căn", en: "Whole Houses", h1Vi: "Cho thuê Nhà nguyên căn & Nhà phố Đà Nẵng — Dài hạn trực tiếp chủ nhà", h1En: "Whole Houses & Townhouses for Long-Term Rent in Da Nang", descVi: "Cho thuê nhà nguyên căn, nhà phố sân vườn & shophouse Đà Nẵng tại Hải Châu, Sơn Trà, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê →", descEn: "Whole houses, modern townhouses & garden homes for long-term rent across Da Nang →" },
+  { slug: "penthouse", bedrooms: "3", vi: "Penthouse hạng sang", en: "Luxury Penthouses", h1Vi: "Cho thuê Penthouse & Căn hộ hạng sang Đà Nẵng — View sông Hàn & biển", h1En: "Luxury Penthouses & Sky Residences for Rent in Da Nang", descVi: "Bộ sưu tập Penthouse & căn hộ hạng sang view toàn cảnh sông Hàn, cầu Rồng & biển Mỹ Khê (The Filmore, The Panoma, Azura) →", descEn: "Exclusive luxury penthouses & sky residences in Da Nang with panoramic Han River & ocean views →" },
+  { slug: "mua-ban-nha-dat", isBuy: true, vi: "Mua bán Căn hộ & Nhà đất", en: "Buy Property & Investment", h1Vi: "Tư vấn Mua bán & Đầu tư Căn hộ, Biệt thự, Nhà đất Đà Nẵng — Pháp lý minh bạch", h1En: "Buy Apartments, Condos & Villas in Da Nang — Investment & Resale Advisory", descVi: "Tư vấn mua bán & chuyển nhượng căn hộ chung cư, penthouse, biệt thự và nhà phố Đà Nẵng (sổ hồng & suất người nước ngoài SPA) →", descEn: "Advisory for buying apartments, penthouses & villas in Da Nang (pink book & 30% foreigner quota SPA) →" }
+];
+
+const SEO_PILLAR_GUIDES: Array<{
+  slug: string;
+  catVi: string;
+  catEn: string;
+  titleVi: string;
+  titleEn: string;
+  descVi: string;
+  descEn: string;
+  sectionsVi: Array<{ h2: string; p: string }>;
+  sectionsEn: Array<{ h2: string; p: string }>;
+}> = [
+  {
+    slug: "gia-thue-can-ho-da-nang-2026",
+    catVi: "CHỈ SỐ GIÁ 2026",
+    catEn: "2026 PRICE INDEX",
+    titleVi: "Bảng Giá Thuê Căn Hộ & Chung Cư Đà Nẵng 2026 Chi Tiết",
+    titleEn: "Da Nang Apartment & Condo Rent Prices 2026 Guide",
+    descVi: "Cập nhật giá thuê căn hộ Studio, 1PN, 2PN, 3PN & biệt thự Đà Nẵng 2026 theo từng tòa nhà (The Filmore, The Panoma, Hiyori, Monarchy, Azura) và 19 khu vực.",
+    descEn: "Real 2026 monthly rent benchmarks in Da Nang across Studio, 1BR, 2BR, 3BR condos & villas (The Filmore, Panoma, Hiyori, Monarchy, Azura).",
+    sectionsVi: [
+      { h2: "1. Mặt bằng giá thuê căn hộ Đà Nẵng 2026 theo loại hình", p: "Căn hộ Studio & 1 phòng ngủ đầy đủ nội thất dao động 7 – 15 triệu/tháng ($300 – $600); chung cư cao cấp 2 phòng ngủ từ 16 – 35 triệu/tháng ($650 – $1,400); căn 3 phòng ngủ, Penthouse và biệt thự hồ bơi riêng từ 33 – 85 triệu/tháng ($1,300 – $3,500)." },
+      { h2: "2. Giá thuê thực tế các tòa chung cư nổi bật", p: "• The Filmore Đà Nẵng (Hải Châu): 1PN $1,000–$1,300/tháng | 2PN $1,450–$2,100/tháng.\n• The Panoma — Sun Cosmo Residence (Ngũ Hành Sơn): 1PN $650–$950/tháng | 2PN $950–$1,400/tháng | 3PN $1,400–$2,000/tháng.\n• Hiyori Garden Tower (Sơn Trà — quản lý Nhật Bản): 2PN $750–$1,050/tháng.\n• The Monarchy Block B (Sơn Trà — nuôi thú cưng): 2PN $620–$900/tháng." },
+      { h2: "3. Cách thuê giá tốt trực tiếp chủ nhà", p: "Hợp đồng 6–12 tháng tiết kiệm 10–18% so với thuê ngắn hạn. Toàn bộ chung cư thương mại áp dụng giá điện EVN nhà nước (~2.800đ/kWh). KIN Estates kiểm định thực tế và kết nối ký hợp đồng song ngữ trực tiếp chủ nhà." }
+    ],
+    sectionsEn: [
+      { h2: "1. Da Nang Monthly Rental Benchmarks by Property Type (2026)", p: "Furnished Studios and 1-bedroom apartments range from $300–$600/month. Modern 2-bedroom condos (Hiyori, Monarchy, The Panoma, The Filmore) range from $650–$1,450/month, while 3-bedroom penthouses and private pool villas range from $1,300–$3,500/month." },
+      { h2: "2. Top Condominium Tower Rent Ranges", p: "• The Filmore Da Nang (Hai Chau): 1BR $1,000–$1,300/mo | 2BR $1,450–$2,100/mo.\n• The Panoma / Sun Cosmo (Ngu Hanh Son): 1BR $650–$950/mo | 2BR $950–$1,400/mo | 3BR $1,400–$2,000/mo.\n• Hiyori Garden Tower (Son Tra): 2BR $750–$1,050/mo.\n• The Monarchy (Son Tra — Pet-friendly): 2BR $620–$900/mo." }
+    ]
+  },
+  {
+    slug: "so-sanh-khu-vuc-thue-nha-da-nang",
+    catVi: "SO SÁNH 19 KHU VỰC",
+    catEn: "19 NEIGHBORHOODS",
+    titleVi: "Nên Thuê Nhà Khu Vực Nào Ở Đà Nẵng? So Sánh 19 Quận Phường",
+    titleEn: "Where to Live in Da Nang? Comparing All 19 Districts (2026)",
+    descVi: "So sánh chi tiết ưu nhược điểm khi thuê căn hộ tại An Thượng, Biển Mỹ Khê, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Nam Việt Á & FPT City.",
+    descEn: "Side-by-side comparison of An Thuong, My Khe Beach, Han Riverfront, Son Tra, Hai Chau, Hoa Xuan, Cam Le, Nam Viet A & FPT City.",
+    sectionsVi: [
+      { h2: "1. Nhóm ven biển & cộng đồng quốc tế: An Thượng, Mỹ An, Biển Mỹ Khê, Phước Mỹ", p: "Lựa chọn số 1 cho khách thích đi bộ 3–5 phút ra biển Mỹ Khê, xung quanh dày đặc quán specialty coffee, gym và nhà hàng quốc tế." },
+      { h2: "2. Nhóm trung tâm & view sông Hàn: Hải Châu, Ven sông Hàn, Sơn Trà", p: "Tập trung các tòa chung cư hạng sang The Filmore, Hiyori, The Monarchy, Azura — chỉ 5–8 phút ra sân bay quốc tế Đà Nẵng và bệnh viện Vinmec." },
+      { h2: "3. Nhóm khu đô thị yên tĩnh & giá trị cao: Hòa Xuân, Cẩm Lệ, Nam Việt Á, FPT City", p: "Đường rộng nhiều cây xanh, yên tĩnh tuyệt đối, giá thuê căn hộ, nhà nguyên căn và biệt thự dễ chịu hơn trung tâm 20–35%." }
+    ],
+    sectionsEn: [
+      { h2: "1. Beachfront & Expat Core: An Thuong, My Khe Beach, My An & Phuoc My", p: "Top pick for remote workers and beach lovers wanting a 3–5 minute walk to My Khe Beach, coworking cafes, and international dining." },
+      { h2: "2. Skyline Luxury & Central Convenience: Hai Chau, Han Riverfront & Son Tra", p: "Home to The Filmore, Hiyori, The Monarchy, and Azura, just 5–8 minutes from Da Nang International Airport and Vinmec Hospital." },
+      { h2: "3. Quiet Spacious Value: Hoa Xuan, Nam Viet A, Cam Le & FPT City", p: "Master-planned residential areas offering 20–35% more space per dollar—ideal for families renting houses, pool villas, or quiet apartments." }
+    ]
+  },
+  {
+    slug: "kinh-nghiem-thue-biet-thu-nha-nguyen-can-da-nang",
+    catVi: "BIỆT THỰ & NHÀ PHỐ",
+    catEn: "VILLAS & HOUSES",
+    titleVi: "Kinh Nghiệm Thuê Biệt Thự Hồ Bơi & Nhà Nguyên Căn Đà Nẵng",
+    titleEn: "Guide to Renting Pool Villas & Houses in Da Nang",
+    descVi: "5 lưu ý quan trọng khi thuê biệt thự hồ bơi và nhà nguyên căn Đà Nẵng dài hạn: bảo trì hồ bơi, chống thấm mùa mưa, điện EVN & hợp đồng song ngữ.",
+    descEn: "Essential checklist before signing a long-term villa or house lease in Da Nang: pool maintenance, monsoon waterproofing, EVN bills & security.",
+    sectionsVi: [
+      { h2: "1. Những khu biệt thự đáng sống nhất Đà Nẵng", p: "Nam Việt Á (gần sông Hàn, 5 phút ra biển), Euro Village 1 & 2 (an ninh 24/7), Đảo Xanh (Hải Châu), đảo VIP Hòa Xuân và ven biển Mỹ Khê – Sơn Trà." },
+      { h2: "2. 5 hạng mục bắt buộc kiểm tra khi đi xem biệt thự", p: "1) Chi phí vệ sinh hồ bơi & sân vườn đã gồm trong giá thuê chưa.\n2) Chống thấm mái, cửa kính mùa mưa tháng 10–12.\n3) Công tơ điện nhà nước EVN và áp lực máy bơm.\n4) Điều khoản chủ nhà bảo trì máy lạnh & lọc hồ bơi.\n5) Biên bản bàn giao chụp ảnh chi tiết ngày nhận nhà." }
+    ],
+    sectionsEn: [
+      { h2: "1. Top Villa & House Communities in Da Nang", p: "Nam Viet A, Euro Village 1 & 2 (gated 24/7 security), Green Island (Dao Xanh), Hoa Xuan Eco-Island, and Son Tra coastal villas." },
+      { h2: "2. 5-Point Villa Inspection Checklist", p: "Confirm weekly pool & garden maintenance inclusion, roof waterproofing for Oct–Dec monsoon, state EVN metering, landlord repair clauses, and full photo handover." }
+    ]
+  },
+  {
+    slug: "huong-dan-thue-can-ho-da-nang-cho-nguoi-nuoc-ngoai",
+    catVi: "PHÁP LÝ & NA17",
+    catEn: "EXPAT & FORM NA17",
+    titleVi: "Hướng Dẫn Thuê Căn Hộ Đà Nẵng Cho Người Nước Ngoài (NA17)",
+    titleEn: "Expat Guide: Renting an Apartment in Da Nang (Form NA17)",
+    descVi: "Quy trình chuẩn cho người nước ngoài thuê căn hộ dài hạn tại Đà Nẵng: giấy tờ cần có, hợp đồng song ngữ, đặt cọc an toàn & khai báo tạm trú Form NA17.",
+    descEn: "Everything expats and digital nomads need to rent safely in Da Nang: visa requirements, bilingual leases, deposits & 24h Form NA17 police registration.",
+    sectionsVi: [
+      { h2: "1. Giấy tờ cần thiết & Hợp đồng song ngữ Việt – Anh", p: "Chỉ cần hộ chiếu còn hạn và e-Visa / TRC hợp lệ. KIN Estates soạn hợp đồng song ngữ minh bạch tiền cọc, biểu giá điện EVN và điều khoản chấm dứt hợp đồng." },
+      { h2: "2. Khai báo tạm trú Công an Phường (Form NA17) trong 24 giờ", p: "KIN Estates phối hợp chủ nhà hoàn tất khai báo tạm trú trực tuyến trong 24 giờ đầu tiên và hỗ trợ xin bản xác nhận dấu đỏ (Form NA17) phục vụ gia hạn Visa / TRC." }
+    ],
+    sectionsEn: [
+      { h2: "1. Required Documents & Bilingual Lease Protection", p: "Foreign tenants only need a valid passport and current Vietnam visa/TRC. KIN Estates prepares transparent Vietnamese–English leases directly with the owner." },
+      { h2: "2. Mandatory 24-Hour Police Registration (Form NA17)", p: "Within 24 hours of check-in, we coordinate ward police registration with the landlord and help obtain the red-stamped Form NA17 for visa extensions and TRC." }
+    ]
+  },
+  {
+    slug: "mua-ban-dau-tu-can-ho-da-nang-2026",
+    catVi: "MUA BÁN & ĐẦU TƯ",
+    catEn: "BUY & INVEST 2026",
+    titleVi: "Mua Bán & Đầu Tư Căn Hộ, Biệt Thự Đà Nẵng 2026",
+    titleEn: "Buying Apartments & Real Estate in Da Nang 2026 Guide",
+    descVi: "Cẩm nang mua bán căn hộ, nhà đất & biệt thự Đà Nẵng 2026: pháp lý sổ hồng lâu dài, suất người nước ngoài (SPA), tỷ suất cho thuê 6–9%/năm.",
+    descEn: "Complete 2026 guide to buying condos & villas in Da Nang: pink book ownership, 30% foreigner quota (SPA) & 6–9% rental yields.",
+    sectionsVi: [
+      { h2: "1. Xu hướng đầu tư & dòng tiền cho thuê tại Đà Nẵng 2026", p: "Căn hộ ven sông Hàn (The Filmore, Sun Cosmo Residence, Hiyori), biệt thự Hòa Xuân – Nam Việt Á và FPT City ghi nhận tỷ suất khai thác cho thuê thực tế 6–9%/năm." },
+      { h2: "2. Pháp lý Sổ hồng & Suất người nước ngoài (SPA 30%)", p: "Người Việt sở hữu Sổ hồng lâu dài; khách nước ngoài được sở hữu tối đa 30% số căn chung cư thương mại đủ điều kiện (hợp đồng SPA 50 năm, được gia hạn, bán lại và cho thuê). KIN Estates hỗ trợ trọn gói thẩm định, pháp lý và vận hành cho thuê." }
+    ],
+    sectionsEn: [
+      { h2: "1. Why Invest in Da Nang Real Estate in 2026", p: "Prime Han Riverfront condos (The Filmore, Sun Cosmo, Hiyori), Hoa Xuan villas, and FPT City apartments deliver real net rental yields of 6–9% annually." },
+      { h2: "2. Ownership Rules for Foreign & Vietnamese Buyers", p: "Vietnamese buyers receive freehold pink-book ownership; foreign buyers can own up to 30% of units in eligible commercial condo towers under a renewable 50-year SPA. KIN Estates handles due diligence and turnkey rental management." }
+    ]
+  },
+  {
+    slug: "chi-phi-song-dien-nuoc-evn-da-nang",
+    catVi: "CHI PHÍ SINH HOẠT",
+    catEn: "COST OF LIVING",
+    titleVi: "Chi Phí Sống, Điện EVN & Phí Quản Lý Chung Cư Đà Nẵng 2026",
+    titleEn: "Cost of Living & EVN Utility Bills in Da Nang 2026",
+    descVi: "Chi tiết hóa đơn điện nhà nước EVN, nước sinh hoạt, internet cáp quang, phí quản lý & gửi xe tại các chung cư Đà Nẵng để dự trù ngân sách chuẩn xác.",
+    descEn: "Transparent breakdown of monthly living costs in Da Nang: state EVN electricity rates, water, 300Mbps fiber internet, management & parking fees.",
+    sectionsVi: [
+      { h2: "1. Tiền điện EVN & nước sinh hoạt", p: "Chung cư thương mại tính theo biểu giá bậc thang EVN nhà nước (~2.500–3.000đ/kWh), trung bình 800.000đ – 1.800.000đ/tháng cho căn 1–2PN. Nước sinh hoạt 80.000đ – 200.000đ/tháng." },
+      { h2: "2. Internet cáp quang, phí quản lý & gửi xe", p: "Internet cáp quang 300Mbps ~220.000đ – 300.000đ/tháng; gửi xe máy 80.000đ – 150.000đ/tháng; gửi ô tô hầm 1.000.000đ – 1.800.000đ/tháng." }
+    ],
+    sectionsEn: [
+      { h2: "1. Official State EVN Electricity & Water Rates", p: "Commercial condos bill electricity at official EVN rates (~2,500–3,000 VND/kWh), averaging $35–$75/month for 1–2BR units. Municipal water averages $4–$10/month." },
+      { h2: "2. Fiber Internet & Parking", p: "300Mbps Fiber Wi-Fi costs $9–$12/month; motorbike parking $3–$6/month; basement car parking $40–$70/month." }
+    ]
+  }
+];
+
+const parseClientLocalizedPath = (rawPathname: string, rawSearch = ""): { route: string; langFromUrl: Lang | null } => {
+  const m = String(rawPathname || "/").match(/^\/(en|zh|ru|ko|ja)(\/.*)?$/i);
+  if (m) {
+    const l = m[1].toLowerCase() as Lang;
+    const rest = m[2] || "/";
+    return { route: rest === "/" ? "/" : rest.replace(/\/+$/, "") || "/", langFromUrl: l };
+  }
+  const qLang = new URLSearchParams(rawSearch).get("lang")?.toLowerCase();
+  const validQ = qLang && ["vi", "en", "zh", "ru", "ko", "ja"].includes(qLang) ? (qLang as Lang) : null;
+  const clean = rawPathname === "/" ? "/" : String(rawPathname || "/").replace(/\/+$/, "") || "/";
+  return { route: clean, langFromUrl: validQ };
+};
+
+const buildLocalizedHref = (cleanPath: string, targetLang: Lang): string => {
+  const p = !cleanPath || cleanPath === "/" ? "/" : cleanPath.replace(/\/+$/, "");
+  if (targetLang === "vi") return p;
+  return p === "/" ? `/${targetLang}` : `/${targetLang}${p}`;
+};
+
 const setMetaTagContent = (selector: string, content: string) => {
   const el = document.querySelector(selector) as HTMLMetaElement | null;
   if (el && content) el.setAttribute("content", content);
@@ -661,11 +820,9 @@ const trackGaEvent = (eventName: string, params: Record<string, any> = {}) => {
 };
 
 export const App: React.FC = () => {
-  const [route, setRoute] = useState<string>(window.location.pathname || "/");
-  const [lang, setLang] = useState<Lang>(() => {
-    const p = new URLSearchParams(window.location.search).get("lang")?.toLowerCase();
-    return p && ["vi", "en", "zh", "ru", "ko", "ja"].includes(p) ? (p as Lang) : "vi";
-  });
+  const initialParsedUrl = parseClientLocalizedPath(window.location.pathname || "/", window.location.search);
+  const [route, setRoute] = useState<string>(initialParsedUrl.route);
+  const [lang, setLang] = useState<Lang>(initialParsedUrl.langFromUrl || "vi");
   const [currency, setCurrency] = useState<Currency>("USD");
   const [langMenuOpen, setLangMenuOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -762,7 +919,12 @@ export const App: React.FC = () => {
   }, [route]);
 
   useEffect(() => {
-    const onPop = () => setRoute(window.location.pathname || "/");
+    const onPop = () => {
+      const parsed = parseClientLocalizedPath(window.location.pathname || "/", window.location.search);
+      setRoute(parsed.route);
+      if (parsed.langFromUrl) setLang(parsed.langFromUrl);
+      else setLang("vi");
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -796,12 +958,19 @@ export const App: React.FC = () => {
     return () => document.removeEventListener("click", onDocClick);
   }, [lang]);
 
-  // Sync area filter when navigating to dedicated /areas/:slug SEO landing pages
+  // Sync filters when navigating to dedicated /areas/:slug or /property/:slug SEO landing pages
   useEffect(() => {
-    const m = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
-    const matched = m ? findSeoAreaBySlug(m[1]) : null;
-    if (matched && area !== matched.value) {
-      setArea(matched.value);
+    const areaM = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
+    const matchedArea = areaM ? findSeoAreaBySlug(areaM[1]) : null;
+    if (matchedArea && area !== matchedArea.value) {
+      setArea(matchedArea.value);
+    }
+    const propM = route.match(/^\/property\/([a-z0-9-]+)\/?$/i);
+    const matchedProp = propM ? SEO_PROPERTY_TYPES.find((p) => p.slug === propM[1].toLowerCase()) : null;
+    if (matchedProp) {
+      setArea("all");
+      setBedrooms(matchedProp.bedrooms || "all");
+      setTag(matchedProp.tag || "all");
     }
   }, [route]);
 
@@ -810,16 +979,20 @@ export const App: React.FC = () => {
     const cleanPath = route === "/" ? "/" : route.replace(/\/+$/, "");
     const aptMatch = cleanPath.match(/^\/apartments\/([^/]+)$/i);
     const areaMatch = cleanPath.match(/^\/areas\/([a-z0-9-]+)$/i);
+    const propMatch = cleanPath.match(/^\/property\/([a-z0-9-]+)$/i);
+    const guideMatch = cleanPath.match(/^\/guides\/([a-z0-9-]+)$/i);
     const activeAreaSeo = areaMatch ? findSeoAreaBySlug(areaMatch[1]) : null;
+    const activePropSeo = propMatch ? SEO_PROPERTY_TYPES.find((p) => p.slug === propMatch[1].toLowerCase()) : null;
+    const activeGuideSeo = guideMatch ? SEO_PILLAR_GUIDES.find((g) => g.slug === guideMatch[1].toLowerCase()) : null;
     const activeApt = aptMatch
       ? apartments.find((a) => a.code.toUpperCase() === decodeURIComponent(aptMatch[1]).toUpperCase())
       : null;
 
-    let pageTitle = "Cho Thuê Căn Hộ Đà Nẵng Dài Hạn Giá Tốt | KIN Estates 2026";
+    let pageTitle = "Cho Thuê Căn Hộ, Nhà & Biệt Thự Đà Nẵng | KIN Estates 2026";
     let pageDesc =
-      "Thuê căn hộ chung cư, studio, 1–3PN, penthouse & biệt thự Đà Nẵng dài hạn (3–12+ tháng) ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ Mỹ Khê, An Thượng, Hòa Xuân →";
+      "Thuê căn hộ chung cư, studio, nhà nguyên căn, penthouse, biệt thự hồ bơi & mua bán nhà đất Đà Nẵng ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ 19 khu vực Đà Nẵng →";
     let pageKeywords =
-      "thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng dài hạn, thuê chung cư Đà Nẵng, KIN Estates Đà Nẵng, kinestatesdanang";
+      "thuê căn hộ Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, thuê biệt thự Đà Nẵng, mua bán căn hộ Đà Nẵng, KIN Estates Đà Nẵng, kinestatesdanang";
 
     if (activeApt) {
       const rawTitle =
@@ -840,42 +1013,46 @@ export const App: React.FC = () => {
           ? `Cho thuê căn hộ tại ${activeApt.areaName || "Đà Nẵng"} (${activeApt.bedrooms ?? 1}PN · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`
           : `For rent in ${activeApt.areaName || "Da Nang"} (${activeApt.bedrooms ?? 1}BR · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`;
       pageKeywords = `${rawTitle}, ${activeApt.building || ""}, thuê căn hộ ${activeApt.areaName || "Đà Nẵng"} Đà Nẵng, ${activeApt.code}, KIN Estates, kinestatesdanang`;
+    } else if (activePropSeo) {
+      pageTitle = lang === "vi" ? `${activePropSeo.vi} Đà Nẵng 2026 | KIN Estates` : `${activePropSeo.en} in Da Nang 2026 | KIN Estates`;
+      pageDesc = lang === "vi" ? activePropSeo.descVi : activePropSeo.descEn;
+      pageKeywords = `${activePropSeo.vi} Đà Nẵng, ${activePropSeo.en} Da Nang, KIN Estates, kinestatesdanang`;
+    } else if (activeGuideSeo) {
+      pageTitle = `${lang === "vi" ? activeGuideSeo.titleVi : activeGuideSeo.titleEn} | KIN Estates`;
+      pageDesc = lang === "vi" ? activeGuideSeo.descVi : activeGuideSeo.descEn;
+      pageKeywords = `${activeGuideSeo.titleVi}, ${activeGuideSeo.titleEn}, KIN Estates Đà Nẵng, kinestatesdanang`;
     } else if (activeAreaSeo) {
       pageTitle =
         lang === "vi"
-          ? `Thuê Căn Hộ ${activeAreaSeo.vi} Đà Nẵng Dài Hạn Giá Tốt | KIN Estates`
-          : `Apartments for Rent in ${activeAreaSeo.en}, Da Nang | KIN Estates`;
+          ? `Thuê Căn Hộ, Nhà & Biệt Thự ${activeAreaSeo.vi} Đà Nẵng | KIN Estates`
+          : `Apartments, Houses & Villas in ${activeAreaSeo.en}, Da Nang | KIN`;
       pageDesc =
         lang === "vi"
-          ? `Cho thuê căn hộ, studio, chung cư & biệt thự ${activeAreaSeo.vi} Đà Nẵng dài hạn (3–12+ tháng) ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ Đặt lịch xem nhà ngay →`
-          : `Verified long-term apartments, studios & villas in ${activeAreaSeo.en}, Da Nang (3–12+ months) ✓ Direct owner pricing ✓ State EVN rates →`;
-      pageKeywords = `thuê căn hộ ${activeAreaSeo.vi} Đà Nẵng, cho thuê nhà ${activeAreaSeo.vi}, apartments for rent ${activeAreaSeo.en} Da Nang, KIN Estates, kinestatesdanang`;
+          ? `Cho thuê căn hộ, studio, chung cư, nhà nguyên căn & biệt thự ${activeAreaSeo.vi} Đà Nẵng dài hạn ✓ Giá trực tiếp chủ nhà ✓ Điện EVN →`
+          : `Verified long-term apartments, studios, houses & villas in ${activeAreaSeo.en}, Da Nang (3–12+ mo) ✓ Direct owner pricing ✓ EVN rates →`;
+      pageKeywords = `thuê căn hộ ${activeAreaSeo.vi} Đà Nẵng, thuê nhà ${activeAreaSeo.vi}, apartments for rent ${activeAreaSeo.en} Da Nang, KIN Estates, kinestatesdanang`;
     } else if (cleanPath === "/apartments") {
       pageTitle =
         lang === "vi"
-          ? "Thuê Chung Cư & Căn Hộ Đà Nẵng Đang Trống | KIN Estates"
+          ? "Thuê Chung Cư, Căn Hộ & Biệt Thự Đà Nẵng | KIN Estates"
           : lang === "ko"
-            ? "다낭 실시간 공실 아파트 매물 리스트 & 가격 지도 | KIN Estates"
+            ? "다낭 실시간 공실 아파트·풀빌라 매물 & 지도 | KIN Estates"
             : lang === "zh"
-              ? "岘港在租公寓房源列表与实时价格地图 | KIN Estates"
+              ? "岘港在租公寓与独栋别墅房源列表及地图 | KIN Estates"
               : lang === "ru"
-                ? "Свободные Квартиры в Дананге — Цены на Карте | KIN Estates"
+                ? "Свободные Квартиры, Дома и Виллы в Дананге | KIN Estates"
                 : lang === "ja"
-                  ? "ダナン空室賃貸物件一覧＆インタラクティブ地図 | KIN Estates"
-                  : "Available Apartments for Rent in Da Nang + Map | KIN Estates";
+                  ? "ダナン空室アパート・ヴィラ一覧＆価格マップ | KIN Estates"
+                  : "Available Apartments, Houses & Villas in Da Nang | KIN Estates";
       pageDesc =
         lang === "vi"
-          ? "Danh sách căn hộ cho thuê Đà Nẵng cập nhật thực tế ✓ Lọc nhanh 19 khu vực (An Thượng, Mỹ Khê, Sơn Trà, Hải Châu, Hòa Xuân, Cẩm Lệ), bản đồ giá & ảnh thật →"
-          : "Browse verified available Da Nang apartments & villas with live map pricing across 19 districts (An Thuong, My Khe, Son Tra, Hai Chau, Hoa Xuan) →";
+          ? "Danh sách căn hộ, nhà nguyên căn & biệt thự Đà Nẵng đang trống cập nhật mỗi ngày ✓ Lọc nhanh 19 quận phường, bản đồ giá & ảnh thật →"
+          : "Browse verified available Da Nang apartments, houses & pool villas with live map pricing across 19 districts →";
     } else if (cleanPath === "/areas") {
       pageTitle =
         lang === "vi"
-          ? "19 Khu Vực Thuê Căn Hộ Đà Nẵng Đáng Sống Nhất | KIN Estates"
-          : "Best Neighborhoods to Rent in Da Nang (19 Areas) | KIN Estates";
-      pageDesc =
-        lang === "vi"
-          ? "So sánh giá thuê & nhịp sống 19 khu vực Đà Nẵng: An Thượng, Biển Mỹ Khê, Ven sông Hàn, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê, FPT City."
-          : "Compare Da Nang's top 19 residential districts side by side: An Thuong, My Khe Beach, Han Riverfront, Son Tra, Hai Chau, Hoa Xuan & FPT City →";
+          ? "19 Khu Vực Thuê Căn Hộ & Nhà Đà Nẵng Đáng Sống | KIN Estates"
+          : "19 Best Neighborhoods to Rent in Da Nang | KIN Estates";
     } else if (cleanPath === "/how-to-rent") {
       pageTitle =
         lang === "vi"
@@ -884,8 +1061,8 @@ export const App: React.FC = () => {
     } else if (cleanPath === "/guides") {
       pageTitle =
         lang === "vi"
-          ? "Bảng Giá Thuê Chung Cư Đà Nẵng 2026 & Cẩm Nang | KIN Estates"
-          : "Da Nang Condo Rent Price Index & Living Guide 2026 | KIN";
+          ? "Cẩm Nang Thuê Nhà, Mua Bán & Bảng Giá Đà Nẵng 2026 | KIN"
+          : "Da Nang Rent Price Index, Buying & Living Guides 2026 | KIN";
     } else if (cleanPath === "/about") {
       pageTitle =
         lang === "vi"
@@ -899,19 +1076,20 @@ export const App: React.FC = () => {
     } else if (lang !== "vi") {
       pageTitle =
         lang === "ko"
-          ? "다낭 장기 임대 아파트 & 풀빌라 월세 전문 | KIN Estates 2026"
+          ? "다낭 장기 임대 아파트·풀빌라·단독주택 월세 & 매매 | KIN Estates"
           : lang === "zh"
-            ? "岘港长租公寓与海景别墅出租 — 房东直租 | KIN Estates 2026"
+            ? "岘港长租公寓・海景别墅・整栋房屋出租与买房 | KIN Estates"
             : lang === "ru"
-              ? "Аренда Квартир в Дананге на Долгий Срок | KIN Estates 2026"
+              ? "Аренда Квартир, Домов и Вилл в Дананге | KIN Estates 2026"
               : lang === "ja"
-                ? "ダナン長期賃貸アパート・高級マンション＆ヴィラ | KIN Estates"
-                : "Da Nang Apartments for Rent — Long-Term | KIN Estates 2026";
+                ? "ダナン賃貸アパート・ヴィラ・一軒家＆不動産購入 | KIN Estates"
+                : "Da Nang Apartments, Houses & Villas for Rent | KIN Estates";
       pageDesc =
-        "Verified long-term apartments, studios, condos & pool villas in Da Nang (3–12+ months) ✓ Direct owner rent ✓ State EVN rates ✓ My Khe, An Thuong, Han River →";
+        "Verified long-term apartments, studios, houses, pool villas & condos for rent or sale in Da Nang (3–12+ mo) ✓ Direct owner pricing ✓ 19 districts →";
     }
 
-    const canonicalHref = `${window.location.origin}${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`;
+    const localizedPath = buildLocalizedHref(cleanPath, lang);
+    const canonicalHref = `${window.location.origin}${localizedPath}`;
     document.title = pageTitle;
     document.documentElement.lang = lang;
 
@@ -937,7 +1115,7 @@ export const App: React.FC = () => {
 
     trackGaEvent("page_view", {
       page_title: pageTitle,
-      page_path: `${cleanPath}${lang !== "vi" ? `?lang=${lang}` : ""}`,
+      page_path: localizedPath,
       page_location: window.location.href,
       language: lang
     });
@@ -1057,13 +1235,16 @@ export const App: React.FC = () => {
     };
   }, [lang]);
 
-  const navigate = (path: string) => {
-    const suffix = lang !== "vi" && !path.includes("?") ? `?lang=${lang}` : "";
-    const target = `${path}${suffix}`;
+  const navigate = (path: string, overrideLang?: Lang) => {
+    const activeL = overrideLang || lang;
+    const [rawPath, rawQuery] = path.split("?");
+    const cleanPath = !rawPath || rawPath === "/" ? "/" : rawPath.replace(/\/+$/, "");
+    const baseHref = buildLocalizedHref(cleanPath, activeL);
+    const target = rawQuery ? `${baseHref}?${rawQuery}` : baseHref;
     if (`${window.location.pathname}${window.location.search}` !== target) {
-      window.history.pushState({ path }, "", target);
+      window.history.pushState({ path: cleanPath, lang: activeL }, "", target);
     }
-    setRoute(path.split("?")[0] || "/");
+    setRoute(cleanPath);
     setMobileMenuOpen(false);
     setBookingFeedback("");
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -1700,7 +1881,15 @@ export const App: React.FC = () => {
     const m = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
     return m ? findSeoAreaBySlug(m[1]) : null;
   }, [route]);
-  const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding);
+  const activePropertyLanding = React.useMemo(() => {
+    const m = route.match(/^\/property\/([a-z0-9-]+)\/?$/i);
+    return m ? SEO_PROPERTY_TYPES.find((p) => p.slug === m[1].toLowerCase()) || null : null;
+  }, [route]);
+  const activeGuideLanding = React.useMemo(() => {
+    const m = route.match(/^\/guides\/([a-z0-9-]+)\/?$/i);
+    return m ? SEO_PILLAR_GUIDES.find((g) => g.slug === m[1].toLowerCase()) || null : null;
+  }, [route]);
+  const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding) || Boolean(activePropertyLanding);
 
   const filteredApartments = React.useMemo(() => {
     let list = [...apartments];
@@ -2401,9 +2590,9 @@ export const App: React.FC = () => {
                       onClick={() => {
                         setLang(item.code);
                         setLangMenuOpen(false);
-                        const nextUrl = item.code === "vi" ? window.location.pathname : `${window.location.pathname}?lang=${item.code}`;
-                        window.history.replaceState({}, "", nextUrl);
-                        trackGaEvent("select_language", { language: item.code, page_path: window.location.pathname });
+                        const nextUrl = buildLocalizedHref(route, item.code);
+                        window.history.pushState({ path: route, lang: item.code }, "", nextUrl);
+                        trackGaEvent("select_language", { language: item.code, page_path: nextUrl });
                       }}
                     >
                       <div>
@@ -3382,36 +3571,61 @@ export const App: React.FC = () => {
           <div className="page-container">
             <div style={{ marginBottom: "1.75rem" }}>
               <span className="eyebrow-badge">
-                {activeAreaLanding
-                  ? tx(
-                      `KHU VỰC ${activeAreaLanding.vi.toUpperCase()} · ĐÀ NẴNG`,
-                      `${activeAreaLanding.en.toUpperCase()} DISTRICT · DA NANG`,
-                      `岘港 · ${trArea(activeAreaLanding.value)}`,
-                      `ДАНАНГ · ${trArea(activeAreaLanding.value)}`,
-                      `다낭 · ${trArea(activeAreaLanding.value)}`,
-                      `ダナン・${trArea(activeAreaLanding.value)}`
-                    )
-                  : tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
+                {activePropertyLanding
+                  ? tx(`${activePropertyLanding.vi.toUpperCase()} · ĐÀ NẴNG`, `${activePropertyLanding.en.toUpperCase()} · DA NANG`)
+                  : activeAreaLanding
+                    ? tx(
+                        `KHU VỰC ${activeAreaLanding.vi.toUpperCase()} · ĐÀ NẴNG`,
+                        `${activeAreaLanding.en.toUpperCase()} DISTRICT · DA NANG`,
+                        `岘港 · ${trArea(activeAreaLanding.value)}`,
+                        `ДАНАНГ · ${trArea(activeAreaLanding.value)}`,
+                        `다낭 · ${trArea(activeAreaLanding.value)}`,
+                        `ダナン・${trArea(activeAreaLanding.value)}`
+                      )
+                    : tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
               </span>
               <h1 className="section-heading-serif">
-                {activeAreaLanding
-                  ? tx(
-                      `Cho thuê căn hộ ${activeAreaLanding.vi}, Đà Nẵng — Giá trực tiếp chủ nhà.`,
-                      `Apartments & Villas for Rent in ${activeAreaLanding.en}, Da Nang.`,
-                      `岘港${trArea(activeAreaLanding.value)}长租公寓与别墅精选。`,
-                      `Долгосрочная аренда квартир — ${trArea(activeAreaLanding.value)}, Дананг.`,
-                      `다낭 ${trArea(activeAreaLanding.value)} 장기 임대 아파트 & 풀빌라.`,
-                      `ダナン・${trArea(activeAreaLanding.value)}の長期賃貸アパート＆ヴィラ。`
-                    )
-                  : tx(
-                      "Cho thuê căn hộ chung cư Đà Nẵng dài hạn — Tổ ấm theo nhịp sống riêng.",
-                      "Long-Term Apartments & Villas in Da Nang — Curated for Your Rhythm.",
-                      "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
-                      "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
-                      "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
-                      "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
-                    )}
+                {activePropertyLanding
+                  ? tx(activePropertyLanding.h1Vi, activePropertyLanding.h1En)
+                  : activeAreaLanding
+                    ? tx(
+                        `Cho thuê căn hộ, nhà & biệt thự ${activeAreaLanding.vi}, Đà Nẵng.`,
+                        `Apartments, Houses & Villas for Rent in ${activeAreaLanding.en}, Da Nang.`,
+                        `岘港${trArea(activeAreaLanding.value)}长租公寓与别墅精选。`,
+                        `Долгосрочная аренда квартир — ${trArea(activeAreaLanding.value)}, Дананг.`,
+                        `다낭 ${trArea(activeAreaLanding.value)} 장기 임대 아파트 & 풀빌라.`,
+                        `ダナン・${trArea(activeAreaLanding.value)}の長期賃貸アパート＆ヴィラ。`
+                      )
+                    : tx(
+                        "Cho thuê căn hộ chung cư, nhà & biệt thự Đà Nẵng — Tổ ấm theo nhịp sống riêng.",
+                        "Long-Term Apartments, Houses & Villas in Da Nang — Curated for Your Rhythm.",
+                        "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
+                        "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
+                        "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
+                        "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
+                      )}
               </h1>
+              {activePropertyLanding?.isBuy && (
+                <div style={{ marginTop: "0.95rem", background: "#14191F", color: "#FFFFFF", borderRadius: "16px", padding: "1.15rem 1.35rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "0.85rem" }}>
+                  <div style={{ maxWidth: "660px", fontSize: "0.88rem", color: "rgba(255,255,255,0.86)", lineHeight: 1.55 }}>
+                    <strong style={{ color: "#F5D9B8", display: "block", marginBottom: "0.2rem" }}>
+                      {tx("Tư vấn Mua bán & Đầu tư BĐS Đà Nẵng (Sổ hồng lâu dài & Suất người nước ngoài SPA)", "Da Nang Property Acquisition & Investment Advisory (Freehold & 30% Foreigner Quota SPA)")}
+                    </strong>
+                    {tx(
+                      "Nhận giỏ hàng chuyển nhượng giá tốt The Filmore, Sun Cosmo Residence, Hiyori, Hòa Xuân, Nam Việt Á kèm phân tích dòng tiền cho thuê 6–9%/năm.",
+                      "Request our private resale shortlist for The Filmore, Sun Cosmo, Hiyori, Hoa Xuan & Nam Viet A with verified 6–9% annual rental yield analysis."
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "0.55rem", flexWrap: "wrap" }}>
+                    <a href="https://zalo.me/0389711601" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--gold" style={{ textDecoration: "none", padding: "0.55rem 1rem", fontSize: "0.8rem" }}>
+                      Zalo 0389 711 601 →
+                    </a>
+                    <a href="https://wa.me/84389711601" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none", padding: "0.55rem 1rem", fontSize: "0.8rem", color: "#fff", borderColor: "rgba(255,255,255,0.35)" }}>
+                      WhatsApp →
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="kin-cat-filter-shell">
@@ -4558,6 +4772,51 @@ export const App: React.FC = () => {
               </p>
             </div>
 
+            <div className="cards-grid" style={{ marginBottom: "2.25rem" }}>
+              {SEO_PILLAR_GUIDES.map((pg, idx) => (
+                <article key={pg.slug} className="guide-editorial-card" style={{ animationDelay: `${idx * 55}ms` }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.65rem" }}>
+                      <span className="eyebrow-badge" style={{ margin: 0 }}>{lang === "vi" ? pg.catVi : pg.catEn}</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)" }}>
+                        0{idx + 1}
+                      </span>
+                    </div>
+                    <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.32rem", marginBottom: "0.55rem", lineHeight: 1.28 }}>
+                      <a
+                        href={buildLocalizedHref(`/guides/${pg.slug}`, lang)}
+                        style={{ color: "inherit", textDecoration: "none" }}
+                        onClick={(e) => {
+                          if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                            e.preventDefault();
+                            navigate(`/guides/${pg.slug}`);
+                          }
+                        }}
+                      >
+                        {lang === "vi" ? pg.titleVi : pg.titleEn}
+                      </a>
+                    </h2>
+                    <p style={{ fontSize: "0.86rem", color: "var(--text-secondary)", marginBottom: "1.15rem" }}>
+                      {lang === "vi" ? pg.descVi : pg.descEn}
+                    </p>
+                  </div>
+                  <a
+                    href={buildLocalizedHref(`/guides/${pg.slug}`, lang)}
+                    style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--accent-bronze-dark)", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                        e.preventDefault();
+                        navigate(`/guides/${pg.slug}`);
+                      }
+                    }}
+                  >
+                    <span>{tx("Đọc cẩm nang chi tiết", "Read Full Guide", "阅读完整指南", "Читать гайд", "전문 가이드 읽기", "詳細ガイドを読む")}</span>
+                    <IconArrowUpRight size={14} />
+                  </a>
+                </article>
+              ))}
+            </div>
+
             <div className="cards-grid" style={{ marginBottom: "3.25rem" }}>
               {GUIDES_DATA.map((g, idx) => (
                 <article
@@ -4749,6 +5008,96 @@ export const App: React.FC = () => {
                   </article>
                 );
               })}
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* ====================================================================
+          PAGE 5B: SEO PILLAR GUIDE ARTICLE (/guides/:slug)
+          ==================================================================== */}
+      {activeGuideLanding && (
+        <main className="page-route">
+          <div className="page-container" style={{ maxWidth: "900px" }}>
+            <div style={{ marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
+              <a
+                href={buildLocalizedHref("/guides", lang)}
+                className="apt-detail-back-btn"
+                style={{ textDecoration: "none" }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    navigate("/guides");
+                  }
+                }}
+              >
+                <span>← {tx("Tất cả cẩm nang", "All Guides", "全部指南", "Все гиды", "전체 가이드", "ガイド一覧")}</span>
+              </a>
+              <span className="eyebrow-badge" style={{ margin: 0 }}>
+                {lang === "vi" ? activeGuideLanding.catVi : activeGuideLanding.catEn}
+              </span>
+            </div>
+
+            <article style={{ background: "#FFFFFF", borderRadius: "24px", padding: "2rem", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)", marginBottom: "2rem" }}>
+              <h1 className="section-heading-serif" style={{ marginBottom: "0.85rem" }}>
+                {lang === "vi" ? activeGuideLanding.titleVi : activeGuideLanding.titleEn}
+              </h1>
+              <p style={{ fontSize: "1rem", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "1.75rem", paddingBottom: "1.25rem", borderBottom: "1px solid var(--border-light)" }}>
+                {lang === "vi" ? activeGuideLanding.descVi : activeGuideLanding.descEn}
+              </p>
+
+              {(lang === "vi" ? activeGuideLanding.sectionsVi : activeGuideLanding.sectionsEn).map((sec, idx) => (
+                <section key={idx} style={{ marginBottom: "1.65rem" }}>
+                  <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.32rem", marginBottom: "0.55rem", color: "var(--text-primary)" }}>
+                    {sec.h2}
+                  </h2>
+                  <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.75, whiteSpace: "pre-line" }}>
+                    {sec.p}
+                  </p>
+                </section>
+              ))}
+
+              <div style={{ marginTop: "2rem", background: "#14191F", color: "#FFFFFF", borderRadius: "18px", padding: "1.35rem 1.5rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+                <div>
+                  <strong style={{ color: "#F5D9B8", display: "block", marginBottom: "0.2rem" }}>
+                    {tx("Cần tư vấn thuê căn hộ, biệt thự hoặc mua bán nhà đất Đà Nẵng?", "Need personal help renting or buying in Da Nang?")}
+                  </strong>
+                  <span style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.8)" }}>
+                    {tx("KIN Estates hỗ trợ 6 ngôn ngữ · Dẫn xem thực tế & Video Call 4K · Giá trực tiếp chủ nhà.", "KIN Estates 6-language advisory · In-person & 4K live tours · Direct owner pricing.")}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "0.55rem", flexWrap: "wrap" }}>
+                  <a href="https://zalo.me/0389711601" target="_blank" rel="noreferrer" className="btn-luxe btn-luxe--gold" style={{ textDecoration: "none", padding: "0.55rem 1rem", fontSize: "0.8rem" }}>
+                    Zalo 0389 711 601 →
+                  </a>
+                  <a href={buildLocalizedHref("/apartments", lang)} className="btn-luxe btn-luxe--outline" style={{ textDecoration: "none", padding: "0.55rem 1rem", fontSize: "0.8rem", color: "#fff", borderColor: "rgba(255,255,255,0.35)" }} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); navigate("/apartments"); } }}>
+                    {tx("Xem kho căn hộ →", "Browse Listings →")}
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.85rem" }}>
+              {SEO_PILLAR_GUIDES.filter((g) => g.slug !== activeGuideLanding.slug).slice(0, 3).map((rel) => (
+                <a
+                  key={rel.slug}
+                  href={buildLocalizedHref(`/guides/${rel.slug}`, lang)}
+                  style={{ textDecoration: "none", background: "#FFFFFF", padding: "1.1rem 1.25rem", borderRadius: "16px", border: "1px solid var(--border-light)", color: "var(--text-primary)", boxShadow: "var(--shadow-soft)" }}
+                  onClick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey) {
+                      e.preventDefault();
+                      navigate(`/guides/${rel.slug}`);
+                    }
+                  }}
+                >
+                  <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--accent-bronze-dark)", marginBottom: "0.35rem" }}>
+                    {lang === "vi" ? rel.catVi : rel.catEn}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.35 }}>
+                    {lang === "vi" ? rel.titleVi : rel.titleEn}
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
         </main>
@@ -5953,16 +6302,37 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Crawlable 19-Area Da Nang Local SEO Directory Strip */}
+        {/* Crawlable Property Types + 19-Area + 6-Language Global SEO Directory Strip */}
         <div className="page-container" style={{ paddingTop: 0, borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-          <div style={{ paddingTop: "1.1rem", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(245,217,184,0.7)", marginBottom: "0.5rem" }}>
-            {tx("CHO THUÊ CĂN HỘ ĐÀ NẴNG THEO KHU VỰC", "DA NANG APARTMENTS BY NEIGHBORHOOD", "按区域浏览岘港公寓", "АРЕНДА ПО РАЙОНАМ ДАНАНГА", "다낭 지역별 임대 아파트", "エリア別ダナン賃貸物件")}
+          <div style={{ paddingTop: "1.1rem", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(245,217,184,0.7)", marginBottom: "0.45rem" }}>
+            {tx("LOẠI HÌNH BẤT ĐỘNG SẢN ĐÀ NẴNG (THUÊ & MUA BÁN)", "DA NANG PROPERTY TYPES (RENT & BUY)", "岘港房源类型（租房与买房）", "ТИПЫ НЕДВИЖИМОСТИ ДАНАНГА", "다낭 매물 유형별 (임대 & 매매)", "ダナン物件タイプ別（賃貸・購入）")}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.75rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.85rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.78)", lineHeight: 1.65, marginBottom: "0.95rem" }}>
+            {SEO_PROPERTY_TYPES.map((pt) => (
+              <a
+                key={pt.slug}
+                href={buildLocalizedHref(`/property/${pt.slug}`, lang)}
+                style={{ color: "inherit", textDecoration: "none" }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    navigate(`/property/${pt.slug}`);
+                  }
+                }}
+              >
+                {lang === "vi" ? pt.vi : pt.en}
+              </a>
+            ))}
+          </div>
+
+          <div style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(245,217,184,0.7)", marginBottom: "0.45rem" }}>
+            {tx("CHO THUÊ CĂN HỘ, NHÀ & BIỆT THỰ THEO 19 KHU VỰC ĐÀ NẴNG", "DA NANG APARTMENTS & VILLAS BY 19 DISTRICTS", "按19大区域浏览岘港房源", "АРЕНДА ПО 19 РАЙОНАМ ДАНАНГА", "다낭 19개 지역별 임대 매물", "ダナン19エリア別物件")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.75rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.68)", lineHeight: 1.6, marginBottom: "0.95rem" }}>
             {SEO_AREA_SLUGS.map((ar) => (
               <a
                 key={ar.slug}
-                href={`/areas/${ar.slug}`}
+                href={buildLocalizedHref(`/areas/${ar.slug}`, lang)}
                 style={{ color: "inherit", textDecoration: "none" }}
                 onClick={(e) => {
                   if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
@@ -5973,6 +6343,26 @@ export const App: React.FC = () => {
                 }}
               >
                 {tx(`Căn hộ ${ar.vi}`, `${ar.en} Rentals`, `${trArea(ar.value)}租房`, trArea(ar.value), `${trArea(ar.value)} 임대`, `${trArea(ar.value)}賃貸`)}
+              </a>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem 0.9rem", fontSize: "0.74rem", color: "rgba(245,217,184,0.72)", paddingTop: "0.65rem", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            <span>🌍 International:</span>
+            {LANGUAGE_LIST.map((l) => (
+              <a
+                key={l.code}
+                href={buildLocalizedHref("/", l.code)}
+                style={{ color: lang === l.code ? "#F5D9B8" : "rgba(255,255,255,0.68)", textDecoration: "none", fontWeight: lang === l.code ? 700 : 500 }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    setLang(l.code);
+                    navigate("/", l.code);
+                  }
+                }}
+              >
+                {l.native}
               </a>
             ))}
           </div>

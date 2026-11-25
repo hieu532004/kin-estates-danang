@@ -1556,16 +1556,17 @@ function loadBaseIndexHtml() {
   return cachedIndexHtml;
 }
 
-// SPA Fallback with Server-Side Dynamic SEO Meta, 6-Language Hreflang, OpenGraph & JSON-LD Injection
+// SPA Fallback with Server-Side Dynamic SEO Meta, 6-Language Sub-Path (/en /ko /zh /ru /ja) Hreflang, OpenGraph & JSON-LD Injection
 app.get("*", async (req, res) => {
   try {
     const baseHtml = loadBaseIndexHtml();
     await ensureInitialized();
     await db.ensureMongoConnection();
     const origin = seoService.getSiteOrigin(req);
-    const lang = seoService.resolveLang(req.query.lang);
-    const pathname = req.path || "/";
-    const aptMatch = pathname.match(/^\/apartments\/([^/]+)\/?$/i);
+    const parsed = seoService.parseLocalizedPath(req.path || "/", req.query.lang);
+    const lang = parsed.lang;
+    const cleanPath = parsed.cleanPath;
+    const aptMatch = cleanPath.match(/^\/apartments\/([^/]+)\/?$/i);
 
     let apartment = null;
     let apartments = [];
@@ -1577,13 +1578,13 @@ app.get("*", async (req, res) => {
       if (found && db.isPublicApartment(found)) {
         apartment = found;
       }
-    } else if (pathname === "/" || /^\/(apartments|areas)(\/|$)/i.test(pathname)) {
+    } else if (cleanPath === "/" || /^\/(apartments|areas|property)(\/|$)/i.test(cleanPath)) {
       apartments = await db.getApartments({ includeHidden: false });
     }
     about = await db.getAboutContent().catch(() => null);
 
-    const seoHead = seoService.buildPageSeoHead({ origin, pathname, lang, apartment, apartments, about });
-    const ssrBody = seoService.buildSsrRootMarkup({ origin, pathname, lang, apartment, apartments, about });
+    const seoHead = seoService.buildPageSeoHead({ origin, pathname: req.path || "/", lang, apartment, apartments, about });
+    const ssrBody = seoService.buildSsrRootMarkup({ origin, pathname: req.path || "/", lang, apartment, apartments, about });
     const html = seoService.injectSeoIntoHtml(baseHtml, seoHead, ssrBody);
     res.set({
       "Content-Type": "text/html; charset=utf-8",
