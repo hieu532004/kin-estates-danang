@@ -107,7 +107,7 @@ async function submitUrlsToIndexNow(rawUrls = [], origin = getEffectiveOrigin())
 }
 
 async function notifyApartmentIndexed(apt) {
-  if (!apt?.code || isSearchPingDisabled()) return;
+  if (!apt?.code || isSearchPingDisabled()) return { ok: true, skipped: true };
   const origin = getEffectiveOrigin();
   const urls = [
     `${origin}/`,
@@ -115,13 +115,33 @@ async function notifyApartmentIndexed(apt) {
     `${origin}/apartments/${encodeURIComponent(apt.code)}`,
     `${origin}/en/apartments/${encodeURIComponent(apt.code)}`,
     `${origin}/sitemap.xml`,
-    `${origin}/rss.xml`
+    `${origin}/rss.xml`,
+    `${origin}/llms.txt`
   ];
-  return submitUrlsToIndexNow(urls, origin);
+  return Promise.race([
+    submitUrlsToIndexNow(urls, origin),
+    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 1800))
+  ]).catch(() => ({ ok: false }));
 }
 
-async function submitAllSiteUrlsToSearchEngines(apartments = []) {
+async function notifyCatalogRefreshed() {
+  if (isSearchPingDisabled()) return { ok: true, skipped: true };
   const origin = getEffectiveOrigin();
+  const urls = [
+    `${origin}/`,
+    `${origin}/apartments`,
+    `${origin}/sitemap.xml`,
+    `${origin}/rss.xml`,
+    `${origin}/llms.txt`
+  ];
+  return Promise.race([
+    submitUrlsToIndexNow(urls, origin),
+    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 1800))
+  ]).catch(() => ({ ok: false }));
+}
+
+async function submitAllSiteUrlsToSearchEngines(apartments = [], explicitOrigin) {
+  const origin = explicitOrigin || getEffectiveOrigin();
   const allUrls = buildCoreSeoUrlList(apartments, origin);
   return submitUrlsToIndexNow(allUrls, origin);
 }
@@ -131,5 +151,6 @@ module.exports = {
   buildCoreSeoUrlList,
   submitUrlsToIndexNow,
   notifyApartmentIndexed,
+  notifyCatalogRefreshed,
   submitAllSiteUrlsToSearchEngines
 };

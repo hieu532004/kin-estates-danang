@@ -320,16 +320,16 @@ function loadJsonStore() {
         apartments: enrichDefaultApartments(
           parsed.apartments && parsed.apartments.length > 0 ? parsed.apartments : initialApartments
         ),
-        leases: parsed.leases && parsed.leases.length > 0 ? parsed.leases : initialDemoLeases,
-        inquiries: parsed.inquiries && parsed.inquiries.length > 0 ? parsed.inquiries : initialDemoInquiries,
+        leases: Array.isArray(parsed.leases) ? parsed.leases : [],
+        inquiries: Array.isArray(parsed.inquiries) ? parsed.inquiries : [],
         settings: { ...store.settings, ...(parsed.settings || {}) }
       };
     } else {
       store.apartments = enrichDefaultApartments(JSON.parse(JSON.stringify(initialApartments)));
       store.buildings = JSON.parse(JSON.stringify(initialBuildings));
       store.neighborhoods = JSON.parse(JSON.stringify(neighborhoods));
-      store.inquiries = JSON.parse(JSON.stringify(initialDemoInquiries));
-      store.leases = JSON.parse(JSON.stringify(initialDemoLeases));
+      store.inquiries = [];
+      store.leases = [];
       saveJsonStore();
     }
   } catch (err) {
@@ -337,8 +337,8 @@ function loadJsonStore() {
     store.apartments = enrichDefaultApartments(JSON.parse(JSON.stringify(initialApartments)));
     store.buildings = JSON.parse(JSON.stringify(initialBuildings));
     store.neighborhoods = JSON.parse(JSON.stringify(neighborhoods));
-    store.inquiries = JSON.parse(JSON.stringify(initialDemoInquiries));
-    store.leases = JSON.parse(JSON.stringify(initialDemoLeases));
+    store.inquiries = [];
+    store.leases = [];
   }
 }
 
@@ -393,13 +393,30 @@ async function initDatabase() {
       const seedDocs = store.apartments.map(({ _id, ...rest }) => rest);
       await ApartmentModel.insertMany(seedDocs);
     }
-    const leaseCount = await LeaseModel.countDocuments();
-    if (leaseCount === 0 && store.leases.length > 0) {
-      await LeaseModel.insertMany(store.leases.map(({ _id, ...rest }) => rest));
-    }
-    const inqCount = await InquiryModel.countDocuments();
-    if (inqCount === 0 && store.inquiries.length > 0) {
-      await InquiryModel.insertMany(store.inquiries.map(({ _id, ...rest }) => rest));
+    // One-time cleanup of legacy auto-reseeded demo leads & demo lease so deleted sample records never reappear
+    try {
+      const metaCol = mongoose.connection.db.collection("site_content");
+      const purged = await metaCol.findOne({ _id: "crm_demo_purge_v1" });
+      if (!purged) {
+        await InquiryModel.deleteMany({ code: { $in: ["KH-1088", "KH-1089"] } });
+        const removedDemoLease = await LeaseModel.findOneAndDelete({
+          code: "HD-2026-01",
+          tenantName: /Lucas Meyer/i
+        }).lean();
+        if (removedDemoLease?.apartmentCode) {
+          await ApartmentModel.updateOne(
+            { code: removedDemoLease.apartmentCode, "currentTenant.leaseCode": "HD-2026-01" },
+            { $set: { status: "Available", currentTenant: null } }
+          );
+        }
+        await metaCol.updateOne(
+          { _id: "crm_demo_purge_v1" },
+          { $set: { purgedAt: new Date().toISOString() } },
+          { upsert: true }
+        );
+      }
+    } catch {
+      // Non-fatal migration check
     }
     console.log(`✓ Connected to ${mongoConnectionMode}`);
   } catch (err) {
@@ -1195,14 +1212,21 @@ function newInquiryCode() {
 }
 
 function inquirySelector(identifier) {
-  const clean = canonicalCode(identifier);
+  const raw = typeof identifier === "string" ? identifier.trim() : String(identifier || "").trim();
+  const clean = canonicalCode(raw);
   const pattern = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const code = { code: new RegExp(`^${pattern}$`, "i") };
-  return mongoose.Types.ObjectId.isValid(clean) ? { $or: [{ _id: clean.toLowerCase() }, code] } : code;
+  return mongoose.Types.ObjectId.isValid(raw) ? { $or: [{ _id: raw.toLowerCase() }, code] } : code;
 }
 
 function inquiryForRead(doc) {
-  return doc && { ...doc, _id: String(doc._id) };
+  if (!doc) return null;
+  return {
+    ...doc,
+    _id: String(doc._id),
+    ...(doc.createdAt instanceof Date ? { createdAt: doc.createdAt.toISOString() } : {}),
+    ...(doc.updatedAt instanceof Date ? { updatedAt: doc.updatedAt.toISOString() } : {})
+  };
 }
 
 function inquiryIndex(identifier) {
@@ -1376,7 +1400,9 @@ async function submitInquiry(payload, { durable = false, requestId, fingerprint 
     }
     try {
       const saved = await InquiryModel.create(id ? { ...docData, _id } : docData);
-      return { inquiry: inquiryForRead(saved.toObject()), replayed: false };
+      const createdInq = inquiryForRead(saved.toObject());
+      store.inquiries = [createdInq, ...(store.inquiries || []).filter((i) => i.code !== createdInq.code)];
+      return { inquiry: createdInq, replayed: false };
     } catch (error) {
       if (error.code === 11000 && id) {
         const previous = inquiryForRead(await InquiryModel.findById(id).lean());
@@ -1406,7 +1432,18 @@ function inquiryPatch(inquiry, updates) {
   const patch = Object.fromEntries(INQUIRY_EDIT_FIELDS.filter((field) =>
     Object.hasOwn(updates, field)).map((field) => [field, updates[field]]));
   if (patch.apartmentCode !== undefined) patch.apartmentCode = canonicalCode(patch.apartmentCode);
-  if (Object.hasOwn(patch, "viewingTime")) patch.viewingTime = newViewingTime(patch.type || inquiry.type, patch.viewingTime);
+  if (Object.hasOwn(patch, "viewingTime")) {
+    const incomingVt = String(patch.viewingTime ?? "").trim();
+    const existingVt = String(inquiry.viewingTime ?? "").trim();
+    if (incomingVt === existingVt && patch.status !== "Viewing_Scheduled") {
+      delete patch.viewingTime;
+    } else if (incomingVt && !normalizeViewingTime(incomingVt) && patch.status !== "Viewing_Scheduled" && inquiry.status !== "Viewing_Scheduled") {
+      // Preserve free-text preferred time notes when status is not locked viewing slot
+      patch.viewingTime = incomingVt.slice(0, 160);
+    } else {
+      patch.viewingTime = newViewingTime(patch.type || inquiry.type, incomingVt);
+    }
+  }
   if ((patch.status === "Viewing_Scheduled" ||
        (Object.hasOwn(patch, "viewingTime") && !patch.status && inquiry.status === "Viewing_Scheduled")) &&
       !normalizeViewingTime(patch.viewingTime ?? inquiry.viewingTime)) {
@@ -1441,15 +1478,23 @@ async function updateInquiry(identifier, updates) {
         patch.viewingSlotKey = slot;
       }
       try {
+        const concurrencyFilter = target.updatedAt
+          ? { _id: target._id, updatedAt: new Date(target.updatedAt) }
+          : { _id: target._id, $or: [{ updatedAt: null }, { updatedAt: { $exists: false } }] };
         const updated = await InquiryModel.findOneAndUpdate(
-          { _id: target._id, updatedAt: target.updatedAt ?? null },
+          concurrencyFilter,
           {
             $set: { ...patch, updatedAt: nextApartmentRevision(target.updatedAt) },
             ...(slotChanged && !slot ? { $unset: { viewingSlotKey: 1 } } : {})
           },
           { new: true, timestamps: false }
         ).lean();
-        if (updated) return inquiryForRead(updated);
+        if (updated) {
+          const formatted = inquiryForRead(updated);
+          const memIdx = inquiryIndex(identifier);
+          if (memIdx >= 0 && store.inquiries) store.inquiries[memIdx] = formatted;
+          return formatted;
+        }
       } catch (error) {
         if (error.code === 11000 && slot) throw viewingSlotConflict();
         throw error;
@@ -1507,6 +1552,9 @@ async function deleteInquiry(identifier) {
     if (!deleted && isReservation(target)) {
       throw reservationError("RESERVATION_ACTION_REQUIRED", "Tải lại yêu cầu và hủy giữ chỗ trước khi xóa.");
     }
+    store.inquiries = (store.inquiries || []).filter(
+      (item) => String(item._id) !== String(target._id) && canonicalCode(item.code) !== canonicalCode(target.code)
+    );
     return inquiryForRead(deleted);
   }
   commitLocalStore({ inquiries: store.inquiries.filter((item) => item !== target) });
@@ -1599,8 +1647,12 @@ async function getLeaseByCodeOrId(identifier) {
   if (!identifier) return null;
   const raw = String(identifier).trim();
   const clean = raw.toUpperCase();
+  const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (isNativeMongoConnected) {
-    const conds = [{ code: clean }, { apartmentCode: clean, status: "Active" }];
+    const conds = [
+      { code: new RegExp(`^${escaped}$`, "i") },
+      { apartmentCode: new RegExp(`^${escaped}$`, "i"), status: "Active" }
+    ];
     if (mongoose.Types.ObjectId.isValid(raw)) conds.push({ _id: raw });
     const doc = await LeaseModel.findOne({ $or: conds }).lean();
     if (doc) return { ...doc, _id: String(doc._id) };
@@ -1624,7 +1676,7 @@ async function createLease(payload) {
   );
 
   const code = String(
-    payload.code || `HD-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`
+    payload.code || `HD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
   ).toUpperCase();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -1659,15 +1711,34 @@ async function createLease(payload) {
 
   if (isNativeMongoConnected) {
     const { _id, ...docData } = lease;
-    await LeaseModel.findOneAndUpdate({ code: lease.code }, docData, { upsert: true, new: true });
+    const savedDoc = await LeaseModel.findOneAndUpdate({ code: lease.code }, docData, { upsert: true, new: true }).lean();
+    if (savedDoc?._id) lease._id = String(savedDoc._id);
   }
 
   store.leases = store.leases || [];
-  const existIdx = store.leases.findIndex((l) => l.code.toUpperCase() === lease.code);
+  const existIdx = store.leases.findIndex((l) => String(l.code || "").toUpperCase() === lease.code);
   if (existIdx >= 0) {
     store.leases[existIdx] = lease;
   } else {
     store.leases.unshift(lease);
+  }
+
+  // If created from a customer inquiry in Studio, automatically mark that customer inquiry as Rented_Closed
+  if (payload.sourceInquiryCode) {
+    try {
+      const srcInq = await getInquiryByCodeOrId(payload.sourceInquiryCode);
+      if (srcInq) {
+        if (isReservation(srcInq) && srcInq.status !== "Confirmed") {
+          if (isNativeMongoConnected) {
+            await InquiryModel.updateOne({ _id: srcInq._id }, { $set: { status: "Confirmed" } });
+          }
+        } else if (!isReservation(srcInq) && srcInq.status !== "Rented_Closed") {
+          await updateInquiry(srcInq.code || srcInq._id, { status: "Rented_Closed" });
+        }
+      }
+    } catch {
+      // Non-blocking customer status sync
+    }
   }
 
   // Automatically sync the linked apartment to Rented status + attach currentTenant + release any active reservationHold
@@ -1726,7 +1797,7 @@ async function updateLease(identifier, updates) {
   };
 
   const idx = (store.leases || []).findIndex(
-    (l) => l.code.toUpperCase() === target.code.toUpperCase() || String(l._id) === String(target._id)
+    (l) => String(l.code || "").toUpperCase() === String(target.code || "").toUpperCase() || String(l._id) === String(target._id)
   );
   if (idx >= 0) {
     store.leases[idx] = merged;
@@ -1734,7 +1805,28 @@ async function updateLease(identifier, updates) {
 
   if (isNativeMongoConnected) {
     const { _id: _stripId, ...mongoPatch } = merged;
-    await LeaseModel.findOneAndUpdate({ code: target.code }, { $set: mongoPatch });
+    const mongoFilter = mongoose.Types.ObjectId.isValid(String(target._id))
+      ? { _id: target._id }
+      : { code: new RegExp(`^${String(target.code || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") };
+    await LeaseModel.findOneAndUpdate(mongoFilter, { $set: mongoPatch });
+  }
+
+  // If lease moved to a different apartmentCode, free the old apartment if no other active lease remains on it
+  if (
+    target.apartmentCode &&
+    merged.apartmentCode &&
+    String(target.apartmentCode).toUpperCase() !== String(merged.apartmentCode).toUpperCase()
+  ) {
+    const remainOnOld = (await getLeases({ status: "Active" })).find(
+      (l) => l.code !== merged.code && String(l.apartmentCode || "").toUpperCase() === String(target.apartmentCode).toUpperCase()
+    );
+    if (!remainOnOld) {
+      await updateApartment(target.apartmentCode, {
+        status: "Available",
+        isVisible: true,
+        currentTenant: null
+      });
+    }
   }
 
   // Sync linked apartment status & currentTenant accurately across Active <-> Ended transitions
@@ -1786,10 +1878,20 @@ async function deleteLease(identifier) {
   if (!target) return null;
 
   store.leases = (store.leases || []).filter(
-    (l) => l.code.toUpperCase() !== target.code.toUpperCase() && String(l._id) !== String(target._id)
+    (l) =>
+      String(l.code || "").toUpperCase() !== String(target.code || "").toUpperCase() &&
+      String(l._id) !== String(target._id)
   );
   if (isNativeMongoConnected) {
-    await LeaseModel.findOneAndDelete({ code: target.code });
+    const delConds = [];
+    if (mongoose.Types.ObjectId.isValid(String(target._id))) delConds.push({ _id: target._id });
+    if (target.code) {
+      const esc = String(target.code).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      delConds.push({ code: new RegExp(`^${esc}$`, "i") });
+    }
+    if (delConds.length) {
+      await LeaseModel.deleteMany({ $or: delConds });
+    }
   }
   if (target.apartmentCode && target.status === "Active") {
     const otherActive = (await getLeases({ status: "Active" })).find(

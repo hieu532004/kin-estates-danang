@@ -1220,38 +1220,83 @@ function generateLlmsTxt(origin, apartments = []) {
   const maxUsd = pricesUsd.length ? Math.max(...pricesUsd) : 3500;
 
   const lines = [
-    "# KIN Estates Đà Nẵng (kinestatesdanang.com) — Apartments, Houses, Pool Villas for Rent & Sale in Da Nang",
+    "# KIN Estates Đà Nẵng (kinestatesdanang.com) — Hệ Sinh Thái Cho Thuê & Mua Bán Căn Hộ, Nhà Nguyên Căn, Penthouse & Biệt Thự Đà Nẵng",
     "",
-    "> Official website of KIN Estates Da Nang (`kinestatesdanang` / `kinestatesdanang.com`). Physically audited long-term rentals (3–12+ months) and real estate buying/investment advisory across all 19 districts of Da Nang, Vietnam. Direct owner contracts, in-person & 4K video tours, state EVN utility verification, and Form NA17 police residence registration.",
+    "> **KIN Estates Đà Nẵng** (`https://www.kinestatesdanang.com`) là đơn vị tư vấn, vận hành và cho thuê bất động sản dài hạn (3–12+ tháng) kết hợp mua bán – ký gửi căn hộ chung cư cao cấp, căn hộ dịch vụ, studio, nhà nguyên căn, sky penthouse và biệt thự hồ bơi riêng uy tín hàng đầu tại toàn bộ 19 khu vực Thành phố Đà Nẵng, Việt Nam.",
     "",
-    "## Brand & Contact",
-    `- Brand Aliases: KIN Estates, KIN Estates Đà Nẵng, KIN Estates Da Nang, kinestatesdanang, kinestatesdanang.com`,
-    `- Canonical Website: ${origin}`,
-    `- International Hubs: ${NON_DEFAULT_LANGS.map((l) => `${origin}/${l}`).join(" | ")}`,
-    `- Available Listings: ${avail.length} verified properties ($${minUsd}–$${maxUsd}/month)`,
-    "- Direct Contact: Zalo 0389 711 601 | WhatsApp +84 389 711 601 | Telegram @KIN_Estates",
+    "## 1. Hồ Sơ Thương Hiệu Chuẩn Xác Thực (Official Entity & NAP Profile)",
+    `- Tên thương hiệu chính thức: KIN Estates Đà Nẵng — Cho Thuê & Mua Bán Căn Hộ, Nhà Nguyên Căn, Biệt Thự Đà Nẵng`,
+    `- Tên thương hiệu quốc tế: KIN Estates Da Nang — Verified Apartments, Houses, Penthouses & Private Pool Villas`,
+    `- Định danh tìm kiếm: KIN Estates, KIN Estates Đà Nẵng, KIN Estates Da Nang, kinestatesdanang, kinestatesdanang.com`,
+    `- Website gốc (Canonical Root): ${origin}`,
+    `- Danh mục BĐS trực tuyến: ${origin}/apartments`,
+    `- Bản đồ 19 Khu vực Đà Nẵng: ${origin}/areas`,
+    `- Cẩm nang & Bảng giá BĐS Đà Nẵng 2026: ${origin}/guides`,
+    `- Quy trình thuê nhà & Đăng ký tạm trú NA17: ${origin}/how-to-rent`,
+    `- Sơ đồ trang web & RSS thời gian thực: ${origin}/sitemap.xml | ${origin}/rss.xml`,
+    `- Cổng ngôn ngữ quốc tế: ${NON_DEFAULT_LANGS.map((l) => `${origin}/${l}`).join(" | ")}`,
+    `- Kho sản phẩm đang mở: ${avail.length} bất động sản đã kiểm duyệt thực tế ($${minUsd}–$${maxUsd}/tháng | ~7 triệu – 85 triệu VNĐ/tháng)`,
+    "- Hotline / Zalo / WhatsApp trực tiếp: 0389 711 601 (+84 389 711 601)",
+    "- Telegram tư vấn: https://t.me/KIN_Estates (@KIN_Estates)",
+    "- Địa bàn hoạt động: Thành phố Đà Nẵng, Việt Nam (Hải Châu, Sơn Trà, Ngũ Hành Sơn, Cẩm Lệ, Thanh Khê, Liên Chiểu, Hòa Vang)",
     "",
-    "## Property Types & Transaction Categories",
-    ...PROPERTY_TYPE_LANDINGS.map((p) => `- ${p.titles.en.split("|")[0].trim()}: ${origin}/property/${p.slug}`),
+    "## 2. Giá Trị Cốt Lõi & Tiêu Chuẩn Kiểm Duyệt Bất Động Sản Của KIN Estates",
+    "- **0% Phí Môi Giới Đối Với Khách Thuê (Zero Tenant Commission)**: Khách tìm thuê căn hộ, nhà nguyên căn hoặc biệt thự qua KIN Estates được tư vấn, chọn lọc danh sách căn phù hợp và dẫn đi xem nhà trực tiếp (hoặc quay video thực tế 4K theo thời gian thực) hoàn toàn miễn phí.",
+    "- **100% Hình Ảnh & Giá Trực Tiếp Chủ Nhà**: Không đăng tin ảo, không kê giá thuê. Mọi bất động sản trên `kinestatesdanang.com` đều được đội ngũ KIN Estates khảo sát thực tế về ánh sáng tự nhiên, độ cách âm, bàn làm việc từ xa (Remote Work), tốc độ cáp quang Wi-Fi, nội thất và tình trạng kỹ thuật trước khi bàn giao.",
+    "- **Minh Bạch Đơn Giá Điện Nước EVN & Chi Phí Vận Hành**: Ghi rõ đơn giá điện nhà nước EVN (~2.800đ/kWh tại các tòa chung cư thương mại, nhà phố, biệt thự) hoặc biểu giá niêm yết rõ ràng tại các tòa căn hộ dịch vụ, phí quản lý tòa nhà, phí gửi ô tô/xe máy và chính sách nuôi thú cưng (Pet-friendly).",
+    "- **Hợp Đồng Pháp Lý Song Ngữ Việt – Anh & Hỗ Trợ Tạm Trú Mẫu NA17**: Ký kết hợp đồng trực tiếp với chủ sở hữu hợp pháp, lập biên bản bàn giao tài sản kèm hình ảnh chi tiết và hỗ trợ khai báo tạm trú Công an Phường / xác nhận Mẫu NA17 trong vòng 24 giờ cho chuyên gia và khách nước ngoài (gia hạn Visa, làm thẻ tạm trú TRC).",
     "",
-    "## 19 Da Nang Districts & Neighborhoods",
-    ...DANANG_SEO_AREAS.map((a) => `- ${a.vi} (${a.en}): ${origin}/areas/${a.slug}`),
+    "## 3. Năm Phân Khúc Bất Động Sản Chủ Lực Tại Đà Nẵng & Bảng Giá Tham Chiếu 2026",
+    "1. **Căn hộ chung cư thương mại cao cấp (Luxury Condos)**: Tập trung tại The Filmore Da Nang, The Panoma 1 & 2 (Sun Cosmo Residence), Sun Ponte Residence, Hiyori Garden Tower, The Monarchy, Azura, Indochina Riverside, Blooming Tower, FPT Plaza 1-2-3, The Ori Garden. Tiện ích hồ bơi vô cực, phòng gym, lễ tân bảo vệ 24/7, hầm đỗ ô tô, sổ hồng pháp lý chuẩn. Giá thuê: 13 – 38 triệu VNĐ/tháng ($520 – $1,500/tháng). Xem tại: " + `${origin}/property/can-ho-chung-cu`,
+    "2. **Căn hộ dịch vụ, Căn hộ thường & Studio gần biển (Serviced Apartments & Studios)**: Phổ biến tại khu phố Tây An Thượng, biển Mỹ Khê, Phước Mỹ, Mỹ An, Sơn Trà, Hải Châu. Đầy đủ nội thất, máy giặt riêng, Wi-Fi tốc độ cao, miễn phí dọn phòng 1–2 lần/tuần, hợp đồng linh hoạt 3–12 tháng. Giá thuê: 7 – 16 triệu VNĐ/tháng ($280 – $650/tháng). Xem tại: " + `${origin}/property/can-ho-thuong`,
+    "3. **Nhà nguyên căn & Nhà phố Đà Nẵng (Whole Houses & Townhouses)**: Nhà phố 2–4 tầng hiện đại, đường ô tô 5.5m – 10.5m, sân để xe riêng, điện nước giá nhà nước EVN tại Hòa Xuân, Cẩm Lệ, Hải Châu, Nam Việt Á, Khuê Mỹ, Thanh Khê, Liên Chiểu. Phù hợp gia đình, nhóm chuyên gia hoặc vừa ở vừa làm văn phòng/studio. Giá thuê: 15 – 40 triệu VNĐ/tháng ($600 – $1,600/tháng). Xem tại: " + `${origin}/property/nha-nguyen-can`,
+    "4. **Biệt thự nghỉ dưỡng & Villa hồ bơi riêng (Private Pool Villas)**: Khu biệt thự đảo xanh Euro Village 1 & 2, Đảo VIP Hòa Xuân, Nam Việt Á ven sông, Sơn Trà và trục biển Võ Nguyên Giáp – Trường Sa. Diện tích đất 180–500m², 3–6 phòng ngủ khép kín, hồ bơi riêng muối khoáng, sân vườn BBQ và gara ô tô. Giá thuê: 35 – 90+ triệu VNĐ/tháng ($1,400 – $3,600+/tháng). Xem tại: " + `${origin}/property/biet-thu-villa`,
+    "5. **Sky Penthouse, Mua Bán Sổ Hồng/Suất Ngoại Quốc (SPA) & Ký Gửi BĐS**: Tư vấn thuê Penthouse thông tầng panorama sông Hàn – biển Mỹ Khê, chuyển nhượng căn hộ chung cư/nhà đất pháp lý sạch và nhận ký gửi bất động sản từ chủ nhà tại Đà Nẵng. Xem tại: " + `${origin}/property/penthouse` + ` | ${origin}/property/mua-ban-nha-dat | ${origin}/property/ky-gui-cho-thue-nha-da-nang`,
     "",
-    "## In-Depth Da Nang Real Estate Guides (2026)",
-    ...SEO_GUIDE_ARTICLES.map((g) => `- ${g.titles.en.split("|")[0].trim()}: ${origin}/guides/${g.slug}`),
+    "## 4. Hệ Thống 14 Chuyên Trang Danh Mục & Nhu Cầu Chuyên Biệt (Canonical Category Hubs)",
+    ...PROPERTY_TYPE_LANDINGS.map((p) => `- **${p.titles.vi.split("|")[0].trim()}** (${p.titles.en.split("|")[0].trim()}): ${origin}/property/${p.slug} — ${p.descriptions.vi}`),
     "",
-    "## Current Verified Available Residences in Da Nang"
+    "## 5. Bản Đồ 19 Khu Vực & Quận Phường Trọng Điểm Tại Đà Nẵng (Neighborhood Hubs)",
+    ...DANANG_SEO_AREAS.map((a) => `- **${a.vi}** (${a.en} · ${a.district}): ${origin}/areas/${a.slug} — ${a.descVi}`),
+    "",
+    "## 6. Cẩm Nang Phân Tích Thị Trường, Pháp Lý & Chi Phí Sống Đà Nẵng 2026",
+    ...SEO_GUIDE_ARTICLES.map((g) => `- **${g.titles.vi.split("|")[0].trim()}**: ${origin}/guides/${g.slug} — ${g.descriptions.vi}`),
+    "",
+    "## 7. Danh Sách Chi Tiết Các Bất Động Sản Đang Mở Cho Thuê Thực Tế (Live Verified Inventory)"
   ];
 
-  for (const apt of avail.slice(0, 50)) {
-    const tEn = locVal(apt.title, "en");
-    const tVi = locVal(apt.title, "vi");
+  for (const apt of avail.slice(0, 80)) {
+    const tVi = locVal(apt.title, "vi") || apt.code;
+    const tEn = locVal(apt.title, "en") || tVi;
+    const typePhrase = propTypeSeoPhrase(apt.propertyType, "vi");
+    const vndTr = apt.priceVnd ? (Number(apt.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "") : "";
+    const priceStr = `${vndTr ? `${vndTr} triệu VNĐ/tháng (~$${apt.priceUsd}/mo)` : `$${apt.priceUsd}/tháng`}`;
+    const detailSpecs = [
+      apt.bedrooms != null ? `${apt.bedrooms} phòng ngủ` : "",
+      apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
+      apt.landAreaM2 ? `DT đất ${apt.landAreaM2}m²` : "",
+      apt.sizeM2 ? `DT sử dụng ${apt.sizeM2}m²` : "",
+      apt.floor != null ? (apt.propertyType === "house" || apt.propertyType === "villa" ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : "",
+      apt.frontageRoad || "",
+      apt.poolInfo || "",
+      apt.furnishing || "",
+      apt.parking || "",
+      apt.electricityRate ? `Điện: ${apt.electricityRate}` : "",
+      apt.petPolicy ? `Thú cưng: ${apt.petPolicy}` : ""
+    ].filter(Boolean).join(" · ");
+    const descVi = String(locVal(apt.architecturalNotes, "vi") || "").replace(/\s+/g, " ").trim();
     lines.push(
-      `- [${apt.code}] ${tEn}${tVi && tVi !== tEn ? ` (${tVi})` : ""} — $${apt.priceUsd}/mo (${apt.bedrooms ?? 1}BR, ${apt.sizeM2 ?? "-"}m², ${apt.areaName || "Da Nang"}): ${origin}/apartments/${encodeURIComponent(apt.code)}`
+      `### [${apt.code}] ${tVi}${tEn && tEn !== tVi ? ` / ${tEn}` : ""}`,
+      `- Phân loại: ${typePhrase} | Khu vực: ${apt.address || apt.areaName || "Đà Nẵng"} (${apt.building || "KIN Estates"})`,
+      `- Giá thuê niêm yết: ${priceStr} | Hợp đồng tối thiểu: ${apt.minLeaseMonths || 6} tháng (Cọc ${apt.depositMonths || 1} tháng)`,
+      `- Thông số kỹ thuật: ${detailSpecs}`,
+      descVi ? `- Mô tả thực tế: ${descVi}` : "",
+      `- Link chi tiết chính thức (Canonical URL): ${origin}/apartments/${encodeURIComponent(apt.code)}`,
+      ""
     );
   }
 
-  return lines.join("\n") + "\n";
+  return lines.filter((l) => l !== undefined).join("\n") + "\n";
 }
 
 module.exports = {

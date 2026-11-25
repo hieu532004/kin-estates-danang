@@ -1432,3 +1432,34 @@ svg {
   text-decoration: none;
   cursor: pointer;
 }
+
+.st-confirm-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 20px 18px 16px;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
+  border: 1px solid var(--border-strong);
+  margin: 0 auto;
+}
+
+.st-confirm-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.st-confirm-msg {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+
+.st-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 8px;
+}

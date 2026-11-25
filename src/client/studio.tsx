@@ -606,77 +606,159 @@ function buildSeoSharePost(apt: Apartment): string {
   const siteOrigin = "https://www.kinestatesdanang.com";
   const canonicalUrl = `${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
   const pt = apt.propertyType || "condo";
+  const catSlug =
+    pt === "house"
+      ? "nha-nguyen-can"
+      : pt === "villa"
+      ? "biet-thu-villa"
+      : pt === "penthouse"
+      ? "penthouse"
+      : pt === "apartment"
+      ? "can-ho-thuong"
+      : "can-ho-chung-cu";
   const headlinePrefix =
     pt === "house"
       ? "🏡 CHO THUÊ NHÀ NGUYÊN CĂN ĐÀ NẴNG"
       : pt === "villa"
       ? "🌴 CHO THUÊ BIỆT THỰ / VILLA HỒ BƠI ĐÀ NẴNG"
       : pt === "penthouse"
-      ? "✨ CHO THUÊ PENTHOUSE ĐÀ NẴNG"
+      ? "✨ CHO THUÊ SKY PENTHOUSE ĐÀ NẴNG"
       : pt === "apartment"
       ? "🏠 CHO THUÊ CĂN HỘ DỊCH VỤ ĐÀ NẴNG"
-      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ ĐÀ NẴNG";
+      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ CAO CẤP ĐÀ NẴNG";
   const vndNum = Number(apt.priceVnd || 0);
   const priceText =
     vndNum >= 1_000_000
-      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu/tháng${apt.priceUsd ? ` (~$${apt.priceUsd})` : ""}`
+      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu VNĐ/tháng${apt.priceUsd ? ` (~$${apt.priceUsd}/tháng)` : ""}`
       : `$${apt.priceUsd || 0}/tháng`;
   const isHouseOrVilla = pt === "house" || pt === "villa";
   const specs = [
     apt.bedrooms != null ? `${apt.bedrooms} phòng ngủ` : "",
-    apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
-    apt.landAreaM2 ? `DT đất ${apt.landAreaM2}m²` : "",
-    apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "DT sàn " : ""}${apt.sizeM2}m²` : "",
-    apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
+    apt.bathrooms != null ? `${apt.bathrooms} phòng tắm (WC)` : "",
+    apt.landAreaM2 ? `Diện tích đất ${apt.landAreaM2}m²` : "",
+    apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "Diện tích sàn " : "Diện tích "}${apt.sizeM2}m²` : "",
+    apt.floor != null ? (isHouseOrVilla ? `Kết cấu ${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
   ]
     .filter(Boolean)
     .join(" · ");
 
   const extraLines = [
-    apt.frontageRoad ? `🛣 Đường/Mặt tiền: ${apt.frontageRoad}` : "",
+    apt.building && apt.building !== "KIN Estates Residence" ? `🏛️ Tòa nhà / Khu dân cư: ${apt.building}` : "",
+    apt.frontageRoad ? `🛣 Đường trước nhà / Mặt tiền: ${apt.frontageRoad}` : "",
     apt.poolInfo ? `🏊 Hồ bơi & Sân vườn: ${apt.poolInfo}` : "",
-    apt.furnishing ? `🛋 Nội thất: ${apt.furnishing}` : "",
-    apt.cleaningService ? `🧹 Dịch vụ: ${apt.cleaningService}` : "",
+    apt.furnishing ? `🛋 Tình trạng nội thất: ${apt.furnishing}` : "",
+    apt.cleaningService ? `🧹 Dịch vụ vận hành: ${apt.cleaningService}` : "",
     apt.managementFee ? `🏢 Phí quản lý: ${apt.managementFee}` : "",
-    apt.parking ? `🚗 Đỗ xe: ${apt.parking}` : "",
-    apt.electricityRate ? `⚡ Điện: ${apt.electricityRate}` : ""
+    apt.parking ? `🚗 Chỗ đỗ xe: ${apt.parking}` : "",
+    `📑 Hợp đồng thuê: Tối thiểu ${apt.minLeaseMonths || 6} tháng · Đặt cọc ${apt.depositMonths || 1} tháng${apt.availableFrom ? ` · Nhận nhà từ: ${apt.availableFrom}` : " · Vào ở ngay"}`,
+    `⚡ Điện & Nước: Điện ${apt.electricityRate || "theo quy định"} · Nước ${apt.waterRate || "nhà nước"}${apt.wifiIncluded !== false ? " · Wi-Fi tốc độ cao" : ""}`,
+    apt.petPolicy ? `🐾 Chính sách thú cưng: ${apt.petPolicy}` : ""
   ].filter(Boolean);
 
   const notes = notesOf(apt).trim();
+  const tagText = Array.isArray(apt.tags) && apt.tags.length ? `✅ Tiện ích nổi bật: ${apt.tags.join(", ")}` : "";
 
   return [
-    `${headlinePrefix} — ${titleOf(apt)}`,
-    `📍 Khu vực: ${apt.address || areaDisplayLabel(apt.areaName)}, Đà Nẵng`,
-    `💰 Giá thuê trực tiếp: ${priceText}`,
-    specs ? `📐 Thông số: ${specs}` : "",
+    `${headlinePrefix} — ${titleOf(apt)} [Mã: ${apt.code}]`,
+    `📍 Vị trí: ${apt.address || areaDisplayLabel(apt.areaName)}, Thành phố Đà Nẵng`,
+    `💰 Giá thuê trực tiếp chủ nhà: ${priceText}`,
+    specs ? `📐 Quy mô & Thông số: ${specs}` : "",
     ...extraLines,
-    notes ? `\n✨ Chi tiết: ${notes}` : "",
+    tagText,
+    notes ? `\n📝 Mô tả thực tế chi tiết:\n${notes}` : "",
     "",
-    `👉 Xem bộ ảnh thực tế, vị trí bản đồ & đặt lịch xem nhà tại Website chính thức:`,
-    `🔗 ${canonicalUrl}`,
+    `🌟 Quyền lợi khi thuê qua KIN Estates Đà Nẵng (kinestatesdanang.com):`,
+    `• Miễn phí 100% phí dịch vụ môi giới, tư vấn chọn lọc & dẫn xem thực tế (hoặc quay video 4K trực tiếp).`,
+    `• Ký hợp đồng song ngữ trực tiếp chủ nhà, kiểm tra kỹ điện nước EVN & hỗ trợ đăng ký tạm trú Công an Phường (Mẫu NA17) cho khách nước ngoài.`,
+    "",
+    `👉 Xem trọn bộ ảnh thực tế, bản đồ định vị & đặt lịch xem căn này tại:`,
+    `🔗 Link chi tiết BĐS: ${canonicalUrl}`,
+    `📂 Xem thêm cùng phân khúc: ${siteOrigin}/property/${catSlug}`,
     `🌐 Kho căn hộ, nhà nguyên căn & biệt thự Đà Nẵng: ${siteOrigin}`,
-    `📞 Hotline / Zalo / WhatsApp: 0389 711 601 (KIN Estates Đà Nẵng)`,
-    `#ThueCanHoDaNang #ThueNhaDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #KINEstates`
+    `📞 Hotline / Zalo / WhatsApp: 0389 711 601 — Telegram: @KIN_Estates`,
+    `#ThueCanHoDaNang #ThueNhaNguyenCanDaNang #ThueBietThuDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #DaNangVilla #KINEstates #kinestatesdanang`
   ]
     .filter((l) => l !== "")
     .join("\n");
 }
 
-function buildNapBacklinkProfile(): string {
+function buildFullAiBacklinkArticle(apartments: Apartment[] = []): string {
+  const siteOrigin = "https://www.kinestatesdanang.com";
+  const avail = (apartments || []).filter((a) => a.isVisible !== false && a.status === "Available");
+  const featuredLines = avail.slice(0, 8).map((apt, idx) => {
+    const vndNum = Number(apt.priceVnd || 0);
+    const priceStr =
+      vndNum >= 1_000_000
+        ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu/tháng (~$${apt.priceUsd})`
+        : `$${apt.priceUsd}/tháng`;
+    const isHouseOrVilla = apt.propertyType === "house" || apt.propertyType === "villa";
+    const specs = [
+      getAptCategoryLabel(apt.propertyType),
+      apt.bedrooms != null ? `${apt.bedrooms}PN` : "",
+      apt.bathrooms != null ? `${apt.bathrooms}WC` : "",
+      apt.landAreaM2 ? `Đất ${apt.landAreaM2}m²` : "",
+      apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "Sàn " : ""}${apt.sizeM2}m²` : "",
+      areaDisplayLabel(apt.areaName)
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return `${idx + 1}. [${apt.code}] ${titleOf(apt)} — Giá: ${priceStr} (${specs})\n   🔗 Chi tiết & hình ảnh thực tế: ${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
+  });
+
   return [
-    "🏛️ HỒ SƠ THƯƠNG HIỆU ĐỒNG NHẤT (NAP) — DÙNG TẠO BACKLINK TOP 1 GOOGLE",
-    "• Tên thương hiệu chuẩn: KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà & Biệt Thự Đà Nẵng",
-    "• Tên quốc tế: KIN Estates — Da Nang Apartments, Houses & Pool Villas",
-    "• Website chính thức (Backlink gốc): https://www.kinestatesdanang.com",
-    "• Trang căn hộ & biệt thự: https://www.kinestatesdanang.com/apartments",
-    "• Trang 19 khu vực Đà Nẵng: https://www.kinestatesdanang.com/areas",
-    "• Trang cẩm nang & giá thuê 2026: https://www.kinestatesdanang.com/guides",
-    "• Sitemap nộp Google Search Console: https://www.kinestatesdanang.com/sitemap.xml",
-    "• RSS Feed tự động: https://www.kinestatesdanang.com/rss.xml",
-    "• Hotline / Zalo / WhatsApp: 0389 711 601 (+84 389 711 601)",
-    "• Khu vực hoạt động: Toàn bộ 19 khu vực Thành phố Đà Nẵng, Việt Nam",
-    "• Giới thiệu ngắn (Copy dán vào Bio Fanpage / Google Maps / YouTube / TikTok / LinkedIn / Medium / Batdongsan / Chợ Tốt):",
-    "KIN Estates Đà Nẵng (https://www.kinestatesdanang.com) chuyên cho thuê dài hạn & tư vấn mua bán căn hộ chung cư (The Filmore, The Panoma, Hiyori, Monarchy), căn hộ dịch vụ gần biển Mỹ Khê - An Thượng, nhà nguyên căn và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem nhà thực tế & hỗ trợ đăng ký tạm trú NA17. Liên hệ Zalo/WhatsApp: 0389 711 601."
+    "KIN ESTATES ĐÀ NẴNG (KINESTATESDANANG.COM) — HỆ SINH THÁI CHO THUÊ & MUA BÁN CĂN HỘ CHUNG CƯ, CĂN HỘ DỊCH VỤ, NHÀ NGUYÊN CĂN, PENTHOUSE & BIỆT THỰ HỒ BƠI UY TÍN HÀNG ĐẦU TẠI ĐÀ NẴNG",
+    "",
+    "1. GIỚI THIỆU TỔNG QUAN VỀ THƯƠNG HIỆU KIN ESTATES ĐÀ NẴNG",
+    `KIN Estates Đà Nẵng (Website chính thức: ${siteOrigin}) là đơn vị tư vấn, thẩm định thực tế và kết nối cho thuê bất động sản dài hạn (từ 3 tháng, 6 tháng đến 1–3 năm) song song với tư vấn mua bán, chuyển nhượng và nhận ký gửi nhà đất tại toàn bộ 19 khu vực của Thành phố Đà Nẵng, Việt Nam.`,
+    "",
+    "Khác với các trang rao vặt đại trà thường xuyên xuất hiện tin ảo, ảnh cũ hoặc chênh lệch giá, toàn bộ giỏ hàng bất động sản trên hệ thống KIN Estates Đà Nẵng đều được kiểm duyệt trực tiếp tại hiện trường trước khi niêm yết công khai:",
+    "• Miễn phí 100% dịch vụ tư vấn, lập danh sách chọn lọc (Curated Shortlist) và dẫn khách đi xem nhà trực tiếp (hoặc quay video thực tế 4K theo thời gian thực cho khách ở xa).",
+    "• Giá thuê và giá bán làm việc trực tiếp với chính chủ, tuyệt đối không kê giá, điều khoản đặt cọc và thanh toán minh bạch.",
+    "• Kiểm tra kỹ lưỡng các tiêu chí sống dài hạn: ánh sáng tự nhiên, độ cách âm, bàn làm việc từ xa (Remote Work), tốc độ Internet cáp quang, tình trạng nội thất – thiết bị điện tử và chỗ đỗ ô tô/xe máy.",
+    "• Rõ ràng đơn giá điện nước ngay từ đầu: ưu tiên các căn hộ chung cư thương mại, nhà nguyên căn và biệt thự áp dụng biểu giá điện nhà nước EVN (~2.800đ/kWh), công khai minh bạch phí quản lý tòa nhà và dịch vụ dọn phòng.",
+    "• Hỗ trợ trọn gói hợp đồng pháp lý song ngữ Việt – Anh, lập biên bản bàn giao tài sản kèm hình ảnh đối chiếu và hỗ trợ khai báo tạm trú Công an Phường / xin giấy xác nhận tạm trú Mẫu NA17 trong 24 giờ cho chuyên gia và người nước ngoài (phục vụ gia hạn Visa, thẻ tạm trú TRC, mở tài khoản ngân hàng).",
+    "",
+    "2. NĂM PHÂN KHÚC BẤT ĐỘNG SẢN CHỦ LỰC & BẢNG GIÁ THAM CHIẾU ĐÀ NẴNG 2026",
+    `🏢 Phân khúc 1 — Cho thuê Căn hộ chung cư cao cấp Đà Nẵng (${siteOrigin}/property/can-ho-chung-cu):`,
+    "Tập trung tại các tòa tháp biểu tượng ven sông Hàn và ven biển Mỹ Khê như The Filmore Da Nang, The Panoma 1 & 2 (Sun Cosmo Residence), Sun Ponte Residence, Hiyori Garden Tower, The Monarchy, Azura, Indochina Riverside Towers, Blooming Tower, FPT Plaza 1–2–3 và The Ori Garden. Đầy đủ tiện ích nội khu chuẩn 5 sao: hồ bơi vô cực, phòng Gym, sảnh lễ tân bảo vệ 24/7, thẻ từ thang máy phân tầng và hầm đỗ xe ô tô. Mức giá thuê tham khảo: từ 13 triệu – 38 triệu VNĐ/tháng ($520 – $1,500/tháng).",
+    "",
+    `🏠 Phân khúc 2 — Cho thuê Căn hộ dịch vụ, Căn hộ thường & Studio gần biển (${siteOrigin}/property/can-ho-thuong | ${siteOrigin}/property/studio):`,
+    "Tập trung dày đặc tại khu phố quốc tế An Thượng, biển Mỹ Khê, Phước Mỹ, Mỹ An, Sơn Trà và trung tâm Hải Châu — chỉ vài phút đi bộ ra bãi biển. Căn hộ trang bị sẵn đầy đủ nội thất hiện đại, máy giặt riêng trong phòng, ban công thoáng mát, miễn phí Wi-Fi tốc độ cao và dọn vệ sinh định kỳ 1–2 lần/tuần. Mức giá thuê tham khảo: từ 7 triệu – 16 triệu VNĐ/tháng ($280 – $650/tháng).",
+    "",
+    `🏡 Phân khúc 3 — Cho thuê Nhà nguyên căn & Nhà phố Đà Nẵng (${siteOrigin}/property/nha-nguyen-can):`,
+    "Nhà phố 2–4 tầng kiên cố, kiệt rộng hoặc mặt tiền đường quy hoạch 5.5m – 7.5m – 10.5m có vỉa hè đỗ ô tô tại Hải Châu, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Khuê Mỹ, Thanh Khê và Liên Chiểu. Không gian riêng tư độc lập, diện tích sàn rộng từ 120m² – 320m², từ 2–5 phòng ngủ, tính điện nước trực tiếp theo hóa đơn nhà nước EVN — lý tưởng cho gia đình, nhóm chuyên gia hoặc kết hợp làm văn phòng đại diện, studio sáng tạo. Mức giá thuê tham khảo: từ 15 triệu – 40 triệu VNĐ/tháng ($600 – $1,600/tháng).",
+    "",
+    `🌴 Phân khúc 4 — Cho thuê Biệt thự nghỉ dưỡng & Villa hồ bơi riêng (${siteOrigin}/property/biet-thu-villa):`,
+    "Tuyển chọn các căn biệt thự đơn lập và song lập đẳng cấp tại khu đảo xanh Euro Village 1 & 2, Đảo VIP Hòa Xuân, Khu biệt thự Nam Việt Á ven sông Hàn, bán đảo Sơn Trà và trục đường biển Võ Nguyên Giáp – Trường Sa (Ngũ Hành Sơn). Diện tích đất 180m² – 500m², hồ bơi riêng công nghệ muối khoáng, sân vườn BBQ xanh mát, gara ô tô trong khuôn viên và khu dân cư an ninh biệt lập. Mức giá thuê tham khảo: từ 35 triệu – 90+ triệu VNĐ/tháng ($1,400 – $3,600+/tháng).",
+    "",
+    `✨ Phân khúc 5 — Sky Penthouse, Mua bán Nhà đất Sổ hồng/Suất ngoại quốc (SPA) & Nhận Ký Gửi BĐS:`,
+    `• Thuê Penthouse thông tầng tầm nhìn toàn cảnh sông Hàn – Cầu Rồng – biển Mỹ Khê: ${siteOrigin}/property/penthouse`,
+    `• Căn hộ đi bộ ra biển Mỹ Khê: ${siteOrigin}/property/can-ho-gan-bien-my-khe | Căn hộ view sông Hàn: ${siteOrigin}/property/can-ho-view-song-han`,
+    `• Căn hộ & Nhà cho phép nuôi thú cưng (Pet-friendly): ${siteOrigin}/property/can-ho-cho-nuoi-thu-cung`,
+    `• Tư vấn Mua bán & Đầu tư Căn hộ, Nhà phố, Biệt thự Đà Nẵng pháp lý sạch: ${siteOrigin}/property/mua-ban-nha-dat`,
+    `• Dịch vụ Nhận Ký Gửi Cho Thuê & Mua Bán BĐS Đà Nẵng cho Chủ nhà: ${siteOrigin}/property/ky-gui-cho-thue-nha-da-nang`,
+    "",
+    "3. MẠNG LƯỚI PHỦ SÓNG TOÀN BỘ 19 KHU VỰC TRỌNG ĐIỂM TẠI ĐÀ NẴNG",
+    `Hệ thống chuyên trang khu vực của KIN Estates (${siteOrigin}/areas) phân tích chi tiết tiện ích sống, khoảng cách ra biển/sân bay và giỏ hàng thực tế tại cả 19 khu vực Đà Nẵng: Khu phố Tây An Thượng, Biển Mỹ Khê, Ven sông Hàn, Quận Sơn Trà, Quận Hải Châu, Quận Ngũ Hành Sơn, Khu đô thị sinh thái Hòa Xuân, Quận Cẩm Lệ, Khu biệt thự Nam Việt Á, Phường Mỹ An, Phường Phước Mỹ, Phường Khuê Mỹ, Quận Thanh Khê, Quận Liên Chiểu, Hòa Khánh, Khu đô thị công nghệ FPT City / Hòa Hải, Thọ Quang (gần bán đảo Sơn Trà), Thuận Phước và Hòa Vang.`,
+    "",
+    ...(featuredLines.length
+      ? [
+          `4. DANH SÁCH BẤT ĐỘNG SẢN TIÊU BIỂU ĐANG MỞ CHO THUÊ THỰC TẾ (${avail.length} BĐS ĐÃ KIỂM DUYỆT)`,
+          ...featuredLines,
+          ""
+        ]
+      : []),
+    "5. THÔNG TIN LIÊN HỆ CHÍNH THỨC & LIÊN KẾT XÁC THỰC (OFFICIAL NAP & AI CITATION LINKS)",
+    "• Thương hiệu: KIN Estates Đà Nẵng — Cho Thuê & Mua Bán Căn Hộ, Nhà Nguyên Căn, Biệt Thự Đà Nẵng",
+    `• Website chính thức: ${siteOrigin}`,
+    `• Kho căn hộ, nhà & villa trực tuyến: ${siteOrigin}/apartments`,
+    `• Cẩm nang kinh nghiệm thuê nhà & bảng giá Đà Nẵng 2026: ${siteOrigin}/guides`,
+    `• Quy trình thuê nhà & thủ tục tạm trú NA17: ${siteOrigin}/how-to-rent`,
+    `• Hồ sơ dữ liệu chuẩn cho AI (ChatGPT / Perplexity / Gemini / Claude): ${siteOrigin}/llms.txt`,
+    "• Hotline / Zalo / WhatsApp 24/7: 0389 711 601 (+84 389 711 601)",
+    "• Telegram hỗ trợ trực tiếp: https://t.me/KIN_Estates (@KIN_Estates)",
+    "• Địa điểm hoạt động: Thành phố Đà Nẵng, Việt Nam",
+    "#KINEstates #KINEstatesDaNang #kinestatesdanang #ThueCanHoDaNang #ChoThueCanHoDaNang #ThueNhaNguyenCanDaNang #ThueBietThuDaNang #VillaDaNang #MuaBanCanHoDaNang #DaNangApartmentsForRent #DaNangRealEstate"
   ].join("\n");
 }
 
@@ -841,7 +923,16 @@ function StudioApp() {
   const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
   const [bulkAptSaving, setBulkAptSaving] = useState<boolean>(false);
   const [resolvingMap, setResolvingMap] = useState<boolean>(false);
-  const [pingingSeo, setPingingSeo] = useState<boolean>(false);
+  const [backlinkModalOpen, setBacklinkModalOpen] = useState<boolean>(false);
+  const [backlinkDraft, setBacklinkDraft] = useState<string>("");
+  const [leaseSourceLeadCode, setLeaseSourceLeadCode] = useState<string>("");
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    danger?: boolean;
+    resolve: (ok: boolean) => void;
+  } | null>(null);
   const aboutHeroDirtyRef = useRef<boolean>(false);
   const [bulkAptForm, setBulkAptForm] = useState({
     pinAction: "",
@@ -993,6 +1084,17 @@ function StudioApp() {
     window.setTimeout(() => setToast((cur) => (cur === msg ? "" : cur)), 2800);
   };
 
+  const askConfirm = (opts: { title: string; message: string; confirmLabel?: string; danger?: boolean }) =>
+    new Promise<boolean>((resolve) => {
+      setConfirmDialog({
+        title: opts.title,
+        message: opts.message,
+        confirmLabel: opts.confirmLabel || "Xác nhận xóa",
+        danger: opts.danger !== false,
+        resolve
+      });
+    });
+
   const copyToClipboard = async (text: string, okMessage: string) => {
     try {
       if (navigator.clipboard?.writeText) {
@@ -1013,25 +1115,9 @@ function StudioApp() {
     }
   };
 
-  const handlePingSearchEngines = async () => {
-    if (pingingSeo) return;
-    setPingingSeo(true);
-    try {
-      const r = await fetch("/api/studio/seo/ping", {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" })
-      });
-      const data = await r.json();
-      if (data.ok) {
-        showToast(`✓ Đã bắn tín hiệu Index ${data.count || 160}+ trang lên Google WebSub, Bing, ChatGPT & Naver!`);
-      } else {
-        showToast("Đã gửi yêu cầu đồng bộ Sitemap & IndexNow.");
-      }
-    } catch {
-      showToast("Không thể kết nối máy chủ SEO lúc này.");
-    } finally {
-      setPingingSeo(false);
-    }
+  const openBacklinkArticleModal = () => {
+    setBacklinkDraft(buildFullAiBacklinkArticle(report?.apartments || []));
+    setBacklinkModalOpen(true);
   };
 
   const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
@@ -1051,7 +1137,7 @@ function StudioApp() {
       const initData = window.Telegram?.WebApp?.initData;
       if (initData) headers["X-Telegram-Init-Data"] = initData;
 
-      const r = await fetch("/api/studio/report", { headers, cache: "no-store" });
+      const r = await fetch(`/api/studio/report?_t=${Date.now()}`, { headers, cache: "no-store" });
       if (r.status === 403) {
         setAuthed(false);
         return false;
@@ -1472,7 +1558,13 @@ function StudioApp() {
   };
 
   const handleDeleteApt = async (code: string) => {
-    if (!window.confirm(`Xóa vĩnh viễn căn hộ ${code}?`)) return;
+    const ok = await askConfirm({
+      title: `Xóa căn hộ ${code}?`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn bất động sản ${code} khỏi kho và Website?`,
+      confirmLabel: "Xóa vĩnh viễn",
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch(`/api/apartments/${encodeURIComponent(code)}`, {
       method: "DELETE",
       headers: authHeaders()
@@ -1538,7 +1630,13 @@ function StudioApp() {
 
   const handleBulkDeleteApts = async () => {
     if (!selectedApts.length) return;
-    if (!window.confirm(`Xóa vĩnh viễn ${selectedApts.length} căn hộ đã chọn? Thao tác không thể hoàn tác.`)) return;
+    const ok = await askConfirm({
+      title: `Xóa ${selectedApts.length} bất động sản?`,
+      message: `Xóa vĩnh viễn ${selectedApts.length} căn đã chọn khỏi kho và Website? Thao tác không thể hoàn tác.`,
+      confirmLabel: `Xóa ${selectedApts.length} căn`,
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch("/api/studio/apartments/bulk", {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
@@ -1558,9 +1656,15 @@ function StudioApp() {
 
   const handleDeleteMedia = async (item: MediaItem) => {
     const warn = item.usedBy.length
-      ? `Ảnh này đang gắn trên ${item.usedBy.length} căn hộ. Xóa sẽ gỡ ảnh khỏi căn đó và xóa vĩnh viễn trên Cloud?`
-      : "Xóa vĩnh viễn ảnh này khỏi kho Cloud?";
-    if (!window.confirm(warn)) return;
+      ? `Ảnh này đang gắn trên ${item.usedBy.length} căn hộ. Xóa sẽ gỡ ảnh khỏi căn đó và xóa vĩnh viễn trên Cloud.`
+      : "Bạn muốn xóa vĩnh viễn ảnh này khỏi kho Cloud?";
+    const ok = await askConfirm({
+      title: "Xóa ảnh khỏi Cloud?",
+      message: warn,
+      confirmLabel: "Xóa ảnh",
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch(`/api/studio/media/${encodeURIComponent(item.id)}`, {
       method: "DELETE",
       headers: authHeaders()
@@ -1594,6 +1698,13 @@ function StudioApp() {
 
   const openEditLead = (inq: Inquiry) => {
     setEditingLeadId(inq.code || inq._id);
+    const rawVt = String(inq.viewingTime || "").trim();
+    const isoMatch = rawVt.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+    const existingNotes = inq.notes || "";
+    const mergedNotes =
+      !isoMatch && rawVt && !existingNotes.includes(rawVt)
+        ? `${existingNotes ? `${existingNotes}\n` : ""}Khung giờ khách hẹn: ${rawVt}`
+        : existingNotes;
     setLeadForm({
       clientName: inq.clientName || "",
       contactHandle: inq.contactHandle || "",
@@ -1601,11 +1712,11 @@ function StudioApp() {
       apartmentCode: inq.apartmentCode || "CURATED-SHORTLIST",
       type: ["reservation", "booking"].includes(inq.type) ? "reservation" : "viewing",
       status: inq.status || "New",
-      viewingTime: inq.viewingTime ? inq.viewingTime.replace(" ", "T").slice(0, 16) : "",
-      moveInDate: inq.moveInDate || "",
+      viewingTime: isoMatch ? `${isoMatch[1]}T${isoMatch[2]}` : "",
+      moveInDate: /^\d{4}-\d{2}-\d{2}$/.test(String(inq.moveInDate || "").trim()) ? String(inq.moveInDate).trim() : "",
       budgetUsd: inq.budgetUsd || "",
       bedrooms: inq.bedrooms || "",
-      notes: inq.notes || "",
+      notes: mergedNotes,
       adminNotes: inq.adminNotes || ""
     });
     setLeadModalOpen(true);
@@ -1616,10 +1727,52 @@ function StudioApp() {
     if (!leadForm.clientName.trim()) return showToast("Nhập tên khách hàng.");
     setSavingLead(true);
     try {
-      const payload = {
-        ...leadForm,
-        viewingTime: leadForm.viewingTime ? leadForm.viewingTime.replace("T", " ") : ""
-      };
+      const existingLead = editingLeadId
+        ? (report?.inquiries || []).find((x) => (x.code || x._id) === editingLeadId)
+        : null;
+      const isEditingBooking = Boolean(existingLead && ["reservation", "booking"].includes(existingLead.type));
+
+      if (isEditingBooking && editingLeadId) {
+        if (leadForm.status === "Confirmed" && existingLead?.status !== "Confirmed") {
+          const cr = await fetch(`/api/studio/reservations/${encodeURIComponent(editingLeadId)}/confirm`, {
+            method: "POST",
+            headers: authHeaders()
+          });
+          const cj = await cr.json().catch(() => ({}));
+          if (!cr.ok || !cj.ok) throw new Error(cj.error || "Không thể xác nhận giữ chỗ.");
+        } else if (leadForm.status === "Cancelled" && !["Cancelled", "Canceled"].includes(existingLead?.status || "")) {
+          const cr = await fetch(`/api/studio/reservations/${encodeURIComponent(editingLeadId)}/cancel`, {
+            method: "POST",
+            headers: authHeaders()
+          });
+          const cj = await cr.json().catch(() => ({}));
+          if (!cr.ok || !cj.ok) throw new Error(cj.error || "Không thể hủy giữ chỗ.");
+        }
+      }
+
+      const payload: Record<string, any> = isEditingBooking
+        ? {
+            clientName: leadForm.clientName.trim(),
+            contactHandle: leadForm.contactHandle.trim(),
+            messenger: leadForm.messenger,
+            budgetUsd: leadForm.budgetUsd,
+            bedrooms: leadForm.bedrooms,
+            moveInDate: leadForm.moveInDate,
+            notes: leadForm.notes,
+            adminNotes: leadForm.adminNotes,
+            ...(leadForm.viewingTime ? { viewingTime: leadForm.viewingTime.replace("T", " ") } : {})
+          }
+        : {
+            ...leadForm,
+            clientName: leadForm.clientName.trim(),
+            contactHandle: leadForm.contactHandle.trim(),
+            ...(leadForm.viewingTime
+              ? { viewingTime: leadForm.viewingTime.replace("T", " ") }
+              : !editingLeadId
+              ? { viewingTime: "" }
+              : {})
+          };
+
       const url = editingLeadId
         ? `/api/inquiries/${encodeURIComponent(editingLeadId)}`
         : "/api/studio/inquiries";
@@ -1665,18 +1818,36 @@ function StudioApp() {
   };
 
   const handleDeleteLead = async (inq: Inquiry) => {
-    if (!window.confirm(`Xóa khách hàng ${inq.clientName}?`)) return;
-    const r = await fetch(`/api/inquiries/${encodeURIComponent(inq.code || inq._id)}`, {
+    const targetId = inq.code || inq._id;
+    const isConfirmedHold = ["reservation", "booking"].includes(inq.type) && inq.status === "Confirmed";
+    const ok = await askConfirm({
+      title: `Xóa khách hàng ${inq.clientName || targetId}?`,
+      message: isConfirmedHold
+        ? `Khách đang giữ chỗ căn ${inq.apartmentCode}. Xóa sẽ tự động hủy giữ chỗ, mở trống căn hộ và xóa vĩnh viễn yêu cầu này.`
+        : `Xóa vĩnh viễn hồ sơ khách hàng ${inq.clientName || targetId} khỏi cơ sở dữ liệu?`,
+      confirmLabel: "Xóa vĩnh viễn",
+      danger: true
+    });
+    if (!ok) return;
+    const r = await fetch(`/api/inquiries/${encodeURIComponent(targetId)}?force=1`, {
       method: "DELETE",
       headers: authHeaders()
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
       setLeadModalOpen(false);
-      showToast("Đã xóa khách hàng.");
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              inquiries: prev.inquiries.filter((x) => (x.code || x._id) !== targetId && x._id !== inq._id)
+            }
+          : prev
+      );
+      showToast("Đã xóa vĩnh viễn khách hàng.");
       await loadReport();
     } else {
-      showToast(j.error || "Không xóa được.");
+      showToast(j.error || "Không xóa được khách hàng.");
     }
   };
 
@@ -1706,7 +1877,13 @@ function StudioApp() {
 
   const handleBulkDeleteLeads = async () => {
     if (!selectedLeads.length) return;
-    if (!window.confirm(`Xóa ${selectedLeads.length} khách hàng đã chọn?`)) return;
+    const ok = await askConfirm({
+      title: `Xóa ${selectedLeads.length} khách hàng?`,
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn ${selectedLeads.length} khách hàng đã chọn khỏi hệ thống?`,
+      confirmLabel: `Xóa ${selectedLeads.length} khách`,
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch("/api/studio/inquiries/bulk", {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
@@ -1714,9 +1891,18 @@ function StudioApp() {
     });
     const j = await r.json();
     if (r.ok && j.ok) {
+      const removedSet = new Set(selectedLeads);
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              inquiries: prev.inquiries.filter((x) => !removedSet.has(x.code || x._id))
+            }
+          : prev
+      );
       setSelectedLeads([]);
       setLeadSelectMode(false);
-      showToast(`Đã xóa ${j.count} khách hàng.`);
+      showToast(`Đã xóa vĩnh viễn ${j.count} khách hàng.`);
       await loadReport();
     } else {
       showToast(j.error || "Không xóa được.");
@@ -1726,9 +1912,10 @@ function StudioApp() {
   /* ======================= LEASES CRUD ======================= */
   const openCreateLease = (inq?: Inquiry) => {
     setEditingLeaseCode(null);
+    setLeaseSourceLeadCode(inq ? inq.code || inq._id : "");
     const firstAvail = report?.apartments.find((a) => a.status === "Available") || report?.apartments[0];
     const targetApt = inq?.apartmentCode
-      ? report?.apartments.find((a) => a.code === inq.apartmentCode)
+      ? report?.apartments.find((a) => a.code === inq.apartmentCode) || firstAvail
       : firstAvail;
     const vndTr = targetApt?.priceVnd
       ? (targetApt.priceVnd / 1_000_000).toFixed(1).replace(/\.0$/, "")
@@ -1751,7 +1938,8 @@ function StudioApp() {
   };
 
   const openEditLease = (l: Lease) => {
-    setEditingLeaseCode(l.code);
+    setEditingLeaseCode(l.code || l._id);
+    setLeaseSourceLeadCode("");
     const vnd = l.priceVnd || Math.round((l.priceUsd || 0) * RATE_VND);
     setLeaseForm({
       apartmentCode: l.apartmentCode || "",
@@ -1791,7 +1979,8 @@ function StudioApp() {
         startDate: leaseForm.startDate,
         endDate: leaseForm.endDate,
         status: leaseForm.status,
-        notes: leaseForm.notes.trim()
+        notes: leaseForm.notes.trim(),
+        ...(!editingLeaseCode && leaseSourceLeadCode ? { sourceInquiryCode: leaseSourceLeadCode } : {})
       };
       const url = editingLeaseCode ? `/api/leases/${encodeURIComponent(editingLeaseCode)}` : "/api/leases";
       const method = editingLeaseCode ? "PATCH" : "POST";
@@ -1803,6 +1992,7 @@ function StudioApp() {
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được hợp đồng");
       setLeaseModalOpen(false);
+      setLeaseSourceLeadCode("");
       showToast(editingLeaseCode ? "Đã cập nhật hợp đồng!" : "Đã tạo hợp đồng & chuyển căn sang Đã thuê!");
       await loadReport();
     } catch (err: any) {
@@ -1813,27 +2003,55 @@ function StudioApp() {
   };
 
   const handleCheckoutLease = async (lease: Lease) => {
-    if (!window.confirm(`Xác nhận khách ${lease.tenantName} trả phòng ${lease.apartmentCode} và mở trống lại căn hộ?`)) return;
-    const r = await fetch(`/api/leases/${encodeURIComponent(lease.code)}/checkout`, {
+    const lid = lease.code || lease._id;
+    const ok = await askConfirm({
+      title: `Trả phòng ${lease.apartmentCode}?`,
+      message: `Xác nhận khách ${lease.tenantName} trả phòng ${lease.apartmentCode} và mở trống lại căn hộ trên Website?`,
+      confirmLabel: "Xác nhận trả phòng",
+      danger: false
+    });
+    if (!ok) return;
+    const r = await fetch(`/api/leases/${encodeURIComponent(lid)}/checkout`, {
       method: "POST",
       headers: authHeaders()
     });
+    const j = await r.json().catch(() => ({}));
     if (r.ok) {
       showToast(`Đã trả phòng & mở trống căn ${lease.apartmentCode}!`);
       await loadReport();
+    } else {
+      showToast(j.error || "Không thể xử lý trả phòng.");
     }
   };
 
   const handleDeleteLease = async (lease: Lease) => {
-    if (!window.confirm(`Xóa vĩnh viễn hợp đồng ${lease.code} của ${lease.tenantName}?`)) return;
-    const r = await fetch(`/api/leases/${encodeURIComponent(lease.code)}`, {
+    const lid = lease.code || lease._id;
+    const ok = await askConfirm({
+      title: `Xóa hợp đồng ${lease.code || ""}?`,
+      message: `Xóa vĩnh viễn hợp đồng của khách ${lease.tenantName} (${lease.apartmentCode})? Nếu hợp đồng đang hiệu lực, căn hộ sẽ tự động mở trống lại.`,
+      confirmLabel: "Xóa hợp đồng",
+      danger: true
+    });
+    if (!ok) return;
+    const r = await fetch(`/api/leases/${encodeURIComponent(lid)}`, {
       method: "DELETE",
       headers: authHeaders()
     });
+    const j = await r.json().catch(() => ({}));
     if (r.ok) {
       setLeaseModalOpen(false);
-      showToast(`Đã xóa hợp đồng ${lease.code}`);
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              leases: prev.leases.filter((x) => (x.code || x._id) !== lid && x._id !== lease._id)
+            }
+          : prev
+      );
+      showToast(`Đã xóa vĩnh viễn hợp đồng ${lease.code || ""}`);
       await loadReport();
+    } else {
+      showToast(j.error || "Không xóa được hợp đồng.");
     }
   };
 
@@ -1941,7 +2159,13 @@ function StudioApp() {
   };
 
   const handleDeleteTourPhoto = async (id: string) => {
-    if (!window.confirm("Xóa ảnh này khỏi trang About?")) return;
+    const ok = await askConfirm({
+      title: "Xóa ảnh dẫn khách?",
+      message: "Bạn muốn xóa ảnh này khỏi trang Về Chúng Tôi (About)?",
+      confirmLabel: "Xóa ảnh",
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch(`/api/studio/about/photos/${encodeURIComponent(id)}`, {
       method: "DELETE",
       headers: authHeaders()
@@ -2005,7 +2229,13 @@ function StudioApp() {
   };
 
   const handleDeleteFeedback = async (id: string) => {
-    if (!window.confirm("Xóa feedback này khỏi trang About?")) return;
+    const ok = await askConfirm({
+      title: "Xóa đánh giá khách hàng?",
+      message: "Bạn muốn xóa feedback này khỏi trang Về Chúng Tôi (About)?",
+      confirmLabel: "Xóa feedback",
+      danger: true
+    });
+    if (!ok) return;
     const r = await fetch(`/api/studio/about/testimonials/${encodeURIComponent(id)}`, {
       method: "DELETE",
       headers: authHeaders()
@@ -2425,47 +2655,40 @@ function StudioApp() {
               </section>
             )}
 
-            {/* SEO IndexNow + Google WebSub + Backlink Toolkit */}
+            {/* Long-Form Backlink & AI Profile Generator (IndexNow Auto-Push runs silently on every mutation) */}
             <section className="st-card st-seo-panel">
-              <div className="st-card-head" style={{ marginBottom: 8 }}>
+              <div className="st-card-head" style={{ marginBottom: 6 }}>
                 <div>
                   <h2 className="st-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon.Boost size={15} /> Đẩy Top Google, AI &amp; Tạo Backlink Chuẩn SEO
+                    <Icon.Copy size={14} /> Bài Viết Backlink &amp; Hồ Sơ AI Chi Tiết
                   </h2>
                   <div style={{ fontSize: 11.5, color: "var(--text-sub)", marginTop: 2 }}>
-                    Tự động thông báo Google WebSub, Bing, ChatGPT &amp; Naver mỗi khi đăng / sửa / ghim BĐS
+                    Mọi căn mới đăng / sửa / ghim đều tự động đẩy Index ngầm lên Google, Bing &amp; AI 24/7
                   </div>
                 </div>
-                <span className="st-badge st-badge--green">Auto Live</span>
-              </div>
-              <div className="st-seo-pills">
-                <span className="st-seo-pill">✓ 19 Khu vực Đà Nẵng</span>
-                <span className="st-seo-pill">✓ 14 Danh mục BĐS</span>
-                <span className="st-seo-pill">✓ 6 Quốc gia (VI·EN·KO·ZH·RU·JA)</span>
-                <span className="st-seo-pill">✓ Sitemap + RSS + IndexNow</span>
+                <span className="st-badge st-badge--green">Tự động 100%</span>
               </div>
               <div className="st-seo-actions">
                 <button
                   type="button"
                   className="st-btn-mini st-btn-mini--navy"
-                  disabled={pingingSeo}
-                  onClick={handlePingSearchEngines}
+                  onClick={openBacklinkArticleModal}
                 >
-                  <Icon.Boost size={12} />
-                  <span>{pingingSeo ? "Đang bắn tín hiệu Index..." : "⚡ Đẩy Index Google & AI Ngay"}</span>
+                  <Icon.Edit size={12} />
+                  <span>Xem Bài Backlink &amp; AI Đầy Đủ</span>
                 </button>
                 <button
                   type="button"
                   className="st-btn-mini st-btn-mini--bronze"
                   onClick={() =>
                     copyToClipboard(
-                      buildNapBacklinkProfile(),
-                      "✓ Đã copy Hồ sơ Backlink chuẩn (NAP) để dán lên Google Maps, Fanpage, BĐS!"
+                      buildFullAiBacklinkArticle(report.apartments),
+                      "✓ Đã copy trọn bộ bài viết Backlink & Hồ sơ AI chi tiết!"
                     )
                   }
                 >
                   <Icon.Copy size={12} />
-                  <span>Copy Hồ Sơ Backlink (NAP)</span>
+                  <span>Copy Toàn Bộ Bài</span>
                 </button>
               </div>
             </section>
@@ -3086,7 +3309,7 @@ function StudioApp() {
                 const ended = l.status === "Ended";
                 const link = contactHref(l.tenantContact, l.messenger);
                 return (
-                  <article key={l.code} className="st-item-card" style={{ opacity: ended ? 0.68 : 1 }}>
+                  <article key={l.code || l._id} className="st-item-card" style={{ opacity: ended ? 0.68 : 1 }}>
                     <div className="st-item-head">
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>{l.tenantName}</div>
@@ -4229,11 +4452,21 @@ function StudioApp() {
                 <div className="st-field">
                   <label className="st-label">Trạng thái</label>
                   <select className="st-select" value={leadForm.status} onChange={(e) => setLeadForm((p) => ({ ...p, status: e.target.value }))}>
-                    <option value="New">Mới</option>
-                    <option value="Contacted">Đã liên hệ</option>
-                    <option value="Viewing_Scheduled">Đã hẹn xem</option>
-                    <option value="Rented_Closed">Đã chốt thuê</option>
-                    <option value="Cancelled">Đã hủy</option>
+                    {leadForm.type === "reservation" ? (
+                      <>
+                        <option value="Pending">Chờ xác nhận giữ chỗ</option>
+                        <option value="Confirmed">Đang giữ chỗ</option>
+                        <option value="Cancelled">Đã hủy giữ chỗ</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="New">Mới</option>
+                        <option value="Contacted">Đã liên hệ</option>
+                        <option value="Viewing_Scheduled">Đã hẹn xem</option>
+                        <option value="Rented_Closed">Đã chốt thuê</option>
+                        <option value="Archived">Đã lưu trữ</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div className="st-field">
@@ -4292,6 +4525,18 @@ function StudioApp() {
               <button type="submit" className="st-btn st-btn--primary" disabled={savingLead}>
                 {savingLead ? "Đang lưu..." : editingLeadId ? "Lưu Cập Nhật Khách" : "Thêm Khách Hàng"}
               </button>
+              {editingLeadId && (
+                <button
+                  type="button"
+                  className="st-btn st-btn--danger"
+                  onClick={() => {
+                    const found = (report?.inquiries || []).find((x) => (x.code || x._id) === editingLeadId);
+                    if (found) void handleDeleteLead(found);
+                  }}
+                >
+                  <Icon.Trash /> Xóa Vĩnh Viễn Khách Hàng Này
+                </button>
+              )}
             </form>
           </div>
         </div>
@@ -4418,6 +4663,18 @@ function StudioApp() {
               <button type="submit" className="st-btn st-btn--green" disabled={savingLease}>
                 {savingLease ? "Đang lưu..." : editingLeaseCode ? "Lưu Cập Nhật Hợp Đồng" : "Lưu Hợp Đồng & Chuyển Đã Thuê"}
               </button>
+              {editingLeaseCode && (
+                <button
+                  type="button"
+                  className="st-btn st-btn--danger"
+                  onClick={() => {
+                    const found = (report?.leases || []).find((x) => (x.code || x._id) === editingLeaseCode);
+                    if (found) void handleDeleteLease(found);
+                  }}
+                >
+                  <Icon.Trash /> Xóa Vĩnh Viễn Hợp Đồng Này
+                </button>
+              )}
             </form>
           </div>
         </div>
@@ -4636,6 +4893,81 @@ function StudioApp() {
                 {savingFb ? "Đang lưu & dịch 6 ngôn ngữ..." : editingFbId ? "Lưu Cập Nhật Feedback" : "Đăng Feedback Lên Trang About"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 9: LONG-FORM AI & SEO BACKLINK ARTICLE ================= */}
+      {backlinkModalOpen && (
+        <div className="st-modal-backdrop" onClick={() => setBacklinkModalOpen(false)}>
+          <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="st-sheet-head">
+              <h2 className="st-sheet-title">Bài Viết Backlink &amp; Hồ Sơ AI Đầy Đủ</h2>
+              <button type="button" className="st-close-btn" onClick={() => setBacklinkModalOpen(false)}>✕</button>
+            </div>
+            <div className="st-sheet-body">
+              <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.5 }}>
+                Bài viết chuẩn SEO &amp; AI dưới đây đã tự động tổng hợp đầy đủ 5 phân khúc BĐS, 19 khu vực Đà Nẵng, quy trình pháp lý NA17, các căn đang mở cho thuê và trọn bộ Link gốc Canonical. Bạn có thể chỉnh sửa thêm rồi bấm Copy để đăng lên Medium, LinkedIn, Fanpage, Diễn đàn BĐS, Google Sites, Notion...
+              </div>
+              <textarea
+                className="st-textarea"
+                style={{ minHeight: 310, fontSize: 12.2, lineHeight: 1.55 }}
+                value={backlinkDraft}
+                onChange={(e) => setBacklinkDraft(e.target.value)}
+              />
+              <button
+                type="button"
+                className="st-btn st-btn--primary"
+                onClick={() => copyToClipboard(backlinkDraft, "✓ Đã copy toàn bộ bài viết Backlink & Hồ sơ AI chi tiết!")}
+              >
+                <Icon.Copy size={15} /> Copy Toàn Bộ Bài Viết Này
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 10: IN-APP CONFIRMATION DIALOG (WEBVIEW SAFE) ================= */}
+      {confirmDialog && (
+        <div
+          className="st-modal-backdrop"
+          style={{ zIndex: 260, alignItems: "center", padding: 16 }}
+          onClick={() => {
+            const fn = confirmDialog.resolve;
+            setConfirmDialog(null);
+            fn(false);
+          }}
+        >
+          <div
+            className="st-confirm-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="st-confirm-title">{confirmDialog.title}</h3>
+            <p className="st-confirm-msg">{confirmDialog.message}</p>
+            <div className="st-confirm-actions">
+              <button
+                type="button"
+                className="st-btn st-btn--outline"
+                onClick={() => {
+                  const fn = confirmDialog.resolve;
+                  setConfirmDialog(null);
+                  fn(false);
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className={`st-btn ${confirmDialog.danger ? "st-btn--danger" : "st-btn--primary"}`}
+                onClick={() => {
+                  const fn = confirmDialog.resolve;
+                  setConfirmDialog(null);
+                  fn(true);
+                }}
+              >
+                {confirmDialog.confirmLabel}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -29,58 +29,78 @@ function buildTelegramSeoSharePost(apt) {
   const siteOrigin = base.includes(".invalid") ? "https://www.kinestatesdanang.com" : base;
   const canonicalUrl = `${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
   const pt = apt?.propertyType || db.inferPropertyType?.(apt) || "condo";
+  const catSlug =
+    pt === "house"
+      ? "nha-nguyen-can"
+      : pt === "villa"
+      ? "biet-thu-villa"
+      : pt === "penthouse"
+      ? "penthouse"
+      : pt === "apartment"
+      ? "can-ho-thuong"
+      : "can-ho-chung-cu";
   const headlinePrefix =
     pt === "house"
       ? "🏡 CHO THUÊ NHÀ NGUYÊN CĂN ĐÀ NẴNG"
       : pt === "villa"
       ? "🌴 CHO THUÊ BIỆT THỰ / VILLA HỒ BƠI ĐÀ NẴNG"
       : pt === "penthouse"
-      ? "✨ CHO THUÊ PENTHOUSE ĐÀ NẴNG"
+      ? "✨ CHO THUÊ SKY PENTHOUSE ĐÀ NẴNG"
       : pt === "apartment"
       ? "🏠 CHO THUÊ CĂN HỘ DỊCH VỤ ĐÀ NẴNG"
-      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ ĐÀ NẴNG";
+      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ CAO CẤP ĐÀ NẴNG";
   const titleVi = apt.title?.vi || apt.title?.en || apt.code;
   const vndNum = Number(apt.priceVnd || 0);
   const priceText =
     vndNum >= 1_000_000
-      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu/tháng${apt.priceUsd ? ` (~$${apt.priceUsd})` : ""}`
+      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu VNĐ/tháng${apt.priceUsd ? ` (~$${apt.priceUsd}/tháng)` : ""}`
       : `$${apt.priceUsd || 0}/tháng`;
   const isHouseOrVilla = pt === "house" || pt === "villa";
   const specs = [
     apt.bedrooms != null ? `${apt.bedrooms} phòng ngủ` : "",
-    apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
-    apt.landAreaM2 ? `DT đất ${apt.landAreaM2}m²` : "",
-    apt.sizeM2 ? `${isHouseOrVilla && apt.landAreaM2 ? "DT sàn " : ""}${apt.sizeM2}m²` : "",
-    apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
+    apt.bathrooms != null ? `${apt.bathrooms} phòng tắm (WC)` : "",
+    apt.landAreaM2 ? `Diện tích đất ${apt.landAreaM2}m²` : "",
+    apt.sizeM2 ? `${isHouseOrVilla && apt.landAreaM2 ? "Diện tích sàn " : "Diện tích "}${apt.sizeM2}m²` : "",
+    apt.floor != null ? (isHouseOrVilla ? `Kết cấu ${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
   ]
     .filter(Boolean)
     .join(" · ");
 
   const extraLines = [
-    apt.frontageRoad ? `🛣 Đường/Mặt tiền: ${apt.frontageRoad}` : "",
+    apt.building && apt.building !== "KIN Estates Residence" ? `🏛️ Tòa nhà / Khu dân cư: ${apt.building}` : "",
+    apt.frontageRoad ? `🛣 Đường trước nhà / Mặt tiền: ${apt.frontageRoad}` : "",
     apt.poolInfo ? `🏊 Hồ bơi & Sân vườn: ${apt.poolInfo}` : "",
-    apt.furnishing ? `🛋 Nội thất: ${apt.furnishing}` : "",
-    apt.cleaningService ? `🧹 Dịch vụ: ${apt.cleaningService}` : "",
+    apt.furnishing ? `🛋 Tình trạng nội thất: ${apt.furnishing}` : "",
+    apt.cleaningService ? `🧹 Dịch vụ vận hành: ${apt.cleaningService}` : "",
     apt.managementFee ? `🏢 Phí quản lý: ${apt.managementFee}` : "",
-    apt.parking ? `🚗 Đỗ xe: ${apt.parking}` : "",
-    apt.electricityRate ? `⚡ Điện: ${apt.electricityRate}` : ""
+    apt.parking ? `🚗 Chỗ đỗ xe: ${apt.parking}` : "",
+    `📑 Điều kiện hợp đồng: Thuê tối thiểu ${apt.minLeaseMonths || 6} tháng · Đặt cọc ${apt.depositMonths || 1} tháng${apt.availableFrom ? ` · Nhận nhà từ: ${apt.availableFrom}` : " · Vào ở ngay"}`,
+    `⚡ Chi phí điện & nước: Điện ${apt.electricityRate || "theo quy định"} · Nước ${apt.waterRate || "nhà nước"}${apt.wifiIncluded !== false ? " · Wi-Fi tốc độ cao" : ""}`,
+    apt.petPolicy ? `🐾 Chính sách thú cưng: ${apt.petPolicy}` : ""
   ].filter(Boolean);
 
   const notes = String(apt.architecturalNotes?.vi || apt.architecturalNotes?.en || "").trim();
+  const tagText = Array.isArray(apt.tags) && apt.tags.length ? `✅ Tiện ích nổi bật: ${apt.tags.join(", ")}` : "";
 
   return [
-    `${headlinePrefix} — ${titleVi}`,
-    `📍 Khu vực: ${apt.address || apt.areaName || "Đà Nẵng"}`,
-    `💰 Giá thuê trực tiếp: ${priceText}`,
-    specs ? `📐 Thông số: ${specs}` : "",
+    `${headlinePrefix} — ${titleVi} [Mã: ${apt.code}]`,
+    `📍 Vị trí: ${apt.address || apt.areaName || "Đà Nẵng"}, Thành phố Đà Nẵng`,
+    `💰 Giá thuê trực tiếp chủ nhà: ${priceText}`,
+    specs ? `📐 Quy mô & Thông số: ${specs}` : "",
     ...extraLines,
-    notes ? `\n✨ Chi tiết: ${notes}` : "",
+    tagText,
+    notes ? `\n📝 Mô tả thực tế chi tiết:\n${notes}` : "",
     "",
-    `👉 Xem bộ ảnh thực tế, bản đồ & đặt lịch xem nhà tại Website chính thức:`,
-    `🔗 ${canonicalUrl}`,
-    `🌐 Kho căn hộ, nhà & villa Đà Nẵng: ${siteOrigin}`,
-    `📞 Hotline / Zalo / WhatsApp: 0389 711 601 (KIN Estates Đà Nẵng)`,
-    `#ThueCanHoDaNang #ThueNhaDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #KINEstates`
+    `🌟 Cam kết từ KIN Estates Đà Nẵng (kinestatesdanang.com):`,
+    `• Miễn phí 100% dịch vụ tư vấn & dẫn khách đi xem thực tế (hoặc quay video 4K trực tiếp).`,
+    `• Làm việc & ký hợp đồng song ngữ trực tiếp chủ nhà, minh bạch pháp lý và hỗ trợ đăng ký tạm trú Công an Phường (Mẫu NA17) cho khách nước ngoài.`,
+    "",
+    `👉 Xem trọn bộ hình ảnh thực tế, bản đồ định vị & đặt lịch xem căn này tại:`,
+    `🔗 Link chi tiết BĐS: ${canonicalUrl}`,
+    `📂 Xem thêm danh mục cùng phân khúc: ${siteOrigin}/property/${catSlug}`,
+    `🌐 Hệ thống kho căn hộ, nhà nguyên căn & biệt thự Đà Nẵng: ${siteOrigin}`,
+    `📞 Liên hệ trực tiếp (Hotline / Zalo / WhatsApp): 0389 711 601 — Telegram: @KIN_Estates`,
+    `#ThueCanHoDaNang #ThueNhaNguyenCanDaNang #ThueBietThuDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #DaNangVilla #KINEstates #kinestatesdanang`
   ]
     .filter((l) => l !== "")
     .join("\n");
@@ -568,10 +588,9 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower === "/tools") {
     const studioUrl = getStudioWebAppUrl();
     return {
-      reply: "⚙️ Công cụ quản lý & Đẩy Top SEO · Cloud 24/7\n(Dữ liệu tự động cập nhật & bắn Index trực tiếp lên https://www.kinestatesdanang.com)",
+      reply: "⚙️ Công cụ quản lý · Cloud 24/7\n(Mọi BĐS đăng mới / sửa / ghim đều tự động cập nhật lên Web & tự động đẩy Index Google, Bing & AI ngay lập tức)",
       parseMode: null,
       buttons: [
-        [{ text: "⚡ Đẩy Index Google, Bing & AI ngay", callback_data: "/seo_ping" }],
         [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
         [
           ...(studioUrl ? [{ text: "📱 Mở KIN Studio", web_app: { url: studioUrl } }] : []),
@@ -626,8 +645,10 @@ async function processTelegramCommand(rawText, meta = {}) {
     const code = text.split(/\s+/)[1];
     const updated = await db.updateApartment(code, { isPinned: true, pinNow: true });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
-    await sheetsService.pushToGoogleSheetsWebhook("pin_apartment", updated);
-    void indexNowService.notifyApartmentIndexed(updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("pin_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
       reply: `📌 *ĐÃ GHIM ƯU TIÊN ĐẦU WEBSITE & SITEMAP (0.98):*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã được khóa ở vị trí **Nổi bật #1** trên đầu trang chủ, RSS Feed và Sitemap Google!`,
       buttons: getApartmentControlButtons(updated),
@@ -641,8 +662,10 @@ async function processTelegramCommand(rawText, meta = {}) {
     const code = text.split(/\s+/)[1];
     const updated = await db.updateApartment(code, { isPinned: false });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
-    await sheetsService.pushToGoogleSheetsWebhook("unpin_apartment", updated);
-    void indexNowService.notifyApartmentIndexed(updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("unpin_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
       reply: `📍 *ĐÃ BỎ GHIM ƯU TIÊN:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã trở về thứ tự sắp xếp tự nhiên theo thời gian cập nhật.`,
       buttons: getApartmentControlButtons(updated),
@@ -656,10 +679,12 @@ async function processTelegramCommand(rawText, meta = {}) {
     const code = text.split(/\s+/)[1];
     const updated = await db.updateApartment(code, { boostNow: true });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
-    await sheetsService.pushToGoogleSheetsWebhook("boost_apartment", updated);
-    void indexNowService.notifyApartmentIndexed(updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("boost_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
-      reply: `🚀 *ĐÃ ĐẨY LÊN ĐẦU DANH SÁCH & CẬP NHẬT GOOGLE INDEX:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) vừa được làm mới thời gian ưu tiên như căn mới đăng hôm nay!`,
+      reply: `🚀 *ĐÃ ĐẨY LÊN ĐẦU DANH SÁCH & TỰ ĐỘNG CẬP NHẬT INDEX:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) vừa được làm mới thời gian ưu tiên như căn mới đăng hôm nay!`,
       buttons: getApartmentControlButtons(updated),
       mutated: true
     };
@@ -671,7 +696,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     const [, code, nextType] = text.split(/\s+/);
     const updated = await db.updateApartment(code, { propertyType: db.normalizePropertyType(nextType) });
     if (!updated) return { reply: "Không tìm thấy bài đăng.", buttons: getMainMenuButtons() };
-    void indexNowService.notifyApartmentIndexed(updated);
+    await indexNowService.notifyApartmentIndexed(updated);
     return {
       reply: `✅ Đã chuyển *${updated.code}* sang danh mục: *${propTypeLabel(updated)}*`,
       buttons: getApartmentControlButtons(updated),
@@ -885,7 +910,10 @@ async function processTelegramCommand(rawText, meta = {}) {
       recordBotReply(res);
       return res;
     }
-    await sheetsService.pushToGoogleSheetsWebhook("hide_apartment", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("hide_apartment", updated),
+      indexNowService.notifyCatalogRefreshed()
+    ]);
     const res = {
       reply: `🙈 *ĐÃ ẨN CĂN HỘ KHỎI WEBSITE:* Căn *${updated.code}* (_${updated.title?.vi}_) hiện đã được ẩn khỏi trang khách hàng.`,
       buttons: getApartmentControlButtons(updated),
@@ -911,7 +939,10 @@ async function processTelegramCommand(rawText, meta = {}) {
     }
     const nextStatus = target.status === "Hidden" ? "Available" : target.status;
     const updated = await db.updateApartment(code, { isVisible: true, status: nextStatus });
-    await sheetsService.pushToGoogleSheetsWebhook("show_apartment", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("show_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
       reply: `👁️ *ĐÃ HIỆN LẠI CĂN HỘ TRÊN WEBSITE:* Căn *${updated.code}* (_${updated.title?.vi}_) đã hiển thị công khai trên Web (Trạng thái: *${updated.status}*).`,
       buttons: getApartmentControlButtons(updated),
@@ -946,7 +977,10 @@ async function processTelegramCommand(rawText, meta = {}) {
       updates.currentTenant = null;
     }
     const updated = await db.updateApartment(code, updates);
-    await sheetsService.pushToGoogleSheetsWebhook("update_status", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("update_status", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const statusTextVi =
       updated.status === "Available"
         ? "🟢 Đang trống (Hiện trên Web)"
@@ -986,7 +1020,10 @@ async function processTelegramCommand(rawText, meta = {}) {
       recordBotReply(res);
       return res;
     }
-    await sheetsService.pushToGoogleSheetsWebhook("update_price", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("update_price", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
       reply: `💰 *ĐÃ CẬP NHẬT GIÁ THUÊ:* Căn *${updated.code}* hiện có giá *$${updated.priceUsd}/tháng* (~${(updated.priceVnd / 1000000).toFixed(1)} triệu VNĐ).`,
       buttons: getApartmentControlButtons(updated),
@@ -1044,7 +1081,10 @@ async function processTelegramCommand(rawText, meta = {}) {
       recordBotReply(res);
       return res;
     }
-    await sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     const res = {
       reply: `✅ *ĐÃ CẬP NHẬT THÔNG TIN CĂN HỘ [${updated.code}]:*\n• Tên: ${updated.title?.vi}\n• Địa chỉ: ${updated.address}\n• Giá: $${updated.priceUsd}/tháng • ${updated.bedrooms}PN • ${updated.sizeM2}m²`,
       buttons: getApartmentControlButtons(updated),
@@ -1203,10 +1243,29 @@ async function processTelegramCommand(rawText, meta = {}) {
   // Delete Lead (/del_lead <code>)
   if (lower.startsWith("/del_lead ")) {
     const code = text.split(/\s+/)[1];
+    const existing = await db.getInquiryByCodeOrId(code);
+    if (existing && ["reservation", "booking"].includes(existing.type) && existing.status === "Confirmed") {
+      await db.transitionReservation(code, "cancel");
+    }
     await db.deleteInquiry(code);
     const res = {
       reply: `🗑️ Đã xóa yêu cầu khách hàng *${code}*.`,
       buttons: getMainMenuButtons(),
+      mutated: true
+    };
+    recordBotReply(res);
+    return res;
+  }
+
+  // Delete Lease (/del_lease <code>)
+  if (lower.startsWith("/del_lease ")) {
+    const code = text.split(/\s+/)[1];
+    const removed = await db.deleteLease(code);
+    if (!removed) return { reply: `❌ Không tìm thấy hợp đồng *${code}*.`, buttons: getMainMenuButtons() };
+    await indexNowService.notifyCatalogRefreshed();
+    const res = {
+      reply: `🗑️ Đã xóa vĩnh viễn hợp đồng *${removed.code}* (${removed.tenantName}) và cập nhật lại trạng thái căn *${removed.apartmentCode}*.`,
+      buttons: [[{ text: "🔑 Xem DS Hợp đồng", callback_data: "/tenants" }], ...getMainMenuButtons()],
       mutated: true
     };
     recordBotReply(res);
@@ -1307,18 +1366,14 @@ async function processTelegramCommand(rawText, meta = {}) {
 
     const buttons = [];
     leases
-      .filter((l) => l.status !== "Ended")
       .slice(0, 6)
       .forEach((l) => {
+        const lid = l.code || l._id;
         buttons.push([
-          {
-            text: `🔓 Trả phòng & Mở trống ${l.apartmentCode}`,
-            callback_data: `/checkout ${l.apartmentCode}`
-          },
-          {
-            text: `🙈 Ẩn ${l.apartmentCode} khỏi Web`,
-            callback_data: `/hide ${l.apartmentCode}`
-          }
+          ...(l.status !== "Ended"
+            ? [{ text: `🔓 Trả phòng ${l.apartmentCode}`, callback_data: `/checkout ${lid}` }]
+            : []),
+          { text: `🗑️ Xóa HĐ ${lid}`, callback_data: `/del_lease ${lid}` }
         ]);
       });
     buttons.push(...getMainMenuButtons());

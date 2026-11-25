@@ -338,11 +338,13 @@ app.get("/api/apartments/:id", async (req, res) => {
 app.post("/api/apartments", requireAdmin, async (req, res) => {
   try {
     const created = await db.createApartment(req.body);
-    await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("create_apartment", created),
+      indexNowService.notifyApartmentIndexed(created)
+    ]);
     void telegramService.notifyStudioMutationToTelegram?.("create", created);
-    void indexNowService.notifyApartmentIndexed(created);
     autoDeployService.scheduleAutoDeploy("Studio create apartment");
-    res.status(201).json({
+    res.set("Cache-Control", "no-store").status(201).json({
       ok: true,
       apartment: created,
       apartments: await db.getApartments({ includeHidden: true }),
@@ -357,11 +359,13 @@ app.patch("/api/apartments/:id", requireAdmin, async (req, res) => {
   try {
     const updated = await db.updateApartment(req.params.id, req.body);
     if (!updated) return res.status(404).json({ ok: false, error: "Apartment not found" });
-    await sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated),
+      indexNowService.notifyApartmentIndexed(updated)
+    ]);
     void telegramService.notifyStudioMutationToTelegram?.("update", updated);
-    void indexNowService.notifyApartmentIndexed(updated);
     autoDeployService.scheduleAutoDeploy("Studio update apartment");
-    res.json({
+    res.set("Cache-Control", "no-store").json({
       ok: true,
       apartment: updated,
       apartments: await db.getApartments({ includeHidden: true }),
@@ -376,10 +380,13 @@ app.delete("/api/apartments/:id", requireAdmin, async (req, res) => {
   try {
     const deleted = await db.deleteApartment(req.params.id);
     if (!deleted) return res.status(404).json({ ok: false, error: "Apartment not found" });
-    await sheetsService.pushToGoogleSheetsWebhook("delete_apartment", { code: deleted.code });
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("delete_apartment", { code: deleted.code }),
+      indexNowService.notifyCatalogRefreshed()
+    ]);
     void telegramService.notifyStudioMutationToTelegram?.("delete", deleted);
     autoDeployService.scheduleAutoDeploy("Studio delete apartment");
-    res.json({
+    res.set("Cache-Control", "no-store").json({
       ok: true,
       deleted,
       apartments: await db.getApartments({ includeHidden: true }),
@@ -401,6 +408,7 @@ app.get("/api/neighborhoods", (req, res) => {
 
 // 4. Inquiries / Customer Leads / Viewing Schedule / Landlord Submissions CRUD
 app.get("/api/inquiries", requireAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const inquiries = await db.getInquiries(req.query);
   res.json({ ok: true, count: inquiries.length, inquiries });
 });
@@ -441,6 +449,7 @@ app.post("/api/inquiries", inquiryRateLimit, async (req, res) => {
 
 app.patch("/api/inquiries/:id", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const updated = await db.updateInquiry(req.params.id, req.body);
     if (!updated) return res.status(404).json({ ok: false, error: "Inquiry not found" });
     await sheetsService.pushToGoogleSheetsWebhook("update_inquiry", updated);
@@ -452,6 +461,13 @@ app.patch("/api/inquiries/:id", requireAdmin, async (req, res) => {
 
 app.delete("/api/inquiries/:id", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
+    if (req.query.force === "1") {
+      const existing = await db.getInquiryByCodeOrId(req.params.id);
+      if (existing && ["reservation", "booking"].includes(existing.type) && existing.status === "Confirmed") {
+        await db.transitionReservation(req.params.id, "cancel");
+      }
+    }
     const deleted = await db.deleteInquiry(req.params.id);
     if (!deleted) return res.status(404).json({ ok: false, error: "Inquiry not found" });
     res.json({ ok: true, deleted, inquiries: await db.getInquiries() });
@@ -480,14 +496,19 @@ app.post("/api/inquiries/:id/approve-listing", requireAdmin, async (req, res) =>
 
 // 5. Leases / Active Tenants Management (Quản lý khách đang thuê căn nào, thời hạn)
 app.get("/api/leases", requireAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const leases = await db.getLeases(req.query);
   res.json({ ok: true, count: leases.length, leases });
 });
 
 app.post("/api/leases", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const lease = await db.createLease(req.body);
-    await sheetsService.pushToGoogleSheetsWebhook("create_lease", lease);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("create_lease", lease),
+      indexNowService.notifyCatalogRefreshed()
+    ]);
     res.status(201).json({
       ok: true,
       lease,
@@ -502,9 +523,13 @@ app.post("/api/leases", requireAdmin, async (req, res) => {
 
 app.patch("/api/leases/:id", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const updated = await db.updateLease(req.params.id, req.body);
     if (!updated) return res.status(404).json({ ok: false, error: "Lease not found" });
-    await sheetsService.pushToGoogleSheetsWebhook("update_lease", updated);
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("update_lease", updated),
+      indexNowService.notifyCatalogRefreshed()
+    ]);
     res.json({
       ok: true,
       lease: updated,
@@ -519,17 +544,22 @@ app.patch("/api/leases/:id", requireAdmin, async (req, res) => {
 
 app.post("/api/leases/:id/checkout", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const lease = await db.getLeaseByCodeOrId(req.params.id);
     const aptCode = lease ? lease.apartmentCode : req.params.id;
     if (lease) {
-      await db.updateLease(lease.code, { status: "Ended" });
+      await db.updateLease(lease.code || lease._id, { status: "Ended" });
+    } else if (aptCode) {
+      await db.updateApartment(aptCode, {
+        status: "Available",
+        isVisible: true,
+        currentTenant: null
+      });
     }
-    await db.updateApartment(aptCode, {
-      status: "Available",
-      isVisible: true,
-      currentTenant: null
-    });
-    await sheetsService.pushToGoogleSheetsWebhook("checkout_lease", { apartmentCode: aptCode });
+    await Promise.allSettled([
+      sheetsService.pushToGoogleSheetsWebhook("checkout_lease", { apartmentCode: aptCode }),
+      indexNowService.notifyCatalogRefreshed()
+    ]);
     res.json({
       ok: true,
       leases: await db.getLeases(),
@@ -543,8 +573,10 @@ app.post("/api/leases/:id/checkout", requireAdmin, async (req, res) => {
 
 app.delete("/api/leases/:id", requireAdmin, async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const deleted = await db.deleteLease(req.params.id);
     if (!deleted) return res.status(404).json({ ok: false, error: "Lease not found" });
+    await indexNowService.notifyCatalogRefreshed();
     res.json({
       ok: true,
       deleted,
@@ -915,6 +947,7 @@ app.post("/api/studio/auth", studioAuthRateLimit, async (req, res) => {
 });
 
 app.get("/api/studio/report", requireAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   try {
     const [apartments, inquiries, leases, aboutContent] = await Promise.all([
       db.getApartments({ includeHidden: true }),
@@ -1139,6 +1172,9 @@ app.post("/api/studio/apartments/bulk", requireAdmin, async (req, res) => {
           failed.push({ code, error: err.message });
         }
       }
+      if (succeeded.length > 0) {
+        await indexNowService.notifyCatalogRefreshed();
+      }
       return res.json({ ok: true, action: "delete", count: succeeded.length, succeeded, failed });
     }
 
@@ -1200,6 +1236,9 @@ app.post("/api/studio/apartments/bulk", requireAdmin, async (req, res) => {
           failed.push({ code, error: err.message });
         }
       }
+      if (succeeded.length > 0) {
+        await indexNowService.notifyCatalogRefreshed();
+      }
       return res.json({ ok: true, action: "update", count: succeeded.length, succeeded, failed });
     }
 
@@ -1241,6 +1280,7 @@ app.post("/api/studio/inquiries", requireAdmin, async (req, res) => {
 
 // Bulk Customer / Inquiry Update or Delete
 app.post("/api/studio/inquiries/bulk", requireAdmin, async (req, res) => {
+  res.set("Cache-Control", "no-store");
   try {
     const { action, ids, updates } = req.body || {};
     const list = Array.isArray(ids) ? [...new Set(ids.map((id) => String(id || "").trim()).filter(Boolean))] : [];
@@ -1249,14 +1289,23 @@ app.post("/api/studio/inquiries/bulk", requireAdmin, async (req, res) => {
     const succeeded = [];
     const failed = [];
     if (action === "delete") {
+      let releasedHold = false;
       for (const id of list) {
         try {
+          const existing = await db.getInquiryByCodeOrId(id);
+          if (existing && ["reservation", "booking"].includes(existing.type) && existing.status === "Confirmed") {
+            await db.transitionReservation(id, "cancel");
+            releasedHold = true;
+          }
           const removed = await db.deleteInquiry(id);
           if (removed) succeeded.push(id);
           else failed.push({ id, error: "Không tìm thấy." });
         } catch (err) {
           failed.push({ id, error: err.message });
         }
+      }
+      if (releasedHold) {
+        await indexNowService.notifyCatalogRefreshed();
       }
       return res.json({ ok: true, action: "delete", count: succeeded.length, succeeded, failed });
     }
@@ -1645,7 +1694,7 @@ app.get(["/rss.xml", "/feed.xml"], async (req, res) => {
   }
 });
 
-app.get("/llms.txt", async (req, res) => {
+app.get(["/llms.txt", "/llms-full.txt", "/ai.txt"], async (req, res) => {
   try {
     await ensureInitialized();
     await db.ensureMongoConnection();

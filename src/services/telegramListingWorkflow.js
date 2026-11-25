@@ -213,12 +213,10 @@ function applyDetails(session, details) {
 }
 
 async function pushListing(event, apartment) {
-  void indexNowService.notifyApartmentIndexed(apartment);
-  try {
-    await sheets.pushToGoogleSheetsWebhook(event, apartment);
-  } catch {
-    console.warn("Telegram listing saved. Optional Google Sheets sync failed.");
-  }
+  await Promise.allSettled([
+    indexNowService.notifyApartmentIndexed(apartment),
+    sheets.pushToGoogleSheetsWebhook(event, apartment)
+  ]);
 }
 
 function savedListing(apartment, message) {
