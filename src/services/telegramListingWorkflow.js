@@ -177,9 +177,11 @@ function preview(session) {
 }
 
 const fieldNames = {
-  propertyType: "Loại hình", title: "Tên", titleEn: "Tên tiếng Anh", building: "Tòa nhà", areaName: "Khu vực", address: "Địa chỉ", district: "Quận",
-  price: "Giá", bedrooms: "Phòng ngủ", bathrooms: "Phòng tắm", sizeM2: "Diện tích",
-  floor: "Tầng", architecturalNotes: "Mô tả", electricityRate: "Điện", waterRate: "Nước", wifiIncluded: "Wi-Fi",
+  propertyType: "Loại hình", title: "Tên", titleEn: "Tên tiếng Anh", building: "Tòa nhà / Đường", areaName: "Khu vực", address: "Địa chỉ", district: "Quận",
+  price: "Giá", bedrooms: "Phòng ngủ", bathrooms: "Phòng tắm", sizeM2: "Diện tích", landAreaM2: "Diện tích đất",
+  floor: "Tầng / Số tầng", frontageRoad: "Đường trước nhà", furnishing: "Nội thất", cleaningService: "Dọn phòng",
+  managementFee: "Phí quản lý", parking: "Chỗ đỗ xe", poolInfo: "Hồ bơi", isPinned: "Ghim ưu tiên",
+  architecturalNotes: "Mô tả", electricityRate: "Điện", waterRate: "Nước", wifiIncluded: "Wi-Fi",
   availableFrom: "Ngày có thể vào", minLeaseMonths: "Thuê tối thiểu", depositMonths: "Cọc",
   petPolicy: "Thú cưng", orientation: "Hướng", tags: "Tiện ích",
   coordinates: "Ghim bản đồ"

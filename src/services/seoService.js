@@ -371,7 +371,7 @@ function buildLocalBusinessSchema(origin, testimonials = []) {
     currenciesAccepted: "VND, USD",
     paymentAccepted: "Cash, Bank Transfer",
     description:
-      "Chuyên cho thuê và tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi dài hạn tại tất cả 19 khu vực Đà Nẵng. Hỗ trợ 6 ngôn ngữ (Việt, Anh, Trung, Nga, Hàn, Nhật).",
+      "Chuyên cho thuê và tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi dài hạn tại tất cả 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, kiểm định thực tế và hỗ trợ đăng ký tạm trú NA17.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Đà Nẵng",
@@ -903,7 +903,7 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     `<a href="${escapeHtml(localizedUrl(origin, "/about", effectiveLang))}">${effectiveLang === "vi" ? "Về KIN Estates" : "About"}</a> | ${langNavLinks}` +
     `</nav></header>` +
     `<h1>${escapeHtml(heading)}</h1>` +
-    `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang.com)</strong> — ${escapeHtml(effectiveLang === "vi" ? "Chuyên cho thuê dài hạn & tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Hỗ trợ 6 ngôn ngữ (VI · EN · 中文 · RU · KO · JA). Hotline Zalo/WhatsApp: 0389 711 601 · Telegram: @KIN_Estates." : "Premier long-term apartment, house, pool villa rental & real estate buying advisory across all 19 districts of Da Nang, Vietnam. Multilingual 6-language service (VI, EN, ZH, RU, KO, JA). WhatsApp/Zalo: +84 389 711 601 · Telegram: @KIN_Estates.")}</p>` +
+    `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang.com)</strong> — ${escapeHtml(effectiveLang === "vi" ? "Chuyên cho thuê dài hạn & tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem thực tế & hỗ trợ đăng ký tạm trú NA17. Hotline Zalo/WhatsApp: 0389 711 601 · Telegram: @KIN_Estates." : "Premier long-term apartment, house, pool villa rental & real estate buying advisory across all 19 districts of Da Nang, Vietnam. Direct owner pricing, verified inspections & Form NA17 residence registration. WhatsApp/Zalo: +84 389 711 601 · Telegram: @KIN_Estates.")}</p>` +
     (aptLinks ? `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Căn hộ & Biệt thự đang trống tại Đà Nẵng" : "Available Residences in Da Nang")}</h2><ul>${aptLinks}</ul></section>` : "") +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo loại hình (Thuê & Mua bán)" : "Browse by Property Type (Rent & Buy)")}</h2><p>${propNavLinks}</p></section>` +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo 19 khu vực Đà Nẵng" : "Browse 19 Da Nang Neighborhoods")}</h2><p>${areaNavLinks}</p></section>` +
@@ -1062,7 +1062,7 @@ function generateLlmsTxt(origin, apartments = []) {
   const lines = [
     "# KIN Estates Đà Nẵng (kinestatesdanang.com) — Apartments, Houses, Pool Villas for Rent & Sale in Da Nang",
     "",
-    "> Official website of KIN Estates Da Nang (`kinestatesdanang` / `kinestatesdanang.com`). Physically audited long-term rentals (3–12+ months) and real estate buying/investment advisory across all 19 districts of Da Nang, Vietnam. Multilingual support in Vietnamese (/), English (/en), Korean (/ko), Chinese (/zh), Russian (/ru), and Japanese (/ja).",
+    "> Official website of KIN Estates Da Nang (`kinestatesdanang` / `kinestatesdanang.com`). Physically audited long-term rentals (3–12+ months) and real estate buying/investment advisory across all 19 districts of Da Nang, Vietnam. Direct owner contracts, in-person & 4K video tours, state EVN utility verification, and Form NA17 police residence registration.",
     "",
     "## Brand & Contact",
     `- Brand Aliases: KIN Estates, KIN Estates Đà Nẵng, KIN Estates Da Nang, kinestatesdanang, kinestatesdanang.com`,

@@ -31,9 +31,16 @@ export interface Apartment {
   bedrooms: number | null;
   bathrooms?: number | null;
   sizeM2: number | null;
+  landAreaM2?: number | null;
   floor?: number | null;
   availableFrom?: string | null;
   orientation?: string;
+  frontageRoad?: string;
+  furnishing?: string;
+  cleaningService?: string;
+  managementFee?: string;
+  parking?: string;
+  poolInfo?: string;
   minLeaseMonths?: number | null;
   depositMonths?: number | null;
   electricityRate?: string | null;
@@ -44,6 +51,11 @@ export interface Apartment {
   status?: string;
   isVisible?: boolean;
   featured?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: string | null;
+  boostedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   locationAccuracy?: "exact" | "area";
   coordinates?: { lat: number; lng: number } | null;
   architecturalNotes?: Record<string, string> | string;
@@ -1868,11 +1880,35 @@ export const App: React.FC = () => {
     );
   };
 
+  const compareClientApartmentPriority = (a: Apartment, b: Apartment): number => {
+    const statusRank = (s?: string) => (s === "Available" || !s ? 0 : s === "Reserved" ? 1 : s === "Rented" ? 2 : 3);
+    const rankDiff = statusRank(a.status) - statusRank(b.status);
+    if (rankDiff !== 0) return rankDiff;
+    const aPinned = Boolean(a.isPinned) && a.status !== "Rented";
+    const bPinned = Boolean(b.isPinned) && b.status !== "Rented";
+    if (aPinned !== bPinned) return aPinned ? -1 : 1;
+    const ts = (v?: string | null) => {
+      if (!v) return 0;
+      const n = new Date(v).getTime();
+      return Number.isFinite(n) ? n : 0;
+    };
+    if (aPinned && bPinned) {
+      const pinDiff = ts(b.pinnedAt) - ts(a.pinnedAt);
+      if (pinDiff !== 0) return pinDiff;
+    }
+    const aFresh = Math.max(ts(a.boostedAt), ts(a.createdAt));
+    const bFresh = Math.max(ts(b.boostedAt), ts(b.createdAt));
+    return bFresh - aFresh;
+  };
+
   const showcaseUnits = React.useMemo(() => {
-    if (showcaseBldgFilter === "all") return apartments;
-    return apartments.filter((a) =>
-      (a.building || "").toLowerCase().includes(showcaseBldgFilter.toLowerCase())
-    );
+    const base =
+      showcaseBldgFilter === "all"
+        ? [...apartments]
+        : apartments.filter((a) =>
+            (a.building || "").toLowerCase().includes(showcaseBldgFilter.toLowerCase())
+          );
+    return base.sort(compareClientApartmentPriority);
   }, [apartments, showcaseBldgFilter]);
 
   const activeShowcaseAptIdx = Math.max(0, showcaseUnits.findIndex((apt) => apt.code === showcaseAptCode));
@@ -1920,18 +1956,20 @@ export const App: React.FC = () => {
   }, [apartments]);
 
   const homeCatalogueUnits = React.useMemo(() => {
-    if (homeChipFilter === "all") return apartments;
-    if (homeChipFilter === "saved") return apartments.filter((a) => savedCodes.includes(a.code));
-    if (["condo", "apartment", "house", "villa", "penthouse"].includes(homeChipFilter)) {
-      return apartments.filter((a) => (a.propertyType || "condo") === homeChipFilter);
-    }
-    if (homeChipFilter === "1" || homeChipFilter === "2" || homeChipFilter === "3") {
+    let base: Apartment[];
+    if (homeChipFilter === "all") base = [...apartments];
+    else if (homeChipFilter === "saved") base = apartments.filter((a) => savedCodes.includes(a.code));
+    else if (["condo", "apartment", "house", "villa", "penthouse"].includes(homeChipFilter)) {
+      base = apartments.filter((a) => (a.propertyType || "condo") === homeChipFilter);
+    } else if (homeChipFilter === "1" || homeChipFilter === "2" || homeChipFilter === "3") {
       const br = Number(homeChipFilter);
-      return apartments.filter((a) => a.bedrooms != null && (br === 3 ? a.bedrooms >= 3 : a.bedrooms === br));
+      base = apartments.filter((a) => a.bedrooms != null && (br === 3 ? a.bedrooms >= 3 : a.bedrooms === br));
+    } else {
+      base = apartments.filter((a) =>
+        (a.tags || []).some((t) => t.toLowerCase().includes(homeChipFilter.toLowerCase()))
+      );
     }
-    return apartments.filter((a) =>
-      (a.tags || []).some((t) => t.toLowerCase().includes(homeChipFilter.toLowerCase()))
-    );
+    return [...base].sort(compareClientApartmentPriority);
   }, [apartments, homeChipFilter, savedCodes]);
 
   const activeAreaLanding = React.useMemo(() => {
@@ -1994,6 +2032,7 @@ export const App: React.FC = () => {
     if (sort === "price-asc") list.sort((a, b) => a.priceUsd - b.priceUsd);
     else if (sort === "price-desc") list.sort((a, b) => b.priceUsd - a.priceUsd);
     else if (sort === "size-desc") list.sort((a, b) => (b.sizeM2 || 0) - (a.sizeM2 || 0));
+    else list.sort(compareClientApartmentPriority);
     return list;
   }, [apartments, propCategory, area, bedrooms, maxPrice, tag, query, sort, lang]);
 
@@ -2223,6 +2262,7 @@ export const App: React.FC = () => {
 
   // Dedicated Single Apartment Detail Page (/apartments/:code)
   const [fullscreenPhotoOpen, setFullscreenPhotoOpen] = useState<boolean>(false);
+  const [shortlistPolicyAgreed, setShortlistPolicyAgreed] = useState<boolean>(false);
   const detailRouteCode = route.startsWith("/apartments/")
     ? decodeURIComponent(route.replace("/apartments/", "").split("/")[0]).trim()
     : "";
@@ -2327,6 +2367,7 @@ export const App: React.FC = () => {
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>, customApt?: Apartment) => {
     e.preventDefault();
     const form = e.currentTarget;
+    if (!customApt && !shortlistPolicyAgreed) return;
     if (customApt && (!policyAgreed || apartmentInquiryUnavailable || apartmentInquiryPending.current || apartmentInquiryState === "received")) return;
     const fd = new FormData(form);
     const contactVal = String(fd.get("contactHandle") || "").trim();
@@ -2385,6 +2426,7 @@ export const App: React.FC = () => {
         setApartmentInquiryState("received");
       } else {
         form.reset();
+        setShortlistPolicyAgreed(false);
         setBookingFeedback(tx("Đã nhận yêu cầu tìm căn hộ. KIN Estates sẽ liên hệ với bạn.", "Shortlist request received. KIN Estates will contact you.", "已收到选房请求。KIN Estates 将与您联系。", "Заявка на подбор получена. KIN Estates свяжется с вами.", "매물 추천 요청이 접수되었습니다. KIN Estates에서 연락드리겠습니다.", "物件紹介のご依頼を受け付けました。KIN Estates からご連絡します。"));
       }
     } catch {
@@ -2422,6 +2464,8 @@ export const App: React.FC = () => {
     const isSaved = savedCodes.includes(apt.code);
     const isRented = apt.status === "Rented";
     const isReserved = apt.status === "Reserved";
+    const isPinnedTop = Boolean(apt.isPinned) && !isRented;
+    const isHouseOrVilla = apt.propertyType === "house" || apt.propertyType === "villa";
 
     return (
       <article key={apt.code} className="apt-modern-card">
@@ -2433,6 +2477,11 @@ export const App: React.FC = () => {
             />
             <div className="apt-modern-card__top-badges">
               <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                {isPinnedTop && (
+                  <span className="pill-badge-dark" style={{ background: "linear-gradient(135deg, #B8894A 0%, #8C6229 100%)", color: "#FFF", fontWeight: 800 }}>
+                    <span>★ {tx("Nổi bật", "Featured", "精选置顶", "Топ", "추천", "注目")}</span>
+                  </span>
+                )}
                 {isRented ? (
                   <span className="pill-badge-dark" style={{ background: "rgba(155, 28, 28, 0.9)", color: "#FFF" }}>
                     <span className="kin-status-dot kin-status-dot--rented" />
@@ -2500,12 +2549,12 @@ export const App: React.FC = () => {
                 <span>{tx("Phòng ngủ", "Bedrooms", "卧室", "Спальни", "침실", "寝室")}</span>
               </div>
               <div>
-                <strong>{apt.sizeM2 != null ? `${apt.sizeM2} m²` : "—"}</strong>
-                <span>{tx("Diện tích", "Size", "面积", "Площадь", "면적", "広さ")}</span>
+                <strong>{apt.sizeM2 != null ? `${apt.sizeM2} m²` : apt.landAreaM2 != null ? `${apt.landAreaM2} m²` : "—"}</strong>
+                <span>{isHouseOrVilla && apt.landAreaM2 && !apt.sizeM2 ? tx("DT đất", "Land", "土地面积", "Участок", "대지면적", "敷地面積") : tx("Diện tích", "Size", "面积", "Площадь", "면적", "広さ")}</span>
               </div>
               <div>
                 <strong>{apt.floor ?? "—"}</strong>
-                <span>{tx("Độ cao", "Floor", "楼层", "Этаж", "층수", "階数")}</span>
+                <span>{isHouseOrVilla ? tx("Số tầng", "Floors", "楼层数", "Этажей", "층수", "階建て") : tx("Độ cao", "Floor", "楼层", "Этаж", "층수", "階数")}</span>
               </div>
               <div>
                 <strong>{apt.minLeaseMonths != null ? apt.minLeaseMonths + tx("T+", "mo+", "个月+", "мес+", "개월+", "ヶ月+") : "—"}</strong>
@@ -3416,7 +3465,7 @@ export const App: React.FC = () => {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.86rem", color: "#F5D9B8" }}>
                   <span>✓ {tx("Miễn phí 100% dịch vụ tư vấn & dẫn đi xem nhà", "100% free tenant advisory & private viewings", "租客咨询与带看服务 100% 免费", "100% бесплатно для арендаторов", "임대 상담 및 현장 투어 100% 무료", "ご相談・内覧サポートは100%無料")}</span>
                   <span>✓ {tx("Chỉ gửi căn hộ thật đang trống, đã kiểm tra ánh sáng & độ ồn", "Only verified available units audited for light & acoustics", "仅发送实地核验采光与隔音的真实空房", "Только проверенные квартиры (свет и тишина)", "채광·방음 실사를 마친 실제 공실 매물만 안내", "採光・防音を現地確認した実際の空室のみをご案内")}</span>
-                  <span>✓ {tx("Phản hồi đa ngôn ngữ: VI · EN · 中文 · RU · KO · JA", "Multilingual team: VI · EN · 中文 · RU · KO · JA", "多语言顾问团队：VI · EN · 中文 · RU · KO · JA", "Поддержка на 6 языках: VI · EN · 中文 · RU · KO · JA", "6개 국어 지원: VI · EN · 中文 · RU · KO · JA", "6ヶ国語対応：VI · EN · 中文 · RU · KO · JA")}</span>
+                  <span>✓ {tx("Hợp đồng minh bạch trực tiếp chủ nhà & hỗ trợ đăng ký tạm trú NA17", "Direct owner lease contracts & Form NA17 residence registration", "与房东直接签署透明合同并协助办理 NA17 暂住登记", "Прямой договор с собственником и регистрация NA17", "임대인 직거래 투명 계약 및 NA17 거주 등록 지원", "オーナー直接契約＆NA17滞在登録サポート")}</span>
                 </div>
               </div>
 
@@ -3513,7 +3562,7 @@ export const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: "1.1rem" }}>
+                <div style={{ marginBottom: "0.95rem" }}>
                   <label className="astryx-select-label" style={{ marginBottom: "0.38rem" }}>
                     {tx("GHI CHÚ THÊM (BÀN LÀM VIỆC, THÚ CƯNG, KHU VỰC...)", "NOTES (WORK DESK, PETS, DISTRICT...)", "备注需求（办公桌、宠物、偏好区域等）", "ПОЖЕЛАНИЯ (СТОЛ, ЖИВОТНЫЕ, РАЙОН...)", "추가 요청사항 (업무 데스크, 반려동물, 선호 지역...)", "ご要望（ワークデスク、ペット、希望エリアなど）")}
                   </label>
@@ -3525,7 +3574,41 @@ export const App: React.FC = () => {
                   />
                 </div>
 
-                <button type="submit" className="btn-luxe btn-luxe--bronze" style={{ width: "100%", padding: "0.95rem", fontSize: "0.9rem" }}>
+                <label className="kin-policy-checkbox-row" style={{ marginBottom: "1rem" }}>
+                  <input
+                    type="checkbox"
+                    className="kin-policy-checkbox-input"
+                    checked={shortlistPolicyAgreed}
+                    onChange={(e) => setShortlistPolicyAgreed(e.target.checked)}
+                    required
+                  />
+                  <span className="kin-policy-checkbox-text">
+                    {tx("Tôi đồng ý với ", "I agree to the ", "我已阅读并同意", "Я согласен с ", "집 찾기를 위한 ", "物件ご案内のための")}
+                    <a
+                      href={buildLocalizedHref("/privacy-policy", lang)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="kin-policy-link-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {tx("Chính sách bảo mật & xử lý dữ liệu", "Privacy & Data Policy", "《隐私与数据保护政策》", "Политикой конфиденциальности", "개인정보 처리방침", "プライバシーポリシー")}
+                    </a>
+                    {tx(" để nhận tư vấn tìm nhà.", " to receive home recommendations.", "以获取房源推荐服务。", " для подбора жилья.", "에 동의합니다.", "に同意します。")}
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  className="btn-luxe btn-luxe--bronze"
+                  disabled={!shortlistPolicyAgreed}
+                  style={{
+                    width: "100%",
+                    padding: "0.95rem",
+                    fontSize: "0.9rem",
+                    opacity: shortlistPolicyAgreed ? 1 : 0.56,
+                    cursor: shortlistPolicyAgreed ? "pointer" : "not-allowed"
+                  }}
+                >
                   <span>{tx("Nhận gợi ý căn hộ phù hợp →", "Receive Curated Shortlist →", "获取定制房源推荐 →", "Получить подборку квартир →", "맞춤 아파트 추천 받기 →", "厳選物件リストを受け取る →")}</span>
                 </button>
 
@@ -4329,17 +4412,47 @@ export const App: React.FC = () => {
                 </p>
 
                 <div className="apt-compact-info-pills">
+                  {currentDetailApt.isPinned && currentDetailApt.status !== "Rented" && (
+                    <span className="apt-compact-info-pill" style={{ background: "rgba(184, 137, 74, 0.14)", color: "#8C6229", borderColor: "rgba(184, 137, 74, 0.35)", fontWeight: 700 }}>
+                      ★ {tx("BĐS Ưu tiên Nổi bật", "Featured Priority Listing", "置顶精选房源", "Приоритетный объект", "우선 추천 매물", "優先おすすめ物件")}
+                    </span>
+                  )}
                   {currentDetailApt.availableFrom && <span className="apt-compact-info-pill">
                     {tx("Có thể vào từ", "Available from", "可入住日期", "Доступно с", "입주 가능일", "入居可能日")}{" "}
                     {new Date(currentDetailApt.availableFrom + "T00:00:00Z").toLocaleDateString(lang, { timeZone: "UTC" })}
                   </span>}
                   {currentDetailApt.floor != null && <span className="apt-compact-info-pill">
-                    {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor}
+                    {currentDetailApt.propertyType === "house" || currentDetailApt.propertyType === "villa"
+                      ? `${currentDetailApt.floor} ${tx("tầng", "floors", "层", "эт.", "층 건물", "階建て")}`
+                      : `${tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} ${currentDetailApt.floor}`}
                   </span>}
+                  {currentDetailApt.landAreaM2 != null && currentDetailApt.landAreaM2 > 0 && (
+                    <span className="apt-compact-info-pill">
+                      {tx("DT đất", "Land", "土地", "Участок", "대지", "敷地")} {currentDetailApt.landAreaM2} m²
+                    </span>
+                  )}
                   <span className="apt-compact-info-pill">
                     {renderPropTypeIcon(currentDetailApt.propertyType, 14)}
                     <span>{trPropType(currentDetailApt.propertyType)}</span>
                   </span>
+                  {currentDetailApt.frontageRoad && (
+                    <span className="apt-compact-info-pill">{trField(currentDetailApt.frontageRoad)}</span>
+                  )}
+                  {currentDetailApt.poolInfo && (
+                    <span className="apt-compact-info-pill">{trField(currentDetailApt.poolInfo)}</span>
+                  )}
+                  {currentDetailApt.furnishing && (
+                    <span className="apt-compact-info-pill">{trField(currentDetailApt.furnishing)}</span>
+                  )}
+                  {currentDetailApt.cleaningService && (
+                    <span className="apt-compact-info-pill">{trField(currentDetailApt.cleaningService)}</span>
+                  )}
+                  {currentDetailApt.managementFee && (
+                    <span className="apt-compact-info-pill">{tx("Phí QL:", "Mgmt:", "物业费:", "УК:", "관리비:", "管理費:")} {trField(currentDetailApt.managementFee)}</span>
+                  )}
+                  {currentDetailApt.parking && (
+                    <span className="apt-compact-info-pill">{trField(currentDetailApt.parking)}</span>
+                  )}
                   {currentDetailApt.electricityRate && <span className="apt-compact-info-pill">
                     {getAptField(currentDetailApt, "electricityRate")}
                   </span>}
@@ -5224,7 +5337,7 @@ export const App: React.FC = () => {
                     {tx("Cần tư vấn thuê căn hộ, biệt thự hoặc mua bán nhà đất Đà Nẵng?", "Need personal help renting or buying in Da Nang?")}
                   </strong>
                   <span style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.8)" }}>
-                    {tx("KIN Estates hỗ trợ 6 ngôn ngữ · Dẫn xem thực tế & Video Call 4K · Giá trực tiếp chủ nhà.", "KIN Estates 6-language advisory · In-person & 4K live tours · Direct owner pricing.")}
+                    {tx("Kiểm định thực tế 19 khu vực Đà Nẵng · Dẫn xem tận nơi & Video Call 4K · Giá trực tiếp chủ nhà.", "Verified across 19 Da Nang districts · In-person & 4K live tours · Direct owner pricing.")}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "0.55rem", flexWrap: "wrap" }}>
@@ -5321,12 +5434,12 @@ export const App: React.FC = () => {
                 </p>
                 <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", lineHeight: 1.7, marginBottom: "1.5rem" }}>
                   {tx(
-                    "KIN Estates chuyên căn hộ, penthouse và biệt thự cho thuê dài hạn (3–12+ tháng) tại Đà Nẵng. Chúng tôi làm việc trực tiếp với chủ nhà, dẫn bạn xem nhà tận nơi và đồng hành suốt thời gian thuê bằng 6 ngôn ngữ (VI · EN · 中文 · RU · KO · JA).",
-                    "KIN Estates specializes in long-term apartments, penthouses, and private villas (3–12+ months) in Da Nang. We deal directly with owners, run viewings in person, and support you throughout your lease in 6 languages (VI · EN · ZH · RU · KO · JA).",
-                    "KIN Estates 专注岘港 3–12个月以上长期公寓与别墅租赁。我们直接对接房东、亲自陪同看房，并提供六语全程租期支持。",
-                    "KIN Estates специализируется на долгосрочной аренде (от 3 до 12+ месяцев) в Дананге. Мы работаем напрямую с собственниками, проводим личные просмотры и остаёмся на связи весь срок аренды.",
-                    "KIN Estates는 다낭 3~12개월 이상 장기 임대 전문 에이전시입니다. 임대인과 직접 소통하고 현장 투어부터 계약 기간 내내 6개 국어로 함께합니다.",
-                    "KIN Estatesはダナンの3〜12ヶ月以上の長期賃貸専門です。オーナー様と直接やり取りし、現地内覧からご入居期間中まで6ヶ国語でサポートします。"
+                    "KIN Estates chuyên căn hộ chung cư, nhà nguyên căn, penthouse và biệt thự cho thuê dài hạn (3–12+ tháng) tại Đà Nẵng. Chúng tôi làm việc trực tiếp với chủ nhà, dẫn bạn xem nhà tận nơi, hỗ trợ đăng ký tạm trú NA17 và đồng hành trọn vẹn suốt kỳ thuê.",
+                    "KIN Estates specializes in long-term apartments, houses, penthouses, and private villas (3–12+ months) in Da Nang. We deal directly with owners, run viewings in person, handle Form NA17 registration, and support you throughout your lease.",
+                    "KIN Estates 专注岘港 3–12个月以上长期公寓、整栋住宅与别墅租赁。我们直接对接房东、亲自陪同看房，并协助办理 NA17 暂住登记与全程租期支持。",
+                    "KIN Estates специализируется на долгосрочной аренде квартир, домов и вилл (от 3 до 12+ месяцев) в Дананге. Мы работаем напрямую с собственниками, проводим личные просмотры и помогаем с регистрацией NA17.",
+                    "KIN Estates는 다낭 3~12개월 이상 장기 임대 전문 에이전시입니다. 임대인과 직접 소통하고 현장 투어부터 공안 거주 등록(NA17) 및 계약 기간 내내 함께합니다.",
+                    "KIN Estatesはダナンの3〜12ヶ月以上の長期賃貸専門です。オーナー様と直接やり取りし、現地内覧からNA17滞在登録・ご入居期間中まで一貫サポートします。"
                   )}
                 </p>
                 <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -5382,8 +5495,8 @@ export const App: React.FC = () => {
                 <div className="kin-about-metric__lbl">{tx("Căn hộ kiểm định thực tế", "Physically audited homes", "100% 实地核验房源", "100% проверенные квартиры", "100% 현장 실사 매물", "100%現地実地確認済")}</div>
               </div>
               <div className="kin-about-metric">
-                <div className="kin-about-metric__num">6</div>
-                <div className="kin-about-metric__lbl">{tx("Ngôn ngữ tư vấn trực tiếp", "Languages supported", "6 种语言直接服务", "Языков поддержки", "6개 국어 전담 지원", "6ヶ国語ダイレクト対応")}</div>
+                <div className="kin-about-metric__num">19</div>
+                <div className="kin-about-metric__lbl">{tx("Khu vực phủ sóng toàn Đà Nẵng", "Da Nang districts covered", "覆盖岘港 19 个核心区域", "Районов Дананга", "다낭 19개 전 지역 커버", "ダナン全19エリア対応")}</div>
               </div>
               <div className="kin-about-metric">
                 <div className="kin-about-metric__num">24h</div>

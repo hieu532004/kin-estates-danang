@@ -269,9 +269,11 @@ app.get("/api/system/status", async (req, res) => {
 // 2. Apartments Catalogue & Full CRUD (Supports Public & Admin views)
 const PUBLIC_APARTMENT_FIELDS = [
   "_id", "code", "propertyType", "title", "building", "address", "areaName", "district", "priceUsd", "priceVnd",
-  "bedrooms", "bathrooms", "sizeM2", "floor", "orientation", "minLeaseMonths", "depositMonths",
+  "bedrooms", "bathrooms", "sizeM2", "landAreaM2", "floor", "orientation", "frontageRoad", "furnishing",
+  "cleaningService", "managementFee", "parking", "poolInfo", "minLeaseMonths", "depositMonths",
   "electricityRate", "waterRate", "wifiIncluded", "naturalLightScore", "remoteWorkSetup", "petPolicy",
-  "status", "availableFrom", "isVisible", "featured", "locationAccuracy", "coordinates", "architecturalNotes", "translations", "tags", "images", "createdAt", "updatedAt"
+  "status", "availableFrom", "isVisible", "featured", "isPinned", "pinnedAt", "boostedAt",
+  "locationAccuracy", "coordinates", "architecturalNotes", "translations", "tags", "images", "createdAt", "updatedAt"
 ];
 
 function publicApartment(apartment) {
@@ -958,12 +960,14 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
 
     const areaMap = new Map();
     const typeCounts = { condo: 0, apartment: 0, house: 0, villa: 0, penthouse: 0 };
+    let pinnedCount = 0;
     const enrichedApartments = apartments.map((apt) => {
       const codeUpper = String(apt.code || "").toUpperCase();
       const cs = contactSummaryMap.get(codeUpper) || { people: 0, clicks: 0, bookings: 0 };
       const pt = apt.propertyType || db.inferPropertyType(apt);
       typeCounts[pt] = (typeCounts[pt] || 0) + 1;
       const isHidden = apt.isVisible === false || apt.status === "Hidden";
+      if (!isHidden && apt.isPinned && apt.status !== "Rented") pinnedCount++;
       if (isHidden) hiddenCount++;
       else if (apt.status === "Rented") rentedCount++;
       else if (apt.status === "Reserved") reservedCount++;
@@ -972,6 +976,11 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
         vacantPotentialVnd += Number(apt.priceVnd || 0);
         vacantPotentialUsd += Number(apt.priceUsd || 0);
       }
+
+      const createdMs = apt.createdAt ? new Date(apt.createdAt).getTime() : 0;
+      const boostedMs = apt.boostedAt ? new Date(apt.boostedAt).getTime() : createdMs;
+      const daysListed = createdMs > 0 && Number.isFinite(createdMs) ? Math.max(0, Math.floor((now - createdMs) / 86400000)) : 0;
+      const daysSinceBoost = boostedMs > 0 && Number.isFinite(boostedMs) ? Math.max(0, Math.floor((now - boostedMs) / 86400000)) : daysListed;
 
       const areaKey = normalizeAreaLabel(apt.areaName);
       const areaStat = areaMap.get(areaKey) || { area: areaKey, total: 0, available: 0, rented: 0, leads: 0, revenueVnd: 0 };
@@ -984,7 +993,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
       areaStat.leads += cs.people;
       areaMap.set(areaKey, areaStat);
 
-      return { ...apt, contactSummary: cs };
+      return { ...apt, contactSummary: cs, daysListed, daysSinceBoost };
     });
 
     const activeLeases = leases.filter((l) => l.status !== "Ended");
@@ -1027,6 +1036,16 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
     const topApartments = [...enrichedApartments]
       .sort((a, b) => (b.contactSummary.people + b.contactSummary.bookings * 2) - (a.contactSummary.people + a.contactSummary.bookings * 2))
       .slice(0, 6);
+    const slowVacantApartments = enrichedApartments
+      .filter((a) => a.isVisible !== false && a.status === "Available")
+      .sort((a, b) => {
+        if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? 1 : -1;
+        const aScore = (a.contactSummary?.people || 0) + (a.contactSummary?.bookings || 0) * 2;
+        const bScore = (b.contactSummary?.people || 0) + (b.contactSummary?.bookings || 0) * 2;
+        if (aScore !== bScore) return aScore - bScore;
+        return (b.daysSinceBoost || 0) - (a.daysSinceBoost || 0);
+      })
+      .slice(0, 5);
 
     res.json({
       ok: true,
@@ -1037,6 +1056,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
         rentedCount,
         reservedCount,
         hiddenCount,
+        pinnedCount,
         typeCounts,
         occupancyRate,
         activeLeasesCount: activeLeases.length,
@@ -1052,6 +1072,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
       },
       areaBreakdown: [...areaMap.values()].sort((a, b) => b.total - a.total),
       topApartments,
+      slowVacantApartments,
       statusFunnel,
       channels: [...channelStats.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
       expiringSoonLeases,
@@ -1148,6 +1169,13 @@ app.post("/api/studio/apartments/bulk", requireAdmin, async (req, res) => {
           if (typeof updates.featured === "boolean") {
             patch.featured = updates.featured;
           }
+          if (typeof updates.isPinned === "boolean") {
+            patch.isPinned = updates.isPinned;
+            if (updates.isPinned) patch.pinNow = true;
+          }
+          if (updates.boostNow === true) {
+            patch.boostNow = true;
+          }
           const baseVnd = Number(apt.priceVnd || Math.round(Number(apt.priceUsd || 0) * rate));
           if (updates.priceMode === "fixed" && Number(updates.priceVnd) > 0) {
             patch.priceVnd = Math.round(Number(updates.priceVnd));
@@ -1194,9 +1222,11 @@ app.post("/api/studio/inquiries", requireAdmin, async (req, res) => {
       apartmentCode: apt ? apt.code : aptCode || "CURATED-SHORTLIST",
       apartmentTitle: apt ? (apt.title?.vi || apt.title?.en || apt.code) : String(body.apartmentTitle || "Tư vấn chọn căn hộ"),
       budgetUsd: String(body.budgetUsd || "").trim(),
+      bedrooms: String(body.bedrooms || "").trim(),
       viewingTime: String(body.viewingTime || "").trim(),
       moveInDate: String(body.moveInDate || "").trim(),
       notes: String(body.notes || "").trim(),
+      adminNotes: String(body.adminNotes || "").trim(),
       status: String(body.status || "New").trim(),
       source: "studio_admin"
     });

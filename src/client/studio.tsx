@@ -31,8 +31,15 @@ interface Apartment {
   bedrooms?: number | null;
   bathrooms?: number | null;
   sizeM2?: number | null;
+  landAreaM2?: number | null;
   floor?: number | null;
   orientation?: string;
+  frontageRoad?: string;
+  furnishing?: string;
+  cleaningService?: string;
+  managementFee?: string;
+  parking?: string;
+  poolInfo?: string;
   minLeaseMonths?: number | null;
   depositMonths?: number | null;
   availableFrom?: string | null;
@@ -43,6 +50,15 @@ interface Apartment {
   status: string;
   isVisible?: boolean;
   featured?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: string | null;
+  boostedAt?: string | null;
+  createdAt?: string;
+  daysListed?: number;
+  daysSinceBoost?: number;
+  landlordName?: string;
+  landlordPhone?: string;
+  adminNote?: string;
   locationAccuracy?: "exact" | "area";
   coordinates?: { lat: number; lng: number } | null;
   architecturalNotes?: Record<string, string> | string;
@@ -61,9 +77,12 @@ interface Inquiry {
   apartmentCode?: string;
   apartmentTitle?: string;
   budgetUsd?: string;
+  bedrooms?: string;
   viewingTime?: string;
+  requestedViewingTime?: string;
   moveInDate?: string;
   notes?: string;
+  adminNotes?: string;
   status: string;
   createdAt?: string;
 }
@@ -134,6 +153,7 @@ interface ReportData {
     rentedCount: number;
     reservedCount: number;
     hiddenCount: number;
+    pinnedCount?: number;
     typeCounts?: Record<string, number>;
     occupancyRate: number;
     activeLeasesCount: number;
@@ -149,6 +169,7 @@ interface ReportData {
   };
   areaBreakdown: Array<{ area: string; total: number; available: number; rented: number; leads: number; revenueVnd: number }>;
   topApartments: Apartment[];
+  slowVacantApartments?: Apartment[];
   statusFunnel: Record<string, number>;
   channels: Array<{ name: string; count: number }>;
   expiringSoonLeases: Lease[];
@@ -191,18 +212,190 @@ const AREAS = [
   { val: "Thuận Phước", label: "Thuận Phước" },
   { val: "Hòa Vang", label: "Hòa Vang" }
 ];
-const QUICK_TAGS = [
-  "View sông Hàn",
-  "Gần biển",
-  "Hồ bơi vô cực",
-  "Bàn làm việc",
-  "Điện EVN",
-  "Gym",
-  "Ban công",
-  "Máy giặt",
-  "Chỗ đỗ ô tô",
-  "Thú cưng"
-];
+type CatAttrKey = "managementFee" | "parking" | "furnishing" | "cleaningService" | "frontageRoad" | "poolInfo";
+
+interface CategorySpecConfig {
+  titleLabel: string;
+  titlePlaceholder: string;
+  bldgLabel: string;
+  bldgPlaceholder: string;
+  bldgPresets: string[];
+  sizeLabel: string;
+  floorLabel: string;
+  defaultFloor: string;
+  hasLandArea: boolean;
+  elecPresets: string[];
+  tags: string[];
+  attrs: Array<{ key: CatAttrKey; label: string; placeholder: string; presets: string[] }>;
+}
+
+const CATEGORY_CONFIG: Record<string, CategorySpecConfig> = {
+  condo: {
+    titleLabel: "Tên căn hộ chung cư *",
+    titlePlaceholder: "VD: The Panoma 2 — Căn góc 2PN View Sông Hàn",
+    bldgLabel: "Tòa nhà / Dự án chung cư",
+    bldgPlaceholder: "VD: The Panoma, The Filmore, Hiyori, Monarchy...",
+    bldgPresets: ["The Panoma", "The Filmore", "Hiyori Garden Tower", "The Monarchy", "Azura", "FPT Plaza"],
+    sizeLabel: "DT thông thủy (m²)",
+    floorLabel: "Tầng căn hộ",
+    defaultFloor: "15",
+    hasLandArea: false,
+    elecPresets: ["Giá nhà nước (EVN ~2,800đ/kWh)", "Theo hóa đơn EVN"],
+    tags: ["View sông Hàn", "Gần biển", "Hồ bơi vô cực", "Gym", "Ban công", "Bàn làm việc", "Máy giặt sấy", "Điện EVN", "An ninh 24/7", "Thú cưng"],
+    attrs: [
+      {
+        key: "managementFee",
+        label: "Phí quản lý vận hành tòa nhà",
+        placeholder: "VD: Đã bao gồm trong giá thuê / 18k/m²",
+        presets: ["Đã bao gồm", "Chưa bao gồm", "Miễn phí năm đầu"]
+      },
+      {
+        key: "parking",
+        label: "Chỗ đỗ xe (Hầm / Nội khu)",
+        placeholder: "VD: Hầm đỗ ô tô & xe máy",
+        presets: ["Hầm ô tô & xe máy", "Hầm xe máy", "Đỗ ô tô nội khu"]
+      },
+      {
+        key: "furnishing",
+        label: "Tiêu chuẩn bàn giao nội thất",
+        placeholder: "VD: Full nội thất cao cấp mới 100%",
+        presets: ["Full nội thất cao cấp", "Nội thất tiêu chuẩn", "Nội thất cơ bản"]
+      }
+    ]
+  },
+  apartment: {
+    titleLabel: "Tên căn hộ thường / Căn hộ dịch vụ / Studio *",
+    titlePlaceholder: "VD: Studio Ban Công Thoáng — Đi bộ 4 phút ra Mỹ Khê",
+    bldgLabel: "Tên tòa căn hộ / Tuyến đường",
+    bldgPlaceholder: "VD: Tòa An Thượng 2 / Đường Hoàng Kế Viêm",
+    bldgPresets: ["Khu phố An Thượng", "Ven biển Mỹ Khê", "Phước Mỹ", "Sơn Trà"],
+    sizeLabel: "Diện tích phòng (m²)",
+    floorLabel: "Tầng số",
+    defaultFloor: "4",
+    hasLandArea: false,
+    elecPresets: ["3,800đ/kWh", "4,000đ/kWh", "Giá nhà nước (EVN)"],
+    tags: ["Gần biển", "Ban công", "Máy giặt riêng", "Dọn phòng tuần", "Wi-Fi miễn phí", "Bàn làm việc", "Thang máy", "Giờ giấc tự do", "Thú cưng"],
+    attrs: [
+      {
+        key: "cleaningService",
+        label: "Dịch vụ dọn phòng & thay ga",
+        placeholder: "VD: Miễn phí dọn phòng 1 lần/tuần",
+        presets: ["Miễn phí 1 lần/tuần", "Miễn phí 2 lần/tuần", "Tự túc"]
+      },
+      {
+        key: "furnishing",
+        label: "Nội thất & Thiết bị giặt sấy",
+        placeholder: "VD: Full nội thất + Máy giặt riêng trong phòng",
+        presets: ["Full nội thất + Máy giặt riêng", "Studio khép kín đầy đủ", "1PN tách bếp riêng"]
+      },
+      {
+        key: "parking",
+        label: "Chỗ để xe",
+        placeholder: "VD: Tầng 1 để xe máy miễn phí, camera 24/7",
+        presets: ["Tầng 1 xe máy miễn phí", "Đỗ ô tô trước nhà"]
+      }
+    ]
+  },
+  house: {
+    titleLabel: "Tên nhà nguyên căn / Nhà phố *",
+    titlePlaceholder: "VD: Nhà nguyên căn 3 tầng mới đẹp — Đảo VIP Hòa Xuân",
+    bldgLabel: "Tên đường / Khu dân cư",
+    bldgPlaceholder: "VD: Khu đảo VIP Hòa Xuân / Đường Đỗ Nhuận",
+    bldgPresets: ["Khu Đảo VIP Hòa Xuân", "Nam Hòa Xuân", "Khu Nam Việt Á", "Khu Phố An Thượng"],
+    sizeLabel: "Tổng DT sàn (m²)",
+    floorLabel: "Số tầng nhà",
+    defaultFloor: "3",
+    hasLandArea: true,
+    elecPresets: ["Giá nhà nước (EVN ~2,800đ/kWh)", "Công tơ điện EVN riêng"],
+    tags: ["Nhà nguyên căn", "Chỗ đỗ ô tô", "Sân thượng", "Sân vườn", "Phù hợp mở VP", "Điện EVN", "Khu dân trí yên tĩnh", "Thú cưng"],
+    attrs: [
+      {
+        key: "frontageRoad",
+        label: "Đường / Kiệt trước nhà",
+        placeholder: "VD: Đường 7.5m vỉa hè 4m đỗ ô tô thoải mái",
+        presets: ["Đường 7.5m vỉa hè rộng", "Đường 5.5m ô tô tránh", "Kiệt ô tô 4m", "Kiệt xe máy 3m"]
+      },
+      {
+        key: "furnishing",
+        label: "Hiện trạng nội thất & Công năng",
+        placeholder: "VD: Full nội thất gia đình / Vừa ở vừa mở văn phòng",
+        presets: ["Full nội thất gia đình", "Nội thất cơ bản", "Phù hợp ở kết hợp VP", "Nhà trống"]
+      },
+      {
+        key: "parking",
+        label: "Sân đỗ xe / Gara",
+        placeholder: "VD: Sân đỗ ô tô 7 chỗ trong nhà",
+        presets: ["Sân đỗ ô tô trong nhà", "Đỗ ô tô trước cửa", "Sân để xe rộng"]
+      }
+    ]
+  },
+  villa: {
+    titleLabel: "Tên Biệt thự / Pool Villa *",
+    titlePlaceholder: "VD: Biệt thự Hồ bơi Muối khoáng 4PN — Khu Nam Việt Á",
+    bldgLabel: "Khu biệt thự / Tuyến đường",
+    bldgPlaceholder: "VD: Khu biệt thự Nam Việt Á / Euro Village",
+    bldgPresets: ["Khu biệt thự Nam Việt Á", "Euro Village 1", "Euro Village 2", "Đảo Xanh", "Đảo VIP Hòa Xuân"],
+    sizeLabel: "Tổng DT sàn (m²)",
+    floorLabel: "Số tầng biệt thự",
+    defaultFloor: "3",
+    hasLandArea: true,
+    elecPresets: ["Giá nhà nước (EVN ~2,800đ/kWh)", "Điện 3 pha EVN nhà nước"],
+    tags: ["Biệt thự", "Hồ bơi riêng", "Sân vườn BBQ", "Chỗ đỗ ô tô", "An ninh 24/7", "Gần biển", "View sông Hàn", "Điện EVN", "Thú cưng"],
+    attrs: [
+      {
+        key: "poolInfo",
+        label: "Hồ bơi & Khuôn viên sân vườn",
+        placeholder: "VD: Hồ bơi riêng muối khoáng + Sân vườn BBQ",
+        presets: ["Hồ bơi riêng muối khoáng", "Hồ bơi riêng + Sân BBQ", "Bao vệ sinh hồ bơi tuần", "Biệt thự sân vườn"]
+      },
+      {
+        key: "parking",
+        label: "Gara ô tô & An ninh khu vực",
+        placeholder: "VD: Gara 2 ô tô + Bảo vệ compound 24/7",
+        presets: ["Gara riêng 2 ô tô", "Compound bảo vệ 24/7", "Đường 7.5m–10.5m đỗ xe"]
+      },
+      {
+        key: "furnishing",
+        label: "Tiêu chuẩn nội thất Villa",
+        placeholder: "VD: Full nội thất nghỉ dưỡng gỗ tự nhiên",
+        presets: ["Full nội thất nghỉ dưỡng", "Nội thất gỗ tự nhiên cao cấp", "Nội thất cơ bản"]
+      }
+    ]
+  },
+  penthouse: {
+    titleLabel: "Tên Penthouse / Duplex / Sky Villa *",
+    titlePlaceholder: "VD: Sky Penthouse Duplex 3PN — View Toàn cảnh Sông Hàn",
+    bldgLabel: "Tòa tháp / Dự án hạng sang",
+    bldgPlaceholder: "VD: The Filmore, Azura, Indochina, Blooming...",
+    bldgPresets: ["The Filmore Da Nang", "The Panoma", "Azura", "Indochina Riverside", "Blooming Tower"],
+    sizeLabel: "Tổng diện tích (m²)",
+    floorLabel: "Tầng đỉnh (Floor)",
+    defaultFloor: "25",
+    hasLandArea: false,
+    elecPresets: ["Giá nhà nước (EVN ~2,800đ/kWh)"],
+    tags: ["Penthouse", "View sông Hàn", "Gần biển", "Hồ bơi vô cực", "Ban công panorama", "Bàn làm việc", "Gym", "Chỗ đỗ ô tô", "Thú cưng"],
+    attrs: [
+      {
+        key: "furnishing",
+        label: "Thiết kế kiến trúc & Bàn giao",
+        placeholder: "VD: Duplex thông tầng kính tràn viền + Bếp đảo",
+        presets: ["Duplex thông tầng kính tràn", "Penthouse sân vườn riêng", "Sảnh thang máy riêng"]
+      },
+      {
+        key: "poolInfo",
+        label: "Hồ bơi riêng / Sân thượng",
+        placeholder: "VD: Sân thượng ngắm pháo hoa / Hồ bơi vô cực",
+        presets: ["Hồ bơi riêng trên cao", "Terrace ngắm pháo hoa", "Hồ bơi vô cực tòa nhà"]
+      },
+      {
+        key: "managementFee",
+        label: "Phí quản lý & Đỗ xe VIP",
+        placeholder: "VD: Đã bao gồm phí quản lý + Ô đỗ ô tô định danh",
+        presets: ["Đã bao gồm phí quản lý", "Kèm ô đỗ ô tô hầm"]
+      }
+    ]
+  }
+};
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=70";
 
 /* Crisp Minimalist Inline SVG Icons */
@@ -328,7 +521,66 @@ const Icon = {
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
       <circle cx="12" cy="10" r="3" />
     </svg>
-  )
+  ),
+  PinTop: ({ size = 13 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 1 1 1z" />
+    </svg>
+  ),
+  Boost: ({ size = 13 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m12 3 7 7-1.4 1.4L13 6.8V21h-2V6.8l-4.6 4.6L5 10z" />
+    </svg>
+  ),
+  Copy: ({ size = 13 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  ),
+  Category: ({ type, size = 14 }: { type: string; size?: number }) => {
+    if (type === "condo") {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2" />
+          <path d="M9 6h2M13 6h2M9 10h2M13 10h2M9 14h2M13 14h2M10 22v-4h4v4" />
+        </svg>
+      );
+    }
+    if (type === "apartment") {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+          <rect x="9" y="13" width="6" height="8" />
+        </svg>
+      );
+    }
+    if (type === "house") {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12 12 3l10 9" />
+          <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
+          <path d="M10 21v-6h4v6" />
+        </svg>
+      );
+    }
+    if (type === "villa") {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 20h18" />
+          <path d="M5 20v-8l7-5 7 5v8" />
+          <path d="M2 23c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
+        </svg>
+      );
+    }
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.8 5.5 21 7.5 13.5 2 9 9 9" />
+      </svg>
+    );
+  }
 };
 
 function fmtVnd(n: number | undefined | null): string {
@@ -423,6 +675,39 @@ function daysUntil(dateStr?: string): number | null {
   return Math.ceil((t - Date.now()) / 86400000);
 }
 
+function formatRelativeTimeVi(iso?: string): string {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "";
+  const diffMin = Math.max(0, Math.floor((Date.now() - t) / 60000));
+  if (diffMin < 1) return "Vừa xong";
+  if (diffMin < 60) return `${diffMin}p trước`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h trước`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay}n trước`;
+  return new Date(t).toLocaleDateString("vi-VN");
+}
+
+function buildLeadQuickActions(handle?: string, messenger?: string) {
+  const raw = String(handle || "").trim();
+  if (!raw || /^bấm liên hệ/i.test(raw)) return { clean: "", digits: "", tgHref: "", zaloHref: "", waHref: "", telHref: "" };
+  const digits = raw.replace(/\D/g, "");
+  const isPhone = digits.length >= 8 && digits.length <= 15;
+  const intlDigits = digits.startsWith("0") ? `84${digits.slice(1)}` : digits;
+  const tgUser = raw.startsWith("@") || String(messenger || "").toLowerCase().includes("telegram")
+    ? raw.replace(/^@/, "").replace(/^https?:\/\/t\.me\//i, "").trim()
+    : "";
+  return {
+    clean: raw,
+    digits,
+    tgHref: tgUser && !/^\d+$/.test(tgUser) ? `https://t.me/${tgUser}` : "",
+    zaloHref: isPhone ? `https://zalo.me/${digits}` : "",
+    waHref: isPhone ? `https://wa.me/${intlDigits}` : "",
+    telHref: isPhone ? `tel:${raw.replace(/\s+/g, "")}` : ""
+  };
+}
+
 async function compressImageToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -472,6 +757,7 @@ function StudioApp() {
   const [aptSearch, setAptSearch] = useState<string>("");
   const [aptFilter, setAptFilter] = useState<string>("all");
   const [aptTypeFilter, setAptTypeFilter] = useState<string>("all");
+  const [aptSort, setAptSort] = useState<"priority" | "slow" | "leads" | "newest" | "price-desc" | "price-asc">("priority");
   const [aptSelectMode, setAptSelectMode] = useState<boolean>(false);
   const [selectedApts, setSelectedApts] = useState<string[]>([]);
   const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
@@ -479,6 +765,7 @@ function StudioApp() {
   const [resolvingMap, setResolvingMap] = useState<boolean>(false);
   const aboutHeroDirtyRef = useRef<boolean>(false);
   const [bulkAptForm, setBulkAptForm] = useState({
+    pinAction: "",
     propertyType: "",
     status: "",
     visibility: "",
@@ -529,6 +816,7 @@ function StudioApp() {
   // Leads filters, multi-select & CRUD modal
   const [leadSearch, setLeadSearch] = useState<string>("");
   const [leadSubTab, setLeadSubTab] = useState<"all" | "viewings" | "bookings">("all");
+  const [leadStatusFilter, setLeadStatusFilter] = useState<"all" | "urgent" | "scheduled" | "contacted" | "closed">("all");
   const [leadAptFilter, setLeadAptFilter] = useState<string>("");
   const [leadSelectMode, setLeadSelectMode] = useState<boolean>(false);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
@@ -547,7 +835,9 @@ function StudioApp() {
     viewingTime: "",
     moveInDate: "",
     budgetUsd: "",
-    notes: ""
+    bedrooms: "",
+    notes: "",
+    adminNotes: ""
   });
 
   // Leases filter & CRUD modal
@@ -577,6 +867,7 @@ function StudioApp() {
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const [form, setForm] = useState({
     propertyType: "condo",
+    isPinned: false,
     title: "",
     building: "",
     areaName: "Han Riverfront",
@@ -588,7 +879,14 @@ function StudioApp() {
     bedrooms: "2",
     bathrooms: "2",
     sizeM2: "70",
+    landAreaM2: "",
     floor: "15",
+    frontageRoad: "",
+    furnishing: "",
+    cleaningService: "",
+    managementFee: "",
+    parking: "",
+    poolInfo: "",
     availableFrom: "",
     minLeaseMonths: "6",
     depositMonths: "1",
@@ -596,6 +894,9 @@ function StudioApp() {
     waterRate: "Giá nhà nước",
     wifiIncluded: true,
     petPolicy: "Thương lượng (Cho phép thú cưng nhỏ)",
+    landlordName: "",
+    landlordPhone: "",
+    adminNote: "",
     tags: ["View sông Hàn", "Bàn làm việc", "Điện EVN"] as string[],
     notes: "",
     images: [] as string[],
@@ -838,30 +1139,42 @@ function StudioApp() {
   }, [authed, token]);
 
   const openCreateEditor = (defaultType = "condo") => {
+    const cfg = CATEGORY_CONFIG[defaultType] || CATEGORY_CONFIG.condo;
     setEditingCode(null);
     setPhotoUrlInput("");
     setForm({
       propertyType: defaultType,
+      isPinned: false,
       title: "",
       building: "",
       areaName: "Han Riverfront",
       address: "",
       status: "Available",
       isVisible: true,
-      priceVndTr: "18",
-      priceUsd: String(Math.round(18_000_000 / RATE_VND)),
-      bedrooms: "2",
-      bathrooms: "2",
-      sizeM2: "70",
-      floor: defaultType === "house" || defaultType === "villa" ? "3" : "15",
+      priceVndTr: defaultType === "villa" ? "45" : defaultType === "apartment" ? "9.5" : "18",
+      priceUsd: String(Math.round((defaultType === "villa" ? 45_000_000 : defaultType === "apartment" ? 9_500_000 : 18_000_000) / RATE_VND)),
+      bedrooms: defaultType === "villa" || defaultType === "house" ? "3" : defaultType === "apartment" ? "1" : "2",
+      bathrooms: defaultType === "villa" || defaultType === "house" ? "3" : defaultType === "apartment" ? "1" : "2",
+      sizeM2: defaultType === "villa" ? "260" : defaultType === "house" ? "180" : defaultType === "apartment" ? "45" : "70",
+      landAreaM2: defaultType === "villa" ? "200" : defaultType === "house" ? "90" : "",
+      floor: cfg.defaultFloor,
+      frontageRoad: "",
+      furnishing: "",
+      cleaningService: "",
+      managementFee: "",
+      parking: "",
+      poolInfo: "",
       availableFrom: "",
-      minLeaseMonths: "6",
-      depositMonths: "1",
-      electricityRate: "Giá nhà nước (EVN ~2,800đ/kWh)",
+      minLeaseMonths: defaultType === "house" || defaultType === "villa" ? "12" : "6",
+      depositMonths: defaultType === "house" || defaultType === "villa" ? "2" : "1",
+      electricityRate: cfg.elecPresets[0] || "Giá nhà nước (EVN ~2,800đ/kWh)",
       waterRate: "Giá nhà nước",
       wifiIncluded: true,
       petPolicy: "Thương lượng (Cho phép thú cưng nhỏ)",
-      tags: ["Bàn làm việc", "Điện EVN"],
+      landlordName: "",
+      landlordPhone: "",
+      adminNote: "",
+      tags: cfg.tags.slice(0, 3),
       notes: "",
       images: [],
       lat: 16.0545,
@@ -878,6 +1191,7 @@ function StudioApp() {
     const initAddr = apt.address || "";
     setForm({
       propertyType: apt.propertyType || "condo",
+      isPinned: Boolean(apt.isPinned),
       title: titleOf(apt),
       building: apt.building || "",
       areaName: normalizeAreaValue(apt.areaName),
@@ -889,7 +1203,14 @@ function StudioApp() {
       bedrooms: String(apt.bedrooms ?? 1),
       bathrooms: String(apt.bathrooms ?? 1),
       sizeM2: String(apt.sizeM2 ?? 60),
+      landAreaM2: apt.landAreaM2 ? String(apt.landAreaM2) : "",
       floor: String(apt.floor ?? 1),
+      frontageRoad: apt.frontageRoad || "",
+      furnishing: apt.furnishing || "",
+      cleaningService: apt.cleaningService || "",
+      managementFee: apt.managementFee || "",
+      parking: apt.parking || "",
+      poolInfo: apt.poolInfo || "",
       availableFrom: apt.availableFrom || "",
       minLeaseMonths: String(apt.minLeaseMonths ?? 6),
       depositMonths: String(apt.depositMonths ?? 1),
@@ -897,6 +1218,9 @@ function StudioApp() {
       waterRate: apt.waterRate || "",
       wifiIncluded: apt.wifiIncluded !== false,
       petPolicy: apt.petPolicy || "",
+      landlordName: apt.landlordName || "",
+      landlordPhone: apt.landlordPhone || "",
+      adminNote: apt.adminNote || "",
       tags: Array.isArray(apt.tags) ? apt.tags : [],
       notes: notesOf(apt),
       images: Array.isArray(apt.images) ? apt.images : [],
@@ -958,8 +1282,10 @@ function StudioApp() {
     try {
       const vnd = Math.round(parseFloat(form.priceVndTr.replace(",", ".")) * 1_000_000) || 0;
       const usd = parseInt(form.priceUsd, 10) || Math.round(vnd / RATE_VND);
+      const landM2 = parseFloat(String(form.landAreaM2 || "").replace(",", "."));
       const payload: any = {
         propertyType: form.propertyType || "condo",
+        isPinned: form.status === "Rented" ? false : Boolean(form.isPinned),
         title: form.title.trim(),
         building: form.building.trim() || "KIN Estates Residence",
         areaName: form.areaName,
@@ -968,10 +1294,17 @@ function StudioApp() {
         isVisible: form.status === "Hidden" ? false : form.isVisible,
         priceVnd: vnd || Math.round(usd * RATE_VND),
         priceUsd: usd || Math.round(vnd / RATE_VND),
-        bedrooms: Number(form.bedrooms) || 1,
+        bedrooms: Number(form.bedrooms) || 0,
         bathrooms: Number(form.bathrooms) || 1,
         sizeM2: Number(form.sizeM2) || 60,
+        landAreaM2: Number.isFinite(landM2) && landM2 > 0 ? landM2 : null,
         floor: Number(form.floor) || 1,
+        frontageRoad: form.frontageRoad.trim(),
+        furnishing: form.furnishing.trim(),
+        cleaningService: form.cleaningService.trim(),
+        managementFee: form.managementFee.trim(),
+        parking: form.parking.trim(),
+        poolInfo: form.poolInfo.trim(),
         availableFrom: form.availableFrom || null,
         minLeaseMonths: Number(form.minLeaseMonths) || 6,
         depositMonths: Number(form.depositMonths) || 1,
@@ -979,6 +1312,9 @@ function StudioApp() {
         waterRate: form.waterRate.trim(),
         wifiIncluded: form.wifiIncluded,
         petPolicy: form.petPolicy.trim(),
+        landlordName: form.landlordName.trim(),
+        landlordPhone: form.landlordPhone.trim(),
+        adminNote: form.adminNote.trim(),
         tags: form.tags,
         architecturalNotes: form.notes.trim(),
         images: form.images,
@@ -994,7 +1330,7 @@ function StudioApp() {
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được");
       setEditorOpen(false);
-      showToast(editingCode ? "Đã lưu & đồng bộ ngay lên Web!" : "Đã đăng căn mới & dịch 6 ngôn ngữ!");
+      showToast(editingCode ? "Đã lưu & đồng bộ ngay lên Web!" : "Đã đăng BĐS mới lên Web!");
       await loadReport();
     } catch (err: any) {
       showToast(err.message);
@@ -1039,6 +1375,9 @@ function StudioApp() {
     e.preventDefault();
     if (!selectedApts.length) return;
     const updates: Record<string, any> = {};
+    if (bulkAptForm.pinAction === "pin") updates.isPinned = true;
+    if (bulkAptForm.pinAction === "unpin") updates.isPinned = false;
+    if (bulkAptForm.pinAction === "boost") updates.boostNow = true;
     if (bulkAptForm.propertyType) updates.propertyType = bulkAptForm.propertyType;
     if (bulkAptForm.status) updates.status = bulkAptForm.status;
     if (bulkAptForm.visibility === "show") updates.isVisible = true;
@@ -1126,7 +1465,9 @@ function StudioApp() {
       viewingTime: "",
       moveInDate: "",
       budgetUsd: "",
-      notes: ""
+      bedrooms: "",
+      notes: "",
+      adminNotes: ""
     });
     setLeadModalOpen(true);
   };
@@ -1143,7 +1484,9 @@ function StudioApp() {
       viewingTime: inq.viewingTime ? inq.viewingTime.replace(" ", "T").slice(0, 16) : "",
       moveInDate: inq.moveInDate || "",
       budgetUsd: inq.budgetUsd || "",
-      notes: inq.notes || ""
+      bedrooms: inq.bedrooms || "",
+      notes: inq.notes || "",
+      adminNotes: inq.adminNotes || ""
     });
     setLeadModalOpen(true);
   };
@@ -1578,19 +1921,61 @@ function StudioApp() {
   const filteredApartments = useMemo(() => {
     const list = report?.apartments || [];
     const q = aptSearch.trim().toLowerCase();
-    return list.filter((a) => {
+    const matched = list.filter((a) => {
       const hidden = a.isVisible === false || a.status === "Hidden";
       if (aptTypeFilter !== "all" && (a.propertyType || "condo") !== aptTypeFilter) return false;
+      if (aptFilter === "pinned" && (!a.isPinned || hidden || a.status === "Rented")) return false;
       if (aptFilter === "available" && (hidden || a.status !== "Available")) return false;
       if (aptFilter === "reserved" && a.status !== "Reserved") return false;
       if (aptFilter === "rented" && a.status !== "Rented") return false;
       if (aptFilter === "hidden" && !hidden) return false;
       if (!q) return true;
-      return [a.code, titleOf(a), a.building, a.address, a.areaName, areaDisplayLabel(a.areaName), getAptCategoryLabel(a.propertyType)].some((v) =>
+      return [a.code, titleOf(a), a.building, a.address, a.areaName, areaDisplayLabel(a.areaName), getAptCategoryLabel(a.propertyType), a.landlordName, a.landlordPhone].some((v) =>
         String(v || "").toLowerCase().includes(q)
       );
     });
-  }, [report, aptSearch, aptFilter, aptTypeFilter]);
+    const ts = (v?: string | null) => {
+      if (!v) return 0;
+      const n = new Date(v).getTime();
+      return Number.isFinite(n) ? n : 0;
+    };
+    const copy = [...matched];
+    if (aptSort === "price-desc") {
+      copy.sort((a, b) => Number(b.priceVnd || 0) - Number(a.priceVnd || 0));
+    } else if (aptSort === "price-asc") {
+      copy.sort((a, b) => Number(a.priceVnd || 0) - Number(b.priceVnd || 0));
+    } else if (aptSort === "leads") {
+      copy.sort((a, b) => (b.contactSummary?.people || 0) - (a.contactSummary?.people || 0));
+    } else if (aptSort === "newest") {
+      copy.sort((a, b) => ts(b.createdAt) - ts(a.createdAt));
+    } else if (aptSort === "slow") {
+      copy.sort((a, b) => {
+        const aAvail = a.status === "Available" && a.isVisible !== false ? 0 : 1;
+        const bAvail = b.status === "Available" && b.isVisible !== false ? 0 : 1;
+        if (aAvail !== bAvail) return aAvail - bAvail;
+        if (Boolean(a.isPinned) !== Boolean(b.isPinned)) return a.isPinned ? 1 : -1;
+        const aLeads = a.contactSummary?.people || 0;
+        const bLeads = b.contactSummary?.people || 0;
+        if (aLeads !== bLeads) return aLeads - bLeads;
+        return (b.daysSinceBoost || 0) - (a.daysSinceBoost || 0);
+      });
+    } else {
+      copy.sort((a, b) => {
+        const sRank = (x: Apartment) => (x.isVisible === false || x.status === "Hidden" ? 3 : x.status === "Available" ? 0 : x.status === "Reserved" ? 1 : 2);
+        const rDiff = sRank(a) - sRank(b);
+        if (rDiff !== 0) return rDiff;
+        const aPin = Boolean(a.isPinned) && a.status !== "Rented";
+        const bPin = Boolean(b.isPinned) && b.status !== "Rented";
+        if (aPin !== bPin) return aPin ? -1 : 1;
+        if (aPin && bPin) {
+          const pDiff = ts(b.pinnedAt) - ts(a.pinnedAt);
+          if (pDiff !== 0) return pDiff;
+        }
+        return Math.max(ts(b.boostedAt), ts(b.createdAt)) - Math.max(ts(a.boostedAt), ts(a.createdAt));
+      });
+    }
+    return copy;
+  }, [report, aptSearch, aptFilter, aptTypeFilter, aptSort]);
 
   const filteredLeads = useMemo(() => {
     const all = (report?.inquiries || []).filter((i) => i.type !== "owner_listing");
@@ -1602,12 +1987,16 @@ function StudioApp() {
         if (leadSubTab === "bookings" && !isBooking) return false;
         if (leadSubTab === "viewings" && isBooking) return false;
       }
+      if (leadStatusFilter === "urgent" && !["New", "Pending"].includes(i.status)) return false;
+      if (leadStatusFilter === "scheduled" && !["Viewing_Scheduled", "Confirmed"].includes(i.status)) return false;
+      if (leadStatusFilter === "contacted" && i.status !== "Contacted") return false;
+      if (leadStatusFilter === "closed" && i.status !== "Rented_Closed") return false;
       if (!q) return true;
-      return [i.clientName, i.contactHandle, i.code, i.apartmentCode, i.notes, i.messenger].some((v) =>
+      return [i.clientName, i.contactHandle, i.code, i.apartmentCode, i.notes, i.adminNotes, i.messenger].some((v) =>
         String(v || "").toLowerCase().includes(q)
       );
     });
-  }, [report, leadSubTab, leadAptFilter, leadSearch]);
+  }, [report, leadSubTab, leadStatusFilter, leadAptFilter, leadSearch]);
 
   const filteredLeases = useMemo(() => {
     const list = report?.leases || [];
@@ -1760,7 +2149,7 @@ function StudioApp() {
                   <span className="st-badge st-badge--green">Online</span>
                 </div>
                 <div className="st-kpi-val">{kpi.availableCount}</div>
-                <div className="st-kpi-note">Tổng {kpi.totalApartments} căn · {kpi.hiddenCount} đang ẩn</div>
+                <div className="st-kpi-note">Ghim đầu: {kpi.pinnedCount || 0} căn · {kpi.hiddenCount} đang ẩn</div>
               </button>
 
               <button type="button" className="st-kpi-card" onClick={() => { setAptFilter("rented"); setTab("apartments"); }}>
@@ -1842,6 +2231,79 @@ function StudioApp() {
                 })}
               </div>
             </section>
+
+            {/* Slow-Moving / Vacant Priority Boost Panel */}
+            {(report.slowVacantApartments || []).length > 0 && (
+              <section className="st-card st-priority-panel">
+                <div className="st-card-head">
+                  <div>
+                    <h2 className="st-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon.PinTop size={15} /> Đẩy Nhanh Cho Thuê (Ghim / Lên Đầu)
+                    </h2>
+                    <div style={{ fontSize: 11.5, color: "var(--text-sub)", marginTop: 2 }}>
+                      Chỉ định căn trống lâu hoặc ít khách hỏi lên vị trí Nổi bật #1 đầu Web
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="st-btn-mini"
+                    onClick={() => {
+                      setAptFilter("available");
+                      setAptSort("slow");
+                      setTab("apartments");
+                    }}
+                  >
+                    Xem kho →
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  {(report.slowVacantApartments || []).slice(0, 4).map((apt) => (
+                    <div key={apt.code} className="st-slow-row">
+                      <img
+                        src={apt.images?.[0] || FALLBACK_IMG}
+                        alt=""
+                        style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", flexShrink: 0, cursor: "pointer" }}
+                        onClick={() => openEditEditor(apt)}
+                      />
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => openEditEditor(apt)}>
+                        <div style={{ fontWeight: 700, fontSize: 12.8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--navy)" }}>
+                          {apt.isPinned ? "★ " : ""}{titleOf(apt)}
+                        </div>
+                        <div style={{ fontSize: 11.2, color: "var(--text-sub)" }}>
+                          {fmtVnd(apt.priceVnd)} · {apt.contactSummary?.people || 0} khách · {apt.daysSinceBoost ? `${apt.daysSinceBoost}n chưa đẩy` : "Mới cập nhật"}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className={`st-btn-mini ${apt.isPinned ? "st-btn-mini--gold-active" : "st-btn-mini--bronze"}`}
+                          onClick={() =>
+                            quickPatchApt(
+                              apt,
+                              apt.isPinned ? { isPinned: false } : { isPinned: true, pinNow: true },
+                              apt.isPinned ? `Đã bỏ ghim ${apt.code}` : `Đã ghim ${apt.code} lên đầu Web!`
+                            )
+                          }
+                          title={apt.isPinned ? "Bỏ ghim đầu" : "Ghim cố định lên đầu Web"}
+                        >
+                          <Icon.PinTop size={12} />
+                          <span>{apt.isPinned ? "Đã ghim" : "Ghim"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="st-btn-mini st-btn-mini--navy"
+                          onClick={() => quickPatchApt(apt, { boostNow: true }, `Đã đẩy ${apt.code} lên đầu danh sách!`)}
+                          title="Làm mới đẩy lên đầu danh sách"
+                        >
+                          <Icon.Boost size={12} />
+                          <span>Đẩy</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Top Contacted Apartments */}
             <section className="st-card">
@@ -1977,6 +2439,7 @@ function StudioApp() {
             <div className="st-chips">
               {[
                 ["all", `Mọi trạng thái`],
+                ["pinned", `Đang ghim (${kpi?.pinnedCount || 0})`],
                 ["available", `Trống (${kpi?.availableCount || 0})`],
                 ["reserved", `Giữ chỗ (${kpi?.reservedCount || 0})`],
                 ["rented", `Đã thuê (${kpi?.rentedCount || 0})`],
@@ -1993,6 +2456,22 @@ function StudioApp() {
               ))}
             </div>
 
+            <div className="st-sort-bar">
+              <span className="st-sort-lbl">Thứ tự kho ({filteredApartments.length} BĐS):</span>
+              <select
+                className="st-sort-select"
+                value={aptSort}
+                onChange={(e) => setAptSort(e.target.value as any)}
+              >
+                <option value="priority">Chuẩn Web (Ghim đầu & Mới đẩy)</option>
+                <option value="slow">Cần đẩy thuê (Trống lâu / Ít khách)</option>
+                <option value="leads">Nhiều khách hỏi nhất</option>
+                <option value="newest">Mới đăng gần đây</option>
+                <option value="price-desc">Giá: Cao → Thấp</option>
+                <option value="price-asc">Giá: Thấp → Cao</option>
+              </select>
+            </div>
+
             {filteredApartments.length === 0 ? (
               <div className="st-empty">Không có căn hộ phù hợp bộ lọc.</div>
             ) : (
@@ -2001,11 +2480,19 @@ function StudioApp() {
                 const isAvail = apt.status === "Available";
                 const people = apt.contactSummary?.people || 0;
                 const isSelected = selectedApts.includes(apt.code);
+                const isHouseOrVilla = apt.propertyType === "house" || apt.propertyType === "villa";
+                const specParts = [
+                  apt.bedrooms != null ? `${apt.bedrooms} PN` : "",
+                  apt.landAreaM2 ? `Đất ${apt.landAreaM2}m²` : "",
+                  apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "Sàn " : ""}${apt.sizeM2}m²` : "",
+                  apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `T${apt.floor}`) : "",
+                  areaDisplayLabel(apt.areaName)
+                ].filter(Boolean).join(" · ");
 
                 return (
                   <article
                     key={apt.code}
-                    className={`st-apt-card ${isSelected ? "selected" : ""}`}
+                    className={`st-apt-card ${isSelected ? "selected" : ""} ${apt.isPinned && !isHidden && apt.status !== "Rented" ? "is-pinned" : ""}`}
                     onClick={aptSelectMode ? () => toggleSelectApt(apt.code) : undefined}
                   >
                     <div className="st-apt-top">
@@ -2048,10 +2535,13 @@ function StudioApp() {
                         <div className="st-apt-price">
                           {fmtVnd(apt.priceVnd)}/th <span style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 600 }}>· ${apt.priceUsd}</span>
                         </div>
-                        <div className="st-apt-meta">
-                          {apt.bedrooms ?? "-"} PN · {apt.sizeM2 ?? "-"} m² · {areaDisplayLabel(apt.areaName)}
-                        </div>
+                        <div className="st-apt-meta">{specParts}</div>
                         <div className="st-apt-badges">
+                          {apt.isPinned && apt.status !== "Rented" && (
+                            <span className="st-badge st-badge--gold-pin">
+                              <Icon.PinTop size={10} /> Ghim đầu #1
+                            </span>
+                          )}
                           <span className="st-badge st-badge--bronze">{getAptCategoryLabel(apt.propertyType)}</span>
                           {isHidden ? (
                             <span className="st-badge st-badge--gray">Đang ẩn</span>
@@ -2063,6 +2553,9 @@ function StudioApp() {
                             <span className="st-badge st-badge--green">Còn trống</span>
                           )}
                           <span className="st-badge st-badge--gray">{apt.code}</span>
+                          {isAvail && !isHidden && (apt.daysSinceBoost || 0) >= 3 && (
+                            <span className="st-badge st-badge--amber">{apt.daysSinceBoost}n chưa đẩy</span>
+                          )}
                           {people > 0 && (
                             <span
                               className="st-badge st-badge--blue"
@@ -2081,43 +2574,75 @@ function StudioApp() {
                     </div>
 
                     {!aptSelectMode && (
-                      <div className="st-apt-actions">
-                        <button
-                          type="button"
-                          className={`st-btn-mini ${isAvail ? "st-btn-mini--amber" : "st-btn-mini--green"}`}
-                          onClick={() =>
-                            quickPatchApt(
-                              apt,
-                              { status: isAvail ? "Rented" : "Available", isVisible: true },
-                              isAvail ? `Đã chuyển ${apt.code} sang Đã thuê` : `Đã mở trống ${apt.code}`
-                            )
-                          }
-                        >
-                          {isAvail ? "Đã thuê" : "Mở trống"}
-                        </button>
-                        <button
-                          type="button"
-                          className="st-btn-mini"
-                          onClick={() =>
-                            quickPatchApt(
-                              apt,
-                              { isVisible: isHidden, ...(isHidden && apt.status === "Hidden" ? { status: "Available" } : {}) },
-                              isHidden ? `Đã hiện ${apt.code} lên Web` : `Đã ẩn ${apt.code} khỏi Web`
-                            )
-                          }
-                        >
-                          <Icon.Eye off={!isHidden} />
-                          <span>{isHidden ? "Hiện" : "Ẩn"}</span>
-                        </button>
-                        <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditEditor(apt)}>
-                          <Icon.Edit />
-                          <span>Sửa</span>
-                        </button>
-                        <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteApt(apt.code)}>
-                          <Icon.Trash />
-                          <span>Xóa</span>
-                        </button>
-                      </div>
+                      <>
+                        <div className="st-apt-priority-strip">
+                          <button
+                            type="button"
+                            className={`st-btn-mini ${apt.isPinned ? "st-btn-mini--gold-active" : "st-btn-mini--bronze"}`}
+                            onClick={() =>
+                              quickPatchApt(
+                                apt,
+                                apt.isPinned ? { isPinned: false } : { isPinned: true, pinNow: true },
+                                apt.isPinned ? `Đã bỏ ghim ${apt.code}` : `Đã ghim cố định ${apt.code} lên đầu Web!`
+                              )
+                            }
+                          >
+                            <Icon.PinTop size={12} />
+                            <span>{apt.isPinned ? "Bỏ ghim đầu" : "Ghim lên đầu"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="st-btn-mini st-btn-mini--navy"
+                            onClick={() =>
+                              quickPatchApt(
+                                apt,
+                                { boostNow: true },
+                                `Đã đẩy ${apt.code} lên đầu danh sách như mới đăng!`
+                              )
+                            }
+                          >
+                            <Icon.Boost size={12} />
+                            <span>Đẩy Top ngay</span>
+                          </button>
+                        </div>
+                        <div className="st-apt-actions">
+                          <button
+                            type="button"
+                            className={`st-btn-mini ${isAvail ? "st-btn-mini--amber" : "st-btn-mini--green"}`}
+                            onClick={() =>
+                              quickPatchApt(
+                                apt,
+                                { status: isAvail ? "Rented" : "Available", isVisible: true },
+                                isAvail ? `Đã chuyển ${apt.code} sang Đã thuê` : `Đã mở trống ${apt.code}`
+                              )
+                            }
+                          >
+                            {isAvail ? "Đã thuê" : "Mở trống"}
+                          </button>
+                          <button
+                            type="button"
+                            className="st-btn-mini"
+                            onClick={() =>
+                              quickPatchApt(
+                                apt,
+                                { isVisible: isHidden, ...(isHidden && apt.status === "Hidden" ? { status: "Available" } : {}) },
+                                isHidden ? `Đã hiện ${apt.code} lên Web` : `Đã ẩn ${apt.code} khỏi Web`
+                              )
+                            }
+                          >
+                            <Icon.Eye off={!isHidden} />
+                            <span>{isHidden ? "Hiện" : "Ẩn"}</span>
+                          </button>
+                          <button type="button" className="st-btn-mini st-btn-mini--navy" onClick={() => openEditEditor(apt)}>
+                            <Icon.Edit />
+                            <span>Sửa</span>
+                          </button>
+                          <button type="button" className="st-btn-mini st-btn-mini--red" onClick={() => handleDeleteApt(apt.code)}>
+                            <Icon.Trash />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
+                      </>
                     )}
                   </article>
                 );
@@ -2178,22 +2703,42 @@ function StudioApp() {
                 <button type="button" className="st-btn-mini" onClick={() => setLeadAptFilter("")}>Xem tất cả</button>
               </div>
             ) : (
-              <div className="st-chips">
-                {[
-                  ["all", `Tất cả (${(report?.inquiries || []).filter((i) => i.type !== "owner_listing").length})`],
-                  ["viewings", "Tư vấn & Hẹn xem"],
-                  ["bookings", `Giữ chỗ (${(kpi?.pendingBookingsCount || 0) + (kpi?.confirmedBookingsCount || 0)})`]
-                ].map(([key, lbl]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`st-chip ${leadSubTab === key ? "active" : ""}`}
-                    onClick={() => setLeadSubTab(key as any)}
-                  >
-                    {lbl}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="st-chips" style={{ marginBottom: 6 }}>
+                  {[
+                    ["all", `Tất cả (${(report?.inquiries || []).filter((i) => i.type !== "owner_listing").length})`],
+                    ["viewings", "Tư vấn & Hẹn xem"],
+                    ["bookings", `Giữ chỗ (${(kpi?.pendingBookingsCount || 0) + (kpi?.confirmedBookingsCount || 0)})`]
+                  ].map(([key, lbl]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`st-chip ${leadSubTab === key ? "active" : ""}`}
+                      onClick={() => setLeadSubTab(key as any)}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+                <div className="st-chips">
+                  {[
+                    ["all", "Mọi tiến độ"],
+                    ["urgent", `Cần xử lý (${pendingAlertCount})`],
+                    ["scheduled", "Đã hẹn / Đang giữ"],
+                    ["contacted", "Đã liên hệ"],
+                    ["closed", "Đã chốt thuê"]
+                  ].map(([key, lbl]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`st-chip ${leadStatusFilter === key ? "active" : ""}`}
+                      onClick={() => setLeadStatusFilter(key as any)}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {filteredLeads.length === 0 ? (
@@ -2203,6 +2748,8 @@ function StudioApp() {
                 const leadKey = inq.code || inq._id;
                 const isBooking = ["reservation", "booking"].includes(inq.type);
                 const link = contactHref(inq.contactHandle, inq.messenger);
+                const quickContact = buildLeadQuickActions(inq.contactHandle, inq.messenger);
+                const relTime = formatRelativeTimeVi(inq.createdAt);
                 const isSelected = selectedLeads.includes(leadKey);
                 const badgeClass =
                   inq.status === "New" || inq.status === "Pending"
@@ -2234,11 +2781,12 @@ function StudioApp() {
                           </button>
                         )}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)" }}>
-                            {inq.clientName || "Khách hàng"}
+                          <div style={{ fontWeight: 800, fontSize: 14.5, color: "var(--navy)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span>{inq.clientName || "Khách hàng"}</span>
+                            {relTime && <span style={{ fontSize: 10.5, fontWeight: 600, color: "var(--text-muted)" }}>· {relTime}</span>}
                           </div>
                           <div style={{ fontSize: 11.5, color: "var(--text-sub)" }}>
-                            {inq.code} · {isBooking ? "Đặt giữ chỗ" : "Hẹn xem"} · <b>{inq.apartmentCode}</b>
+                            {inq.code} · {isBooking ? "Đặt giữ chỗ" : inq.type === "shortlist" ? "Tìm nhà theo nhu cầu" : "Hẹn xem"} · <b>{inq.apartmentCode}</b>
                           </div>
                         </div>
                       </div>
@@ -2253,9 +2801,39 @@ function StudioApp() {
                       ) : (
                         <span className="st-badge st-badge--gray">{inq.contactHandle || "Chưa có SĐT"}</span>
                       )}
-                      {inq.viewingTime && (
+                      {quickContact.zaloHref && (!link || !link.href.includes("zalo.me")) && (
+                        <a href={quickContact.zaloHref} target="_blank" rel="noreferrer" className="st-contact-chip" onClick={(e) => e.stopPropagation()}>
+                          Zalo
+                        </a>
+                      )}
+                      {quickContact.waHref && (!link || !link.href.includes("wa.me")) && (
+                        <a href={quickContact.waHref} target="_blank" rel="noreferrer" className="st-contact-chip" onClick={(e) => e.stopPropagation()}>
+                          WhatsApp
+                        </a>
+                      )}
+                      {quickContact.telHref && (!link || !link.href.startsWith("tel:")) && (
+                        <a href={quickContact.telHref} className="st-contact-chip" onClick={(e) => e.stopPropagation()}>
+                          Gọi
+                        </a>
+                      )}
+                      {quickContact.clean && (
+                        <button
+                          type="button"
+                          className="st-contact-chip"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard?.writeText(quickContact.clean);
+                            showToast(`Đã sao chép: ${quickContact.clean}`);
+                          }}
+                        >
+                          <Icon.Copy size={11} /> Copy
+                        </button>
+                      )}
+                      {inq.budgetUsd && <span className="st-badge st-badge--bronze">{inq.budgetUsd}</span>}
+                      {inq.bedrooms && <span className="st-badge st-badge--gray">{inq.bedrooms}</span>}
+                      {(inq.viewingTime || inq.requestedViewingTime) && (
                         <span className="st-badge st-badge--amber">
-                          <Icon.Calendar /> {inq.viewingTime}
+                          <Icon.Calendar /> {inq.viewingTime || inq.requestedViewingTime}
                         </span>
                       )}
                       {inq.moveInDate && <span className="st-badge st-badge--gray">Vào ở: {inq.moveInDate}</span>}
@@ -2264,6 +2842,11 @@ function StudioApp() {
                     {inq.notes && (
                       <div style={{ fontSize: 12.5, color: "var(--text-sub)", background: "var(--surface-soft)", padding: "8px 10px", borderRadius: 10 }}>
                         {inq.notes}
+                      </div>
+                    )}
+                    {inq.adminNotes && (
+                      <div style={{ fontSize: 12, color: "var(--bronze-dark)", background: "rgba(179,134,70,0.1)", border: "1px solid rgba(179,134,70,0.25)", padding: "7px 10px", borderRadius: 10 }}>
+                        <b>Ghi chú nội bộ:</b> {inq.adminNotes}
                       </div>
                     )}
 
@@ -2585,7 +3168,7 @@ function StudioApp() {
               type="button"
               className="st-bulk-btn st-bulk-btn--edit"
               onClick={() => {
-                setBulkAptForm({ propertyType: "", status: "", visibility: "", areaName: "", priceMode: "", priceValue: "" });
+                setBulkAptForm({ pinAction: "", propertyType: "", status: "", visibility: "", areaName: "", priceMode: "", priceValue: "" });
                 setBulkAptModalOpen(true);
               }}
             >
@@ -2666,6 +3249,16 @@ function StudioApp() {
             <form className="st-sheet-body" onSubmit={handleBulkUpdateApts}>
               <div style={{ fontSize: 12, color: "var(--text-sub)", background: "var(--surface)", padding: "9px 12px", borderRadius: 12, border: "1px solid var(--border)" }}>
                 Chỉ những mục anh chọn mới thay đổi. Mục để <b>"Giữ nguyên"</b> sẽ không bị ảnh hưởng.
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Ưu tiên đẩy lên đầu trang Web</label>
+                <select className="st-select" value={bulkAptForm.pinAction} onChange={(e) => setBulkAptForm((p) => ({ ...p, pinAction: e.target.value }))}>
+                  <option value="">— Giữ nguyên —</option>
+                  <option value="pin">Ghim cố định lên đầu Web (Nổi bật #1)</option>
+                  <option value="boost">Làm mới đẩy lên đầu danh sách ngay</option>
+                  <option value="unpin">Bỏ ghim ưu tiên</option>
+                </select>
               </div>
 
               <div className="st-field">
@@ -2858,7 +3451,9 @@ function StudioApp() {
       )}
 
       {/* ================= MODAL 4: APARTMENT CREATE / EDIT ================= */}
-      {editorOpen && (
+      {editorOpen && (() => {
+        const activeCat = CATEGORY_CONFIG[form.propertyType] || CATEGORY_CONFIG.condo;
+        return (
         <div className="st-modal-backdrop" onClick={() => setEditorOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
@@ -2867,12 +3462,12 @@ function StudioApp() {
             </div>
             <form className="st-sheet-body" onSubmit={handleSaveApartment}>
               <div style={{ background: "var(--green-bg)", color: "var(--green)", fontSize: 12, fontWeight: 700, padding: "8px 12px", borderRadius: 12 }}>
-                Lưu thẳng Cloud 24/7 — tự đồng bộ sang Bot Telegram & dịch 6 ngôn ngữ lên Web tức thì.
+                Lưu thẳng Cloud 24/7 — tự đồng bộ tức thì lên Website & Bot Telegram.
               </div>
 
-              {/* 1-Tap Product Category Selector */}
+              {/* 1-Tap Product Category Selector with Bespoke SVG Icons */}
               <div className="st-field">
-                <span className="st-label">Danh mục sản phẩm *</span>
+                <span className="st-label">Danh mục sản phẩm * (Tự động mở bộ thuộc tính chuẩn)</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {PROPERTY_CATEGORIES.map((cat) => {
                     const active = form.propertyType === cat.val;
@@ -2881,14 +3476,62 @@ function StudioApp() {
                         key={cat.val}
                         type="button"
                         className={`st-chip ${active ? "active" : ""}`}
-                        style={{ height: 32, fontSize: 12, fontWeight: 700 }}
-                        onClick={() => setForm((p) => ({ ...p, propertyType: cat.val }))}
+                        style={{ height: 34, fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}
+                        onClick={() => {
+                          const nextCfg = CATEGORY_CONFIG[cat.val] || CATEGORY_CONFIG.condo;
+                          setForm((p) => ({
+                            ...p,
+                            propertyType: cat.val,
+                            ...(!editingCode ? { floor: nextCfg.defaultFloor } : {})
+                          }));
+                        }}
                       >
-                        {active ? "✓ " : ""}{cat.label}
+                        <Icon.Category type={cat.val} size={13} />
+                        <span>{cat.label}</span>
                       </button>
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Top-Priority Pin & Boost Toggle Banner */}
+              <div className={`st-pin-banner ${form.isPinned ? "active" : ""}`}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", flex: 1 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.isPinned}
+                    onChange={(e) => setForm((p) => ({ ...p, isPinned: e.target.checked }))}
+                    style={{ width: 18, height: 18, marginTop: 2, accentColor: "#9a6d2f", flexShrink: 0 }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 13, color: "var(--navy)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <Icon.PinTop size={13} /> Ghim ưu tiên lên đầu trang Web (Nổi bật #1)
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-sub)", marginTop: 1 }}>
+                      Dùng cho căn cần đẩy thuê nhanh — luôn hiển thị trên cùng Trang chủ & Danh mục.
+                    </div>
+                  </div>
+                </label>
+                {editingCode && (
+                  <button
+                    type="button"
+                    className="st-btn-mini st-btn-mini--navy"
+                    style={{ flexShrink: 0 }}
+                    onClick={async () => {
+                      const r = await fetch(`/api/apartments/${encodeURIComponent(editingCode)}`, {
+                        method: "PATCH",
+                        headers: authHeaders({ "Content-Type": "application/json" }),
+                        body: JSON.stringify({ boostNow: true })
+                      });
+                      if (r.ok) {
+                        showToast(`Đã đẩy ${editingCode} lên đầu danh sách!`);
+                        await loadReport();
+                      }
+                    }}
+                  >
+                    <Icon.Boost size={12} /> Đẩy Top
+                  </button>
+                )}
               </div>
 
               {/* Photo CRUD Grid */}
@@ -2968,22 +3611,10 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">
-                  {form.propertyType === "house"
-                    ? "Tên nhà nguyên căn *"
-                    : form.propertyType === "villa"
-                      ? "Tên Biệt thự / Villa *"
-                      : form.propertyType === "apartment"
-                        ? "Tên căn hộ thường / Studio *"
-                        : "Tên căn hộ chung cư *"}
-                </label>
+                <label className="st-label">{activeCat.titleLabel}</label>
                 <input
                   className="st-input"
-                  placeholder={
-                    form.propertyType === "house" || form.propertyType === "villa"
-                      ? "VD: Cho thuê nhà 3 tầng đầy đủ nội thất / Villa hồ bơi riêng"
-                      : "VD: The Panoma 2 — Căn góc 2PN View Sông Hàn"
-                  }
+                  placeholder={activeCat.titlePlaceholder}
                   value={form.title}
                   onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   required
@@ -2992,12 +3623,10 @@ function StudioApp() {
 
               <div className="st-row-2">
                 <div className="st-field">
-                  <label className="st-label">
-                    {form.propertyType === "house" || form.propertyType === "villa" ? "Tên đường / Khu dân cư" : "Tòa nhà / Dự án"}
-                  </label>
+                  <label className="st-label">{activeCat.bldgLabel}</label>
                   <input
                     className="st-input"
-                    placeholder={form.propertyType === "house" || form.propertyType === "villa" ? "VD: Khu đảo VIP Hòa Xuân / Đỗ Nhuận" : "VD: The Panoma"}
+                    placeholder={activeCat.bldgPlaceholder}
                     value={form.building}
                     onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))}
                   />
@@ -3011,6 +3640,21 @@ function StudioApp() {
                   </select>
                 </div>
               </div>
+
+              {activeCat.bldgPresets.length > 0 && (
+                <div className="st-preset-chips">
+                  {activeCat.bldgPresets.map((bp) => (
+                    <button
+                      key={bp}
+                      type="button"
+                      className={`st-preset-chip ${form.building === bp ? "active" : ""}`}
+                      onClick={() => setForm((p) => ({ ...p, building: bp }))}
+                    >
+                      {bp}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="st-row-2">
                 <div className="st-field">
@@ -3137,6 +3781,31 @@ function StudioApp() {
                 </div>
               </div>
 
+              {activeCat.hasLandArea ? (
+                <div className="st-row-2">
+                  <div className="st-field">
+                    <label className="st-label">Diện tích đất (m²)</label>
+                    <input
+                      className="st-input"
+                      inputMode="decimal"
+                      placeholder="VD: 100"
+                      value={form.landAreaM2}
+                      onChange={(e) => setForm((p) => ({ ...p, landAreaM2: e.target.value }))}
+                    />
+                  </div>
+                  <div className="st-field">
+                    <label className="st-label">{activeCat.sizeLabel}</label>
+                    <input
+                      className="st-input"
+                      inputMode="decimal"
+                      placeholder="VD: 240"
+                      value={form.sizeM2}
+                      onChange={(e) => setForm((p) => ({ ...p, sizeM2: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
               <div className="st-row-3">
                 <div className="st-field">
                   <label className="st-label">Phòng ngủ</label>
@@ -3147,24 +3816,64 @@ function StudioApp() {
                   <input className="st-input" inputMode="numeric" value={form.bathrooms} onChange={(e) => setForm((p) => ({ ...p, bathrooms: e.target.value }))} />
                 </div>
                 <div className="st-field">
-                  <label className="st-label">Diện tích m²</label>
-                  <input className="st-input" inputMode="decimal" value={form.sizeM2} onChange={(e) => setForm((p) => ({ ...p, sizeM2: e.target.value }))} />
+                  <label className="st-label">{activeCat.hasLandArea ? activeCat.floorLabel : activeCat.sizeLabel}</label>
+                  <input
+                    className="st-input"
+                    inputMode="decimal"
+                    value={activeCat.hasLandArea ? form.floor : form.sizeM2}
+                    onChange={(e) =>
+                      setForm((p) => (activeCat.hasLandArea ? { ...p, floor: e.target.value } : { ...p, sizeM2: e.target.value }))
+                    }
+                  />
                 </div>
               </div>
 
-              <div className="st-row-3">
+              <div className={activeCat.hasLandArea ? "st-row-2" : "st-row-3"}>
+                {!activeCat.hasLandArea && (
+                  <div className="st-field">
+                    <label className="st-label">{activeCat.floorLabel}</label>
+                    <input className="st-input" inputMode="numeric" value={form.floor} onChange={(e) => setForm((p) => ({ ...p, floor: e.target.value }))} />
+                  </div>
+                )}
                 <div className="st-field">
-                  <label className="st-label">{form.propertyType === "house" || form.propertyType === "villa" ? "Số tầng nhà" : "Tầng"}</label>
-                  <input className="st-input" inputMode="numeric" value={form.floor} onChange={(e) => setForm((p) => ({ ...p, floor: e.target.value }))} />
-                </div>
-                <div className="st-field">
-                  <label className="st-label">HĐ tối thiểu</label>
+                  <label className="st-label">HĐ tối thiểu (tháng)</label>
                   <input className="st-input" inputMode="numeric" value={form.minLeaseMonths} onChange={(e) => setForm((p) => ({ ...p, minLeaseMonths: e.target.value }))} />
                 </div>
                 <div className="st-field">
                   <label className="st-label">Cọc (tháng)</label>
                   <input className="st-input" inputMode="numeric" value={form.depositMonths} onChange={(e) => setForm((p) => ({ ...p, depositMonths: e.target.value }))} />
                 </div>
+              </div>
+
+              {/* Category-Specific Dynamic Attributes Box */}
+              <div className="st-cat-attr-box">
+                <div className="st-cat-attr-head">
+                  <Icon.Category type={form.propertyType} size={14} />
+                  <span>Thuộc tính chuẩn: {PROPERTY_CATEGORIES.find((c) => c.val === form.propertyType)?.label}</span>
+                </div>
+                {activeCat.attrs.map((attr) => (
+                  <div key={attr.key} className="st-field">
+                    <label className="st-label">{attr.label}</label>
+                    <input
+                      className="st-input"
+                      placeholder={attr.placeholder}
+                      value={form[attr.key]}
+                      onChange={(e) => setForm((p) => ({ ...p, [attr.key]: e.target.value }))}
+                    />
+                    <div className="st-preset-chips">
+                      {attr.presets.map((pr) => (
+                        <button
+                          key={pr}
+                          type="button"
+                          className={`st-preset-chip ${form[attr.key] === pr ? "active" : ""}`}
+                          onClick={() => setForm((p) => ({ ...p, [attr.key]: pr }))}
+                        >
+                          {pr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="st-field">
@@ -3176,6 +3885,15 @@ function StudioApp() {
                 <div className="st-field">
                   <label className="st-label">Giá điện</label>
                   <input className="st-input" value={form.electricityRate} onChange={(e) => setForm((p) => ({ ...p, electricityRate: e.target.value }))} />
+                  {activeCat.elecPresets.length > 0 && (
+                    <div className="st-preset-chips">
+                      {activeCat.elecPresets.map((ep) => (
+                        <button key={ep} type="button" className="st-preset-chip" onClick={() => setForm((p) => ({ ...p, electricityRate: ep }))}>
+                          {ep}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="st-field">
                   <label className="st-label">Thú cưng</label>
@@ -3184,9 +3902,9 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <span className="st-label">Tiện ích nổi bật</span>
+                <span className="st-label">Tiện ích nổi bật ({getAptCategoryLabel(form.propertyType)})</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {QUICK_TAGS.map((tag) => {
+                  {activeCat.tags.map((tag) => {
                     const on = form.tags.includes(tag);
                     return (
                       <button
@@ -3218,19 +3936,57 @@ function StudioApp() {
                 />
               </div>
 
+              {/* Private Landlord & Internal Admin Note Box */}
+              <div className="st-cat-attr-box" style={{ background: "var(--surface-soft)" }}>
+                <div className="st-cat-attr-head" style={{ color: "var(--navy)" }}>
+                  <Icon.Lock />
+                  <span>Thông tin chủ nhà & Ghi chú nội bộ (Bảo mật — không hiện lên Web)</span>
+                </div>
+                <div className="st-row-2">
+                  <div className="st-field">
+                    <label className="st-label">Tên chủ nhà / Quản lý</label>
+                    <input
+                      className="st-input"
+                      placeholder="VD: Chị Lan chủ nhà"
+                      value={form.landlordName}
+                      onChange={(e) => setForm((p) => ({ ...p, landlordName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="st-field">
+                    <label className="st-label">SĐT / Zalo chủ nhà</label>
+                    <input
+                      className="st-input"
+                      placeholder="0905xxxxxx"
+                      value={form.landlordPhone}
+                      onChange={(e) => setForm((p) => ({ ...p, landlordPhone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="st-field">
+                  <label className="st-label">Ghi chú nội bộ (Mã khóa cửa, hoa hồng, lưu ý...)</label>
+                  <input
+                    className="st-input"
+                    placeholder="VD: Pass cửa 2580#, hoa hồng 1 tháng..."
+                    value={form.adminNote}
+                    onChange={(e) => setForm((p) => ({ ...p, adminNote: e.target.value }))}
+                  />
+                </div>
+              </div>
+
               <button type="submit" className="st-btn st-btn--primary" disabled={savingApt}>
-                {savingApt ? "Đang lưu & dịch 6 ngôn ngữ..." : editingCode ? "Lưu Thay Đổi" : "Đăng Căn Hộ Lên Web"}
+                {savingApt ? "Đang lưu & đồng bộ lên Web..." : editingCode ? "Lưu Thay Đổi" : "Đăng Bất Động Sản Lên Web"}
               </button>
 
               {editingCode && (
                 <button type="button" className="st-btn st-btn--danger" onClick={() => handleDeleteApt(editingCode)}>
-                  <Icon.Trash /> Xóa Vĩnh Viễn Căn Hộ Này
+                  <Icon.Trash /> Xóa Vĩnh Viễn BĐS Này
                 </button>
               )}
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ================= MODAL 5: CUSTOMER / LEAD CREATE & EDIT ================= */}
       {leadModalOpen && (
@@ -3334,12 +4090,23 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">Ghi chú nhu cầu</label>
+                <label className="st-label">Ghi chú nhu cầu của khách</label>
                 <textarea
                   className="st-textarea"
                   placeholder="Yêu cầu view, thú cưng, thời hạn thuê..."
                   value={leadForm.notes}
                   onChange={(e) => setLeadForm((p) => ({ ...p, notes: e.target.value }))}
+                />
+              </div>
+
+              <div className="st-field">
+                <label className="st-label">Ghi chú nội bộ Admin (Lịch sử trao đổi, căn đã gửi...)</label>
+                <textarea
+                  className="st-textarea"
+                  style={{ minHeight: 64 }}
+                  placeholder="VD: Đã gửi 3 căn Hòa Xuân qua Zalo, hẹn chiều T7 đi xem..."
+                  value={leadForm.adminNotes}
+                  onChange={(e) => setLeadForm((p) => ({ ...p, adminNotes: e.target.value }))}
                 />
               </div>
 

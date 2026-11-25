@@ -47,13 +47,14 @@ async function registerTelegramBotCommands(token) {
   if (!token) return;
   try {
     const commands = [
-      { command: "start", description: "🏛️ Bảng điều khiển chính & Tổng quan kho căn hộ" },
-      { command: "wizard", description: "➕ Đăng căn mới từ điện thoại" },
+      { command: "start", description: "🏛️ Bảng điều khiển chính & Tổng quan kho BĐS" },
+      { command: "wizard", description: "➕ Đăng BĐS mới từ điện thoại" },
       { command: "draft", description: "📝 Tiếp tục bản nháp" },
-      { command: "list", description: "🏠 Kho căn hộ, tìm theo tên hoặc mã" },
-      { command: "crm", description: "Khách hàng và lịch xem" },
-      { command: "bookings", description: "Yêu cầu đặt phòng" },
-      { command: "form", description: "📝 Lấy mẫu chữ điền nhanh thông tin căn hộ" },
+      { command: "list", description: "🏠 Kho BĐS, tìm theo tên hoặc mã" },
+      { command: "pinned", description: "📌 Danh sách căn đang ghim ưu tiên đầu Web" },
+      { command: "crm", description: "👥 Khách hàng và lịch xem" },
+      { command: "bookings", description: "📅 Yêu cầu đặt phòng" },
+      { command: "form", description: "📋 Mẫu điền nhanh theo từng danh mục BĐS" },
       { command: "cancel", description: "❌ Hủy thao tác đang nhập" }
     ];
     await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
@@ -172,12 +173,38 @@ function parseMultilineListingText(text = "") {
     else if (key.includes("phòng tắm") || key.includes("wc") || key === "bathrooms") {
       if (/^\d{1,2}$/.test(val)) data.bathrooms = Number(val);
     }
+    else if (key.includes("diện tích đất") || key.includes("dt đất") || key === "land area") {
+      const lsz = val.match(/^(\d{1,5}(?:[.,]\d{1,2})?)\s*(?:m[²2])?$/i);
+      if (lsz && Number(lsz[1].replace(",", ".")) > 0) data.landAreaM2 = Number(lsz[1].replace(",", "."));
+    }
     else if (key.includes("diện tích") || key.includes("dien tich") || key === "m2" || key === "size") {
       const size = val.match(/^(\d{1,5}(?:[.,]\d{1,2})?)\s*(?:m[²2])?$/i);
       if (size && Number(size[1].replace(",", ".")) > 0) data.sizeM2 = Number(size[1].replace(",", "."));
     }
-    else if (key.includes("tầng") || key.includes("tang") || key === "floor") {
-      if (/^-?\d{1,3}$/.test(val)) data.floor = Number(val);
+    else if (key.includes("tầng") || key.includes("tang") || key === "floor" || key === "floors") {
+      const fm = val.match(/^(-?\d{1,3})\s*(?:tầng|tang|lầu)?$/iu);
+      if (fm) data.floor = Number(fm[1]);
+    }
+    else if (key.includes("đường trước nhà") || key.includes("kiệt") || key.includes("mặt tiền") || key === "frontage") {
+      data.frontageRoad = val;
+    }
+    else if (key.includes("nội thất") || key.includes("thiết kế") || key === "furnishing") {
+      data.furnishing = val;
+    }
+    else if (key.includes("dọn phòng") || key.includes("vệ sinh") || key === "cleaning") {
+      data.cleaningService = val;
+    }
+    else if (key.includes("phí quản lý") || key.includes("phi quan ly") || key === "management fee") {
+      data.managementFee = val;
+    }
+    else if (key.includes("đỗ xe") || key.includes("gửi xe") || key.includes("gara") || key === "parking") {
+      data.parking = val;
+    }
+    else if (key.includes("hồ bơi") || key.includes("sân vườn") || key === "pool") {
+      data.poolInfo = val;
+    }
+    else if (key === "ghim" || key === "ghim đầu" || key === "ưu tiên" || key === "pin") {
+      data.isPinned = /^(có|ghim|yes|true|1|đầu)/iu.test(val);
     }
     else if (["ngày có thể vào", "ngày trống", "có thể vào từ", "available from"].includes(key)) {
       const date = parseAvailabilityDate(val);
@@ -227,6 +254,7 @@ function getMainMenuButtons() {
     ...(studioUrl ? [[{ text: "📱 Mở KIN Studio (Quản lý nhanh)", web_app: { url: studioUrl } }]] : []),
     [
       { text: "🏠 Kho BĐS (Tất cả)", callback_data: "/list" },
+      { text: "📌 Đang ghim đầu", callback_data: "/pinned" },
       { text: "➕ Đăng mới", callback_data: "/wizard" }
     ],
     [
@@ -249,8 +277,16 @@ function getMainMenuButtons() {
 function getApartmentControlButtons(apt, contactCount, listBack = "/list") {
   const isAvailable = apt.status === "Available";
   const isVisible = apt.isVisible !== false && apt.status !== "Hidden";
+  const isPinned = Boolean(apt.isPinned);
   const map = apartmentMapUrl(apt);
   return [
+    [
+      {
+        text: isPinned ? "📍 Bỏ ghim đầu" : "📌 Ghim lên đầu",
+        callback_data: isPinned ? `/unpin ${apt.code}` : `/pin ${apt.code}`
+      },
+      { text: "🚀 Đẩy Top ngay", callback_data: `/boost ${apt.code}` }
+    ],
     [
       { text: contactCount === undefined ? "👥 Khách LH" : `👥 Khách LH (${contactCount})`, callback_data: `/apt_contacts ${apt.code}` },
       ...(isVisible && isAvailable && !apt.reservationHold ? [{ text: "📅 Đặt phòng", callback_data: `/book ${apt.code}` }] : []),
@@ -334,26 +370,25 @@ async function processTelegramCommand(rawText, meta = {}) {
     const status = await db.getLiveDbStatus();
     const tc = status.typeCounts || {};
     const typeLine = `🏢 Chung cư: ${tc.condo || 0} · 🏠 Căn hộ: ${tc.apartment || 0} · 🏡 Nhà: ${tc.house || 0} · 🌴 Villa: ${tc.villa || 0}${tc.penthouse ? ` · ✨ Penthouse: ${tc.penthouse}` : ""}`;
+    const pinNote = status.pinnedCount ? ` · 📌 *${status.pinnedCount}* ghim đầu` : "";
     const reply =
       `🏛️ *KIN ESTATES — CLOUD LIVE*\n` +
-      `Tổng *${status.totalApartments}* BĐS · *${status.availableCount}* đang trống · *${status.newInquiriesCount}* khách mới\n` +
+      `Tổng *${status.totalApartments}* BĐS · *${status.availableCount}* đang trống${pinNote} · *${status.newInquiriesCount}* khách mới\n` +
       `${typeLine}\n\n` +
       (lower === "/refresh"
         ? "✅ Đã đồng bộ dữ liệu mới nhất trực tiếp từ Cloud!"
-        : "Chọn danh mục bên dưới để quản lý hoặc gửi ảnh từ thư viện để đăng mới.");
+        : "Chọn danh mục bên dưới để quản lý, ghim đẩy Top căn trống lâu, hoặc gửi ảnh để đăng mới.");
 
     const res = { reply, buttons: getMainMenuButtons() };
     recordBotReply(res);
     return res;
   }
 
-  if (lower === "/form" || lower === "/add") {
-    const res = {
-      reply:
-        "📋 *MẪU ĐĂNG BẤT ĐỘNG SẢN NHANH (CHẠM KHUNG ĐỂ COPY):*\n" +
-        "• *Loại hình:* `Căn hộ chung cư` | `Căn hộ thường` | `Nhà nguyên căn` | `Biệt thự` | `Penthouse`\n" +
-        "• *Bản đồ:* Dán trực tiếp link Google Maps (`maps.app.goo.gl/...`) vào `Ghim bản đồ:` hoặc `Địa chỉ:` — hệ thống tự nhận địa chỉ & ghim chuẩn!\n\n" +
-        "\x60\x60\x60\nĐĂNG CĂN HỘ\n" +
+  if (lower === "/form" || lower.startsWith("/form ") || lower === "/add") {
+    const formArg = lower.startsWith("/form ") ? lower.slice(6).trim() : "condo";
+    const templates = {
+      condo:
+        "ĐĂNG CĂN HỘ\n" +
         "Loại hình: Căn hộ chung cư\n" +
         "Tên: The Panoma 2 — Căn góc 2PN View Sông Hàn\n" +
         "Tòa nhà: The Panoma (Sun Cosmo)\n" +
@@ -362,11 +397,105 @@ async function processTelegramCommand(rawText, meta = {}) {
         "Ghim bản đồ: 16.0508, 108.2355\n" +
         "Giá: 21tr\n" +
         "Thông số: 2PN | 2WC | 74m2 | Tầng 22\n" +
+        "Phí quản lý: Đã bao gồm trong giá thuê\n" +
+        "Đỗ xe: Hầm ô tô & xe máy\n" +
         "Hợp đồng: Tối thiểu 6 tháng | Cọc 1 tháng | Vào ở: 01/12/2026\n" +
-        "Chi phí: Điện EVN ~2.800đ | Nước nhà nước | Wi-Fi: Có | Thú cưng: Cho phép thú cưng nhỏ\n" +
-        "Tiện ích: View sông Hàn, Hồ bơi vô cực, Gym, Bàn làm việc, Chỗ đỗ ô tô\n" +
-        "Mô tả: Căn góc 2 mặt kính Low-E cách âm, nội thất gỗ sồi mới 100%, máy giặt sấy riêng và cáp quang 300Mbps.\n\x60\x60\x60",
-      buttons: [[{ text: "➕ Đăng từng bước (/wizard)", callback_data: "/wizard" }, { text: "📝 Mở bản nháp (/draft)", callback_data: "/draft" }]]
+        "Chi phí: Điện EVN ~2.800đ | Nước nhà nước | Wi-Fi: Có | Thú cưng: Thương lượng\n" +
+        "Tiện ích: View sông Hàn, Hồ bơi vô cực, Gym, Bàn làm việc\n" +
+        "Mô tả: Căn góc 2 mặt kính Low-E cách âm, nội thất gỗ sồi mới 100%, máy giặt sấy riêng.",
+      apartment:
+        "ĐĂNG CĂN HỘ\n" +
+        "Loại hình: Căn hộ thường\n" +
+        "Tên: Căn hộ Studio Ban Công Thoáng — Đi bộ 4 phút ra Mỹ Khê\n" +
+        "Tòa nhà: An Thượng Boutique\n" +
+        "Khu vực: An Thượng\n" +
+        "Địa chỉ: Đường An Thượng 2, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng\n" +
+        "Ghim bản đồ: 16.0498, 108.2459\n" +
+        "Giá: 9.5tr\n" +
+        "Thông số: 1PN | 1WC | 45m2 | Tầng 4\n" +
+        "Dọn phòng: Miễn phí 1 lần/tuần + thay ga\n" +
+        "Nội thất: Đầy đủ nội thất + Máy giặt riêng\n" +
+        "Hợp đồng: Tối thiểu 3 tháng | Cọc 1 tháng\n" +
+        "Chi phí: Điện 3.800đ/kWh | Nước 100.000đ/tháng | Wi-Fi: Miễn phí | Thú cưng: Cho phép mèo\n" +
+        "Tiện ích: Gần biển, Ban công, Bàn làm việc, Máy giặt\n" +
+        "Mô tả: Căn hộ dịch vụ yên tĩnh, nhiều ánh sáng tự nhiên, thang máy thẻ từ an ninh 24/7.",
+      house:
+        "ĐĂNG CĂN HỘ\n" +
+        "Loại hình: Nhà nguyên căn\n" +
+        "Tên: Nhà nguyên căn 3 tầng mới đẹp — Đảo VIP Hòa Xuân\n" +
+        "Tòa nhà: Khu Đảo VIP Hòa Xuân\n" +
+        "Khu vực: Hòa Xuân\n" +
+        "Địa chỉ: Đường Đỗ Nhuận, Phường Hòa Xuân, Quận Cẩm Lệ, Đà Nẵng\n" +
+        "Ghim bản đồ: 16.0175, 108.2215\n" +
+        "Giá: 22tr\n" +
+        "Diện tích đất: 100m2\n" +
+        "Diện tích: 240m2\n" +
+        "Phòng ngủ: 4\n" +
+        "Phòng tắm: 4\n" +
+        "Số tầng: 3\n" +
+        "Đường trước nhà: Đường 7.5m vỉa hè 4m đỗ ô tô\n" +
+        "Nội thất: Full nội thất cao cấp\n" +
+        "Hợp đồng: Tối thiểu 12 tháng | Cọc 2 tháng\n" +
+        "Chi phí: Điện EVN nhà nước | Nước nhà nước | Thú cưng: Thoải mái\n" +
+        "Tiện ích: Chỗ đỗ ô tô, Sân thượng, Điện EVN, Thú cưng\n" +
+        "Mô tả: Nhà phố 3 tầng thiết kế hiện đại, sân đỗ ô tô trong nhà, phù hợp gia đình hoặc chuyên gia.",
+      villa:
+        "ĐĂNG CĂN HỘ\n" +
+        "Loại hình: Biệt thự\n" +
+        "Tên: Biệt thự Hồ bơi Muối khoáng 4PN — Khu Nam Việt Á\n" +
+        "Tòa nhà: Khu Biệt thự Nam Việt Á\n" +
+        "Khu vực: Nam Việt Á\n" +
+        "Địa chỉ: Đường Bùi Tá Hán, Phường Khuê Mỹ, Quận Ngũ Hành Sơn, Đà Nẵng\n" +
+        "Ghim bản đồ: 16.0348, 108.2415\n" +
+        "Giá: 48tr\n" +
+        "Diện tích đất: 250m2\n" +
+        "Diện tích: 360m2\n" +
+        "Phòng ngủ: 4\n" +
+        "Phòng tắm: 5\n" +
+        "Số tầng: 3\n" +
+        "Hồ bơi: Hồ bơi riêng muối khoáng + Sân vườn BBQ\n" +
+        "Đỗ xe: Gara 2 ô tô trong sân\n" +
+        "Hợp đồng: Tối thiểu 12 tháng | Cọc 2 tháng\n" +
+        "Chi phí: Điện EVN nhà nước | Nước nhà nước | Thú cưng: Thoải mái\n" +
+        "Tiện ích: Biệt thự, Hồ bơi riêng, Sân vườn, Chỗ đỗ ô tô, Thú cưng\n" +
+        "Mô tả: Villa biệt lập yên tĩnh gần sông Hàn, bao bảo trì hồ bơi định kỳ.",
+      penthouse:
+        "ĐĂNG CĂN HỘ\n" +
+        "Loại hình: Penthouse\n" +
+        "Tên: Sky Penthouse Duplex 3PN Sân vườn — View Toàn cảnh Sông Hàn\n" +
+        "Tòa nhà: The Filmore Da Nang\n" +
+        "Khu vực: Hải Châu\n" +
+        "Địa chỉ: Đường Bạch Đằng, Quận Hải Châu, Đà Nẵng\n" +
+        "Ghim bản đồ: 16.0614, 108.2238\n" +
+        "Giá: 65tr\n" +
+        "Thông số: 3PN | 3WC | 165m2 | Tầng 25\n" +
+        "Nội thất: Duplex thông tầng + Ban công panorama\n" +
+        "Phí quản lý: Đã bao gồm\n" +
+        "Hợp đồng: Tối thiểu 12 tháng | Cọc 2 tháng\n" +
+        "Mô tả: Penthouse thông tầng kính tràn viền ngắm trọn Cầu Rồng & sông Hàn."
+    };
+    const chosen = templates[formArg] || templates.condo;
+    const res = {
+      reply:
+        "📋 *MẪU ĐĂNG NHANH THEO ĐÚNG THUỘC TÍNH DANH MỤC (CHẠM KHUNG ĐỂ COPY):*\n" +
+        "• Dán thẳng link Google Maps (`maps.app.goo.gl/...`) vào `Ghim bản đồ:` hoặc `Địa chỉ:` — tự nhận chuẩn!\n" +
+        "• Thêm dòng `Ghim đầu: Có` nếu muốn bài đăng ghim cố định Top 1.\n\n" +
+        "\x60\x60\x60\n" + chosen + "\n\x60\x60\x60",
+      buttons: [
+        [
+          { text: "🏢 Mẫu Chung cư", callback_data: "/form condo" },
+          { text: "🏠 Mẫu Căn hộ", callback_data: "/form apartment" }
+        ],
+        [
+          { text: "🏡 Mẫu Nhà nguyên căn", callback_data: "/form house" },
+          { text: "🌴 Mẫu Villa", callback_data: "/form villa" },
+          { text: "✨ Penthouse", callback_data: "/form penthouse" }
+        ],
+        [
+          { text: "➕ Đăng từng bước (/wizard)", callback_data: "/wizard" },
+          { text: "📝 Mở bản nháp (/draft)", callback_data: "/draft" }
+        ]
+      ]
     };
     recordBotReply(res);
     return res;
@@ -399,6 +528,48 @@ async function processTelegramCommand(rawText, meta = {}) {
     return { reply: msg, parseMode: null, buttons: getMainMenuButtons() };
   }
 
+  if (lower.startsWith("/pin ")) {
+    const code = text.split(/\s+/)[1];
+    const updated = await db.updateApartment(code, { isPinned: true, pinNow: true });
+    if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
+    await sheetsService.pushToGoogleSheetsWebhook("pin_apartment", updated);
+    const res = {
+      reply: `📌 *ĐÃ GHIM ƯU TIÊN ĐẦU WEBSITE:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã được khóa ở vị trí **Nổi bật #1** trên đầu trang chủ và trang danh mục để đẩy thuê nhanh!`,
+      buttons: getApartmentControlButtons(updated),
+      mutated: true
+    };
+    recordBotReply(res);
+    return res;
+  }
+
+  if (lower.startsWith("/unpin ")) {
+    const code = text.split(/\s+/)[1];
+    const updated = await db.updateApartment(code, { isPinned: false });
+    if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
+    await sheetsService.pushToGoogleSheetsWebhook("unpin_apartment", updated);
+    const res = {
+      reply: `📍 *ĐÃ BỎ GHIM ƯU TIÊN:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã trở về thứ tự sắp xếp tự nhiên theo thời gian cập nhật.`,
+      buttons: getApartmentControlButtons(updated),
+      mutated: true
+    };
+    recordBotReply(res);
+    return res;
+  }
+
+  if (lower.startsWith("/boost ")) {
+    const code = text.split(/\s+/)[1];
+    const updated = await db.updateApartment(code, { boostNow: true });
+    if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
+    await sheetsService.pushToGoogleSheetsWebhook("boost_apartment", updated);
+    const res = {
+      reply: `🚀 *ĐÃ ĐẨY LÊN ĐẦU DANH SÁCH WEBSITE:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) vừa được làm mới thời gian ưu tiên như căn mới đăng hôm nay!`,
+      buttons: getApartmentControlButtons(updated),
+      mutated: true
+    };
+    recordBotReply(res);
+    return res;
+  }
+
   if (lower.startsWith("/settype ")) {
     const [, code, nextType] = text.split(/\s+/);
     const updated = await db.updateApartment(code, { propertyType: db.normalizePropertyType(nextType) });
@@ -429,7 +600,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     ] };
   }
 
-  const listCommand = text.match(/^\/(list|empty|rented|hidden)(?:\s+(.+))?$/i);
+  const listCommand = text.match(/^\/(list|empty|rented|hidden|pinned)(?:\s+(.+))?$/i);
   if (listCommand) {
     const isFixture = String(process.env.PUBLIC_SITE_URL || "").includes(".invalid");
     const filter = listCommand[1].toLowerCase();
@@ -445,6 +616,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     const all = await db.getApartments({ includeHidden: true });
     const apartments = all.filter(apt => {
       const hidden = apt.isVisible === false || apt.status === "Hidden";
+      if (filter === "pinned" && !apt.isPinned) return false;
       if (filter === "empty" && (hidden || apt.status !== "Available")) return false;
       if (filter === "hidden" && !hidden) return false;
       if (filter === "rented" && !hidden && !["Reserved", "Rented"].includes(apt.status)) return false;
@@ -464,7 +636,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     const entries = apartments.slice((page - 1) * pageSize, page * pageSize);
     const contactSummary = await getApartmentContactSummary(entries.map(apt => apt.code));
     const typeHeaders = { condo: "🏢 Căn hộ chung cư", apartment: "🏠 Căn hộ thường", house: "🏡 Nhà nguyên căn", villa: "🌴 Biệt thự / Villa", house_villa: "🏡 Nhà & Biệt thự", penthouse: "✨ Penthouse" };
-    const labels = { list: typeHeaders[typeFilter] || "Kho BĐS", empty: "Đang trống", rented: "Đã thuê, đã cọc hoặc đang ẩn", hidden: "Đang ẩn" };
+    const labels = { list: typeHeaders[typeFilter] || "Kho BĐS", empty: "Đang trống", rented: "Đã thuê, đã cọc hoặc đang ẩn", hidden: "Đang ẩn", pinned: "📌 Đang ghim ưu tiên đầu Web" };
     const statuses = { Available: "🟢", Rented: "🔴", Reserved: "🟡", Hidden: "⚪" };
     const suffixParts = [typeFilter ? `type:${typeFilter}` : "", keyword].filter(Boolean).join(" ");
     const listBack = `/${filter}${page > 1 ? ` p${page}` : ""}${suffixParts ? ` ${suffixParts}` : ""}`;
@@ -472,9 +644,10 @@ async function processTelegramCommand(rawText, meta = {}) {
       const count = contactSummary.get(apt.code.toUpperCase())?.people || 0;
       const title = String(apt.title?.vi || apt.title?.en || apt.title || apt.code);
       const marker = apt.isVisible === false ? "⚪" : statuses[apt.status] || "⚪";
+      const pinPrefix = apt.isPinned ? "📌 " : "";
       const detail = `/apt ${apt.code}`;
       const fromList = `${detail} ${listBack}`;
-      return [{ text: `${marker} ${title.slice(0, 24)}${title.length > 24 ? "…" : ""} · ${count} khách`,
+      return [{ text: `${pinPrefix}${marker} ${title.slice(0, 22)}${title.length > 22 ? "…" : ""} · ${count} khách`,
         callback_data: listBack !== "/list" && Buffer.byteLength(fromList) <= 64 ? fromList : detail }];
     });
     const pageButton = (label, index) => ({
@@ -499,27 +672,36 @@ async function processTelegramCommand(rawText, meta = {}) {
         apt.sizeM2 != null ? `${apt.sizeM2} m²` : ""
       ].filter(Boolean).join(" · ");
       const caption = [
-        `${marker} ${title}`,
+        `${apt.isPinned ? "📌 [GHIM ĐẦU] " : ""}${marker} ${title}`,
         `${propTypeLabel(apt)} · 💰 ${specLine || apt.code}`,
         `${apt.address ? `📍 ${apt.address}` : `🏷️ ${apt.code}`} · 👥 ${counts.people} khách`
       ].filter(Boolean).join("\n");
       return {
         photo: apt.images?.[0] || "",
         caption,
-        buttons: [[
-          { text: "⚙️ Chi tiết", callback_data: detailCb },
-          { text: `👥 Khách (${counts.people})`, callback_data: `/apt_contacts ${apt.code}` },
-          ...(apt.reservationHold ? [{ text: "📸 Ảnh", callback_data: `/addphoto ${apt.code}` }] : [{
-            text: isAvail ? "🔴 Thuê" : "🟢 Trống",
-            callback_data: `/status ${apt.code} ${isAvail ? "Rented" : "Available"}`
-          }])
-        ]]
+        buttons: [
+          [
+            { text: "⚙️ Chi tiết", callback_data: detailCb },
+            { text: `👥 Khách (${counts.people})`, callback_data: `/apt_contacts ${apt.code}` },
+            ...(apt.reservationHold ? [{ text: "📸 Ảnh", callback_data: `/addphoto ${apt.code}` }] : [{
+              text: isAvail ? "🔴 Thuê" : "🟢 Trống",
+              callback_data: `/status ${apt.code} ${isAvail ? "Rented" : "Available"}`
+            }])
+          ],
+          [
+            {
+              text: apt.isPinned ? "📍 Bỏ ghim" : "📌 Ghim đầu",
+              callback_data: apt.isPinned ? `/unpin ${apt.code}` : `/pin ${apt.code}`
+            },
+            { text: "🚀 Đẩy Top", callback_data: `/boost ${apt.code}` }
+          ]
+        ]
       };
     });
     const res = {
       reply: [`🏠 ${labels[filter]} · ${apartments.length} BĐS${pages > 1 ? ` (Trang ${page}/${pages})` : ""}`,
         ...(keyword ? [`🔍 Tìm: ${keyword.slice(0, 120)}`] : []),
-        entries.length ? (isFixture ? "Chọn căn để xem chi tiết, khách liên hệ và đặt phòng." : "Bấm trực tiếp dưới ảnh từng căn để quản lý, hoặc chọn lọc danh mục bên dưới.") : "Không có căn phù hợp."].join("\n"),
+        entries.length ? (isFixture ? "Chọn căn để xem chi tiết, khách liên hệ và đặt phòng." : "Bấm trực tiếp dưới ảnh từng căn để ghim đầu, đẩy Top hoặc đổi trạng thái.") : (filter === "pinned" ? "Hiện chưa có căn nào được ghim cố định đầu Web. Mở /list và bấm 📌 Ghim đầu ở căn cần đẩy thuê nhanh!" : "Không có căn phù hợp.")].join("\n"),
       parseMode: null,
       roomPhotoCards,
       buttons: [
@@ -531,7 +713,7 @@ async function processTelegramCommand(rawText, meta = {}) {
           { text: "🏡 Nhà", callback_data: "/list type:house" },
           { text: "🌴 Villa", callback_data: "/list type:villa" }
         ],
-        [{ text: "Tất cả", callback_data: "/list" }, { text: "🟢 Trống", callback_data: "/empty" },
+        [{ text: "Tất cả", callback_data: "/list" }, { text: "📌 Đang ghim", callback_data: "/pinned" }, { text: "🟢 Trống", callback_data: "/empty" },
           { text: "🔴 Thuê / Ẩn", callback_data: "/rented" }],
         [{ text: "➕ Đăng mới", callback_data: "/wizard" }, { text: "📋 Mẫu đăng", callback_data: "/form" }, { text: "🏠 Menu", callback_data: "/menu" }]
       ]
@@ -542,7 +724,7 @@ async function processTelegramCommand(rawText, meta = {}) {
 
   // 5. /apt <code_or_id> — Detailed single apartment control panel
   if (lower.startsWith("/apt ")) {
-    const [, code, listBack] = text.match(/^\/apt\s+(\S+)(?:\s+(\/(?:list|empty|rented|hidden)(?:\s+[^\n]+)?))?$/i) || [];
+    const [, code, listBack] = text.match(/^\/apt\s+(\S+)(?:\s+(\/(?:list|empty|rented|hidden|pinned)(?:\s+[^\n]+)?))?$/i) || [];
     const apt = await db.getApartmentByCodeOrId(code);
     if (!apt) {
       const res = {
@@ -556,16 +738,33 @@ async function processTelegramCommand(rawText, meta = {}) {
     const counts = (await getApartmentContactSummary([apt.code])).get(apt.code.toUpperCase()) ||
       { people: 0, clicks: 0, bookings: 0 };
     const labels = { Available: "🟢 Đang trống", Reserved: "🟡 Đang giữ chỗ", Rented: "🔴 Đã thuê", Hidden: "⚪ Đang ẩn" };
-    const specs = [apt.bedrooms != null ? `${apt.bedrooms} PN` : "", apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
-      apt.sizeM2 != null ? `${apt.sizeM2} m²` : "", apt.floor != null ? `Tầng ${apt.floor}` : ""].filter(Boolean);
+    const isHouseOrVilla = apt.propertyType === "house" || apt.propertyType === "villa";
+    const specs = [
+      apt.bedrooms != null ? `${apt.bedrooms} PN` : "",
+      apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
+      apt.landAreaM2 ? `Đất ${apt.landAreaM2} m²` : "",
+      apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "Sàn " : ""}${apt.sizeM2} m²` : "",
+      apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
+    ].filter(Boolean);
+    const catExtras = [
+      apt.frontageRoad ? `🛣 ${apt.frontageRoad}` : "",
+      apt.poolInfo ? `🏊 ${apt.poolInfo}` : "",
+      apt.furnishing ? `🛋 ${apt.furnishing}` : "",
+      apt.cleaningService ? `🧹 ${apt.cleaningService}` : "",
+      apt.managementFee ? `🏢 Phí QL: ${apt.managementFee}` : "",
+      apt.parking ? `🚗 ${apt.parking}` : ""
+    ].filter(Boolean).join(" · ");
     const reply = [
-      `${propTypeLabel(apt)} · ${apt.title?.vi || apt.title?.en || apt.title || apt.code}`,
+      `${apt.isPinned ? "📌 [ĐANG GHIM ĐẦU WEB] · " : ""}${propTypeLabel(apt)}`,
+      `${apt.title?.vi || apt.title?.en || apt.title || apt.code}`,
       `${apt.code} · ${labels[apt.status] || apt.status}${apt.isVisible === false && apt.status !== "Hidden" ? " · 🙈 Ẩn Web" : ""}`,
       `📍 ${apt.address || "Chưa nhập địa chỉ"}`,
       `💰 ${Number(apt.priceVnd).toLocaleString("vi-VN")} ₫/tháng · 📸 ${(apt.images || []).length} ảnh`,
-      specs.join(" · "), apt.availableFrom ? `📅 Vào ở từ ${apt.availableFrom.split("-").reverse().join("/")}` : "",
+      specs.join(" · "),
+      catExtras,
+      apt.availableFrom ? `📅 Vào ở từ ${apt.availableFrom.split("-").reverse().join("/")}` : "",
       `👥 ${counts.people} khách liên hệ${counts.clicks ? ` · ${counts.clicks} lượt bấm` : ""}${counts.bookings ? ` · ${counts.bookings} yêu cầu đặt` : ""}`,
-      apt.architecturalNotes?.vi?.slice(0, 260)
+      apt.architecturalNotes?.vi?.slice(0, 240)
     ].filter(Boolean).join("\n");
 
     const res = {

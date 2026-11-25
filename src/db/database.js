@@ -86,6 +86,16 @@ const ApartmentSchema = new mongoose.Schema(
     isVisible: { type: Boolean, default: true }, // Controls whether shown on public website
     hideWhenRented: { type: Boolean, default: false },
     featured: { type: Boolean, default: false },
+    isPinned: { type: Boolean, default: false },
+    pinnedAt: { type: String, default: null },
+    boostedAt: { type: String, default: null },
+    landAreaM2: { type: Number, default: null },
+    frontageRoad: { type: String, default: "" },
+    furnishing: { type: String, default: "" },
+    cleaningService: { type: String, default: "" },
+    managementFee: { type: String, default: "" },
+    parking: { type: String, default: "" },
+    poolInfo: { type: String, default: "" },
     landlordName: { type: String, default: "" },
     landlordPhone: { type: String, default: "" },
     adminNote: { type: String, default: "" },
@@ -121,7 +131,7 @@ const ApartmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-ApartmentSchema.index({ isVisible: 1, status: 1, featured: -1, createdAt: -1 });
+ApartmentSchema.index({ isVisible: 1, status: 1, isPinned: -1, pinnedAt: -1, boostedAt: -1, createdAt: -1 });
 ApartmentSchema.index({ areaName: 1, priceUsd: 1 });
 ApartmentSchema.index({ images: 1 });
 
@@ -424,10 +434,41 @@ async function persistApartmentLanguageCache(code, lang, translatedApt) {
   }
 }
 
+function statusPriorityRank(status) {
+  if (status === "Available") return 0;
+  if (status === "Reserved") return 1;
+  if (status === "Rented") return 2;
+  return 3;
+}
+
+function parseTimestampMs(val) {
+  if (!val) return 0;
+  const t = new Date(val).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function compareApartmentPriority(a, b, { publicOrder = true } = {}) {
+  if (publicOrder) {
+    const rankDiff = statusPriorityRank(a?.status) - statusPriorityRank(b?.status);
+    if (rankDiff !== 0) return rankDiff;
+  }
+  const aPinned = Boolean(a?.isPinned) && a?.status !== "Rented";
+  const bPinned = Boolean(b?.isPinned) && b?.status !== "Rented";
+  if (aPinned !== bPinned) return aPinned ? -1 : 1;
+  if (aPinned && bPinned) {
+    const pinDiff = parseTimestampMs(b?.pinnedAt) - parseTimestampMs(a?.pinnedAt);
+    if (pinDiff !== 0) return pinDiff;
+  }
+  const aFresh = Math.max(parseTimestampMs(a?.boostedAt), parseTimestampMs(a?.createdAt));
+  const bFresh = Math.max(parseTimestampMs(b?.boostedAt), parseTimestampMs(b?.createdAt));
+  if (bFresh !== aFresh) return bFresh - aFresh;
+  return 0;
+}
+
 async function getApartments(filters = {}) {
   let list = [];
   if (isNativeMongoConnected) {
-    const docs = await ApartmentModel.find().sort({ featured: -1, createdAt: -1 }).lean();
+    const docs = await ApartmentModel.find().sort({ isPinned: -1, pinnedAt: -1, boostedAt: -1, createdAt: -1 }).lean();
     list = docs.map(readMongoApartment);
   } else {
     list = store.apartments.map(apartmentForRead);
@@ -442,6 +483,10 @@ async function getApartments(filters = {}) {
 
   if (!includeHidden) {
     list = list.filter(isPublicApartment);
+  }
+
+  if (filters.pinnedOnly === "true" || filters.pinnedOnly === true) {
+    list = list.filter((a) => Boolean(a.isPinned));
   }
 
   if (filters.area && filters.area !== "all") {
@@ -492,6 +537,7 @@ async function getApartments(filters = {}) {
       );
     });
   }
+  list.sort((a, b) => compareApartmentPriority(a, b, { publicOrder: !includeHidden }));
   return list;
 }
 
@@ -546,6 +592,16 @@ function apartmentForRead(apartment) {
   return withSafeApartmentImages({
     ...apartment,
     propertyType: inferPropertyType(apartment),
+    isPinned: Boolean(apartment.isPinned),
+    pinnedAt: apartment.pinnedAt || null,
+    boostedAt: apartment.boostedAt || null,
+    landAreaM2: apartment.landAreaM2 != null && Number(apartment.landAreaM2) > 0 ? Number(apartment.landAreaM2) : null,
+    frontageRoad: apartment.frontageRoad || "",
+    furnishing: apartment.furnishing || "",
+    cleaningService: apartment.cleaningService || "",
+    managementFee: apartment.managementFee || "",
+    parking: apartment.parking || "",
+    poolInfo: apartment.poolInfo || "",
     ...normalizeApartmentLocation(apartment.locationAccuracy === "exact" ? "exact" : "area", apartment.coordinates)
   });
 }
@@ -743,6 +799,15 @@ function normalizeApartmentPayload(payload, { sparse = false } = {}) {
     building,
     tags
   });
+  const createdAt = payload.createdAt || new Date().toISOString();
+  const isPinned = Boolean(payload.isPinned) && status !== "Rented";
+  const pinnedAt = isPinned ? (payload.pinnedAt || createdAt) : null;
+  const boostedAt = payload.boostedAt || createdAt;
+  const defaultFloor = propertyType === "house" || propertyType === "villa" ? 3 : 12;
+  const landAreaM2 =
+    payload.landAreaM2 != null && payload.landAreaM2 !== "" && Number(payload.landAreaM2) > 0
+      ? Number(payload.landAreaM2)
+      : null;
 
   return {
     _id: payload._id || `apt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -758,8 +823,15 @@ function normalizeApartmentPayload(payload, { sparse = false } = {}) {
     bedrooms: isTelegram && (payload.bedrooms === 0 || payload.bedrooms === "0") ? 0 : numberFact(payload.bedrooms, 1),
     bathrooms: numberFact(payload.bathrooms, Number(payload.bedrooms) || 1),
     sizeM2: numberFact(payload.sizeM2, 65),
-    floor: isTelegram && (payload.floor === 0 || payload.floor === "0") ? 0 : numberFact(payload.floor, 12),
+    landAreaM2,
+    floor: isTelegram && (payload.floor === 0 || payload.floor === "0") ? 0 : numberFact(payload.floor, defaultFloor),
     orientation: fact(payload.orientation, "Đông Nam / Đón gió biển"),
+    frontageRoad: String(payload.frontageRoad || "").trim(),
+    furnishing: String(payload.furnishing || "").trim(),
+    cleaningService: String(payload.cleaningService || "").trim(),
+    managementFee: String(payload.managementFee || "").trim(),
+    parking: String(payload.parking || "").trim(),
+    poolInfo: String(payload.poolInfo || "").trim(),
     minLeaseMonths: numberFact(payload.minLeaseMonths, 3),
     depositMonths: numberFact(payload.depositMonths, 1),
     electricityRate: fact(payload.electricityRate, "Giá nhà nước (EVN ~2,800đ/kWh)"),
@@ -773,6 +845,9 @@ function normalizeApartmentPayload(payload, { sparse = false } = {}) {
     isVisible,
     hideWhenRented: Boolean(payload.hideWhenRented),
     featured: payload.featured !== undefined ? Boolean(payload.featured) : true,
+    isPinned,
+    pinnedAt,
+    boostedAt,
     landlordName: payload.landlordName || "",
     landlordPhone: payload.landlordPhone || "",
     adminNote: payload.adminNote || "",
@@ -782,7 +857,7 @@ function normalizeApartmentPayload(payload, { sparse = false } = {}) {
     tags,
     images,
     source: payload.source || "web",
-    createdAt: payload.createdAt || new Date().toISOString(),
+    createdAt,
     updatedAt: new Date().toISOString()
   };
 }
@@ -940,12 +1015,53 @@ function normalizeApartmentUpdates(target, { _id, reservationHold, ...updates })
   if (updates.propertyType !== undefined) {
     updates.propertyType = normalizePropertyType(updates.propertyType, { ...target, ...updates });
   }
+  if (updates.landAreaM2 !== undefined) {
+    updates.landAreaM2 =
+      updates.landAreaM2 != null && updates.landAreaM2 !== "" && Number(updates.landAreaM2) > 0
+        ? Number(updates.landAreaM2)
+        : null;
+  }
+  for (const attrKey of ["frontageRoad", "furnishing", "cleaningService", "managementFee", "parking", "poolInfo"]) {
+    if (updates[attrKey] !== undefined) {
+      updates[attrKey] = String(updates[attrKey] ?? "").trim();
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const boostNow = Boolean(updates.boostNow);
+  const pinNow = Boolean(updates.pinNow);
+  delete updates.boostNow;
+  delete updates.pinNow;
+
+  if (updates.isPinned !== undefined) {
+    updates.isPinned = Boolean(updates.isPinned);
+    if (updates.isPinned) {
+      updates.pinnedAt = !target.isPinned || pinNow || boostNow ? nowIso : (updates.pinnedAt || target.pinnedAt || nowIso);
+    } else {
+      updates.pinnedAt = null;
+    }
+  } else if (pinNow) {
+    updates.isPinned = true;
+    updates.pinnedAt = nowIso;
+  }
+
+  if (boostNow) {
+    updates.boostedAt = nowIso;
+    if ((updates.isPinned ?? target.isPinned) === true) {
+      updates.pinnedAt = nowIso;
+    }
+  }
+
   if (updates.status === "Hidden") {
     updates.isVisible = false;
   } else if (updates.status === "Available" && updates.isVisible === undefined) {
     updates.isVisible = true;
   }
   if (target.reservationHold && updates.status === "Available") updates.status = "Reserved";
+  if (updates.status === "Rented" && updates.isPinned === undefined && !pinNow) {
+    updates.isPinned = false;
+    updates.pinnedAt = null;
+  }
 
   return updates;
 }
@@ -2013,6 +2129,7 @@ function getDbStatus() {
   const availableCount = allApts.filter((a) => a.status === "Available" && a.isVisible !== false).length;
   const rentedCount = allApts.filter((a) => a.status === "Rented").length;
   const hiddenCount = allApts.filter((a) => a.isVisible === false || a.status === "Hidden").length;
+  const pinnedCount = allApts.filter((a) => a.isPinned && a.status !== "Rented" && a.isVisible !== false).length;
   const allInq = store.inquiries || [];
   const newInqCount = allInq.filter((i) => i.status === "New").length;
   const activeLeasesCount = (store.leases || []).filter((l) => l.status === "Active").length;
@@ -2025,6 +2142,7 @@ function getDbStatus() {
     availableCount,
     rentedCount,
     hiddenCount,
+    pinnedCount,
     totalBuildings: (store.buildings || []).length,
     totalInquiries: allInq.length,
     newInquiriesCount: newInqCount,
@@ -2036,7 +2154,7 @@ async function getLiveDbStatus() {
   if (!isNativeMongoConnected) return getDbStatus();
   try {
     const [apts, totalInq, newInqCount, activeLeasesCount] = await Promise.all([
-      ApartmentModel.find({}, "status isVisible propertyType title building tags").lean(),
+      ApartmentModel.find({}, "status isVisible isPinned propertyType title building tags").lean(),
       InquiryModel.countDocuments({ type: { $ne: "owner_listing" } }),
       InquiryModel.countDocuments({ status: "New", type: { $ne: "owner_listing" } }),
       LeaseModel.countDocuments({ status: { $ne: "Ended" } })
@@ -2044,6 +2162,7 @@ async function getLiveDbStatus() {
     const availableCount = apts.filter((a) => a.status === "Available" && a.isVisible !== false).length;
     const rentedCount = apts.filter((a) => a.status === "Rented").length;
     const hiddenCount = apts.filter((a) => a.isVisible === false || a.status === "Hidden").length;
+    const pinnedCount = apts.filter((a) => a.isPinned && a.status !== "Rented" && a.isVisible !== false).length;
     const typeCounts = { condo: 0, apartment: 0, house: 0, villa: 0, penthouse: 0 };
     for (const a of apts) {
       const pt = inferPropertyType(a);
@@ -2057,6 +2176,7 @@ async function getLiveDbStatus() {
       availableCount,
       rentedCount,
       hiddenCount,
+      pinnedCount,
       typeCounts,
       totalBuildings: (store.buildings || []).length,
       totalInquiries: totalInq,
@@ -2072,6 +2192,7 @@ module.exports = {
   PROPERTY_TYPES,
   normalizePropertyType,
   inferPropertyType,
+  compareApartmentPriority,
   initDatabase,
   ensureMongoConnection,
   persistApartmentLanguageCache,
