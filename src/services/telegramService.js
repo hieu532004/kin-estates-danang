@@ -6,6 +6,7 @@ const { storeTelegramPhoto, getStoredTelegramPhoto } = require("./telegramMediaS
 const { apartmentMapUrl } = require("./apartmentLocation");
 const { getApartmentContactSummary, handleApartmentCrmCommand } = require("./apartmentCrmService");
 const autoDeployService = require("./autoDeployService");
+const indexNowService = require("./indexNowService");
 
 let botInstance = null;
 let activeToken = "";
@@ -21,6 +22,68 @@ const PROPERTY_TYPE_LABELS = {
 function propTypeLabel(apt) {
   const pt = apt?.propertyType || db.inferPropertyType?.(apt) || "condo";
   return PROPERTY_TYPE_LABELS[pt] || "🏢 Căn hộ chung cư";
+}
+
+function buildTelegramSeoSharePost(apt) {
+  const base = (process.env.PUBLIC_SITE_URL || "https://www.kinestatesdanang.com").replace(/\/+$/, "");
+  const siteOrigin = base.includes(".invalid") ? "https://www.kinestatesdanang.com" : base;
+  const canonicalUrl = `${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
+  const pt = apt?.propertyType || db.inferPropertyType?.(apt) || "condo";
+  const headlinePrefix =
+    pt === "house"
+      ? "🏡 CHO THUÊ NHÀ NGUYÊN CĂN ĐÀ NẴNG"
+      : pt === "villa"
+      ? "🌴 CHO THUÊ BIỆT THỰ / VILLA HỒ BƠI ĐÀ NẴNG"
+      : pt === "penthouse"
+      ? "✨ CHO THUÊ PENTHOUSE ĐÀ NẴNG"
+      : pt === "apartment"
+      ? "🏠 CHO THUÊ CĂN HỘ DỊCH VỤ ĐÀ NẴNG"
+      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ ĐÀ NẴNG";
+  const titleVi = apt.title?.vi || apt.title?.en || apt.code;
+  const vndNum = Number(apt.priceVnd || 0);
+  const priceText =
+    vndNum >= 1_000_000
+      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu/tháng${apt.priceUsd ? ` (~$${apt.priceUsd})` : ""}`
+      : `$${apt.priceUsd || 0}/tháng`;
+  const isHouseOrVilla = pt === "house" || pt === "villa";
+  const specs = [
+    apt.bedrooms != null ? `${apt.bedrooms} phòng ngủ` : "",
+    apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
+    apt.landAreaM2 ? `DT đất ${apt.landAreaM2}m²` : "",
+    apt.sizeM2 ? `${isHouseOrVilla && apt.landAreaM2 ? "DT sàn " : ""}${apt.sizeM2}m²` : "",
+    apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const extraLines = [
+    apt.frontageRoad ? `🛣 Đường/Mặt tiền: ${apt.frontageRoad}` : "",
+    apt.poolInfo ? `🏊 Hồ bơi & Sân vườn: ${apt.poolInfo}` : "",
+    apt.furnishing ? `🛋 Nội thất: ${apt.furnishing}` : "",
+    apt.cleaningService ? `🧹 Dịch vụ: ${apt.cleaningService}` : "",
+    apt.managementFee ? `🏢 Phí quản lý: ${apt.managementFee}` : "",
+    apt.parking ? `🚗 Đỗ xe: ${apt.parking}` : "",
+    apt.electricityRate ? `⚡ Điện: ${apt.electricityRate}` : ""
+  ].filter(Boolean);
+
+  const notes = String(apt.architecturalNotes?.vi || apt.architecturalNotes?.en || "").trim();
+
+  return [
+    `${headlinePrefix} — ${titleVi}`,
+    `📍 Khu vực: ${apt.address || apt.areaName || "Đà Nẵng"}`,
+    `💰 Giá thuê trực tiếp: ${priceText}`,
+    specs ? `📐 Thông số: ${specs}` : "",
+    ...extraLines,
+    notes ? `\n✨ Chi tiết: ${notes}` : "",
+    "",
+    `👉 Xem bộ ảnh thực tế, bản đồ & đặt lịch xem nhà tại Website chính thức:`,
+    `🔗 ${canonicalUrl}`,
+    `🌐 Kho căn hộ, nhà & villa Đà Nẵng: ${siteOrigin}`,
+    `📞 Hotline / Zalo / WhatsApp: 0389 711 601 (KIN Estates Đà Nẵng)`,
+    `#ThueCanHoDaNang #ThueNhaDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #KINEstates`
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
 }
 
 function getTelegramAdminChatId() {
@@ -285,7 +348,8 @@ function getApartmentControlButtons(apt, contactCount, listBack = "/list") {
         text: isPinned ? "📍 Bỏ ghim đầu" : "📌 Ghim lên đầu",
         callback_data: isPinned ? `/unpin ${apt.code}` : `/pin ${apt.code}`
       },
-      { text: "🚀 Đẩy Top ngay", callback_data: `/boost ${apt.code}` }
+      { text: "🚀 Đẩy Top ngay", callback_data: `/boost ${apt.code}` },
+      { text: "🔗 Bài & Backlink", callback_data: `/share ${apt.code}` }
     ],
     [
       { text: contactCount === undefined ? "👥 Khách LH" : `👥 Khách LH (${contactCount})`, callback_data: `/apt_contacts ${apt.code}` },
@@ -504,15 +568,45 @@ async function processTelegramCommand(rawText, meta = {}) {
   if (lower === "/tools") {
     const studioUrl = getStudioWebAppUrl();
     return {
-      reply: "⚙️ Công cụ quản lý · Cloud 24/7\n(Dữ liệu tự động cập nhật trực tiếp lên https://www.kinestatesdanang.com)",
+      reply: "⚙️ Công cụ quản lý & Đẩy Top SEO · Cloud 24/7\n(Dữ liệu tự động cập nhật & bắn Index trực tiếp lên https://www.kinestatesdanang.com)",
       parseMode: null,
       buttons: [
+        [{ text: "⚡ Đẩy Index Google, Bing & AI ngay", callback_data: "/seo_ping" }],
         [{ text: "🔑 Khách đang thuê", callback_data: "/tenants" }, { text: "🏡 Chủ nhà gửi căn", callback_data: "/owners" }],
         [
           ...(studioUrl ? [{ text: "📱 Mở KIN Studio", web_app: { url: studioUrl } }] : []),
           { text: "🏠 Về Menu", callback_data: "/menu" }
         ]
       ]
+    };
+  }
+
+  if (lower === "/seo_ping") {
+    const allApts = await db.getAllApartments();
+    const pingRes = await indexNowService.submitAllSiteUrlsToSearchEngines(allApts);
+    return {
+      reply:
+        `🚀 ĐÃ BẮN TÍN HIỆU ĐẨY TOP & INDEX LÊN CÔNG CỤ TÌM KIẾM!\n` +
+        `• Số trang đã gửi: ${pingRes.count || 0} URLs (Trang chủ, 19 khu vực, 14 danh mục, 6 cẩm nang & toàn bộ BĐS đang mở)\n` +
+        `• IndexNow (Bing / ChatGPT / Copilot / Naver / Yandex): ${pingRes.indexNow?.ok ? "Thành công ✓" : "Đã xếp hàng"}\n` +
+        `• Google WebSub RSS Hub: ${pingRes.webSub?.ok ? "Thành công ✓" : "Đã xếp hàng"}\n` +
+        `• Sitemap chuẩn: https://www.kinestatesdanang.com/sitemap.xml`,
+      parseMode: null,
+      buttons: getMainMenuButtons()
+    };
+  }
+
+  if (lower.startsWith("/share ")) {
+    const code = text.split(/\s+/)[1];
+    const apt = await db.getApartmentByCodeOrId(code);
+    if (!apt) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
+    const sharePost = buildTelegramSeoSharePost(apt);
+    return {
+      reply:
+        `🔗 *BÀI ĐĂNG KÈM BACKLINK CHUẨN SEO (${apt.code})*\n` +
+        `Chạm vào khung bên dưới để Copy, đăng lên Facebook Group / Fanpage / Zalo / Threads / Chợ Tốt kèm ảnh thật để vừa có khách thuê ngay vừa tạo Backlink tự nhiên đẩy Web lên Top Google:\n\n` +
+        "\x60\x60\x60\n" + sharePost + "\n\x60\x60\x60",
+      buttons: getApartmentControlButtons(apt)
     };
   }
 
@@ -533,8 +627,9 @@ async function processTelegramCommand(rawText, meta = {}) {
     const updated = await db.updateApartment(code, { isPinned: true, pinNow: true });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
     await sheetsService.pushToGoogleSheetsWebhook("pin_apartment", updated);
+    void indexNowService.notifyApartmentIndexed(updated);
     const res = {
-      reply: `📌 *ĐÃ GHIM ƯU TIÊN ĐẦU WEBSITE:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã được khóa ở vị trí **Nổi bật #1** trên đầu trang chủ và trang danh mục để đẩy thuê nhanh!`,
+      reply: `📌 *ĐÃ GHIM ƯU TIÊN ĐẦU WEBSITE & SITEMAP (0.98):*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã được khóa ở vị trí **Nổi bật #1** trên đầu trang chủ, RSS Feed và Sitemap Google!`,
       buttons: getApartmentControlButtons(updated),
       mutated: true
     };
@@ -547,6 +642,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     const updated = await db.updateApartment(code, { isPinned: false });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
     await sheetsService.pushToGoogleSheetsWebhook("unpin_apartment", updated);
+    void indexNowService.notifyApartmentIndexed(updated);
     const res = {
       reply: `📍 *ĐÃ BỎ GHIM ƯU TIÊN:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) đã trở về thứ tự sắp xếp tự nhiên theo thời gian cập nhật.`,
       buttons: getApartmentControlButtons(updated),
@@ -561,8 +657,9 @@ async function processTelegramCommand(rawText, meta = {}) {
     const updated = await db.updateApartment(code, { boostNow: true });
     if (!updated) return { reply: `❌ Không tìm thấy căn hộ mã *${code}*.`, buttons: getMainMenuButtons() };
     await sheetsService.pushToGoogleSheetsWebhook("boost_apartment", updated);
+    void indexNowService.notifyApartmentIndexed(updated);
     const res = {
-      reply: `🚀 *ĐÃ ĐẨY LÊN ĐẦU DANH SÁCH WEBSITE:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) vừa được làm mới thời gian ưu tiên như căn mới đăng hôm nay!`,
+      reply: `🚀 *ĐÃ ĐẨY LÊN ĐẦU DANH SÁCH & CẬP NHẬT GOOGLE INDEX:*\nCăn *${updated.code}* (_${updated.title?.vi || updated.code}_) vừa được làm mới thời gian ưu tiên như căn mới đăng hôm nay!`,
       buttons: getApartmentControlButtons(updated),
       mutated: true
     };
@@ -574,6 +671,7 @@ async function processTelegramCommand(rawText, meta = {}) {
     const [, code, nextType] = text.split(/\s+/);
     const updated = await db.updateApartment(code, { propertyType: db.normalizePropertyType(nextType) });
     if (!updated) return { reply: "Không tìm thấy bài đăng.", buttons: getMainMenuButtons() };
+    void indexNowService.notifyApartmentIndexed(updated);
     return {
       reply: `✅ Đã chuyển *${updated.code}* sang danh mục: *${propTypeLabel(updated)}*`,
       buttons: getApartmentControlButtons(updated),

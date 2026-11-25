@@ -1,6 +1,7 @@
 const { randomBytes } = require("node:crypto");
 const db = require("../db/database");
 const sheets = require("./googleSheetsService");
+const indexNowService = require("./indexNowService");
 const { parseApartmentCoordinates, resolveGoogleMapsInput, isMapUrlString, apartmentMapUrl } = require("./apartmentLocation");
 
 const PHOTO_LIMIT = 20;
@@ -212,6 +213,7 @@ function applyDetails(session, details) {
 }
 
 async function pushListing(event, apartment) {
+  void indexNowService.notifyApartmentIndexed(apartment);
   try {
     await sheets.pushToGoogleSheetsWebhook(event, apartment);
   } catch {

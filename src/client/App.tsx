@@ -687,7 +687,11 @@ const SEO_PROPERTY_TYPES: Array<{
   { slug: "biet-thu-villa", propertyType: "villa", vi: "Biệt thự & Villa hồ bơi", en: "Private Pool Villas", h1Vi: "Cho thuê Biệt thự & Villa hồ bơi riêng tại Đà Nẵng — Dài hạn 3–12+ tháng", h1En: "Private Pool Villas & Garden Residences for Rent in Da Nang", descVi: "Cho thuê biệt thự hồ bơi riêng & villa sân vườn Đà Nẵng (3–5PN) tại Nam Việt Á, Euro Village, Đảo Xanh, Sơn Trà, Mỹ Khê, Hòa Xuân →", descEn: "Private saltwater pool villas & garden homes (3–5BR) for long-term rent in Da Nang: Nam Viet A, Euro Village, Son Tra & Hoa Xuan →" },
   { slug: "nha-nguyen-can", propertyType: "house", vi: "Nhà nguyên căn", en: "Whole Houses", h1Vi: "Cho thuê Nhà nguyên căn & Nhà phố Đà Nẵng — Dài hạn trực tiếp chủ nhà", h1En: "Whole Houses & Townhouses for Long-Term Rent in Da Nang", descVi: "Cho thuê nhà nguyên căn, nhà phố sân vườn & shophouse Đà Nẵng tại Hải Châu, Sơn Trà, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê →", descEn: "Whole houses, modern townhouses & garden homes for long-term rent across Da Nang →" },
   { slug: "penthouse", propertyType: "penthouse", vi: "Penthouse hạng sang", en: "Luxury Penthouses", h1Vi: "Cho thuê Penthouse & Căn hộ hạng sang Đà Nẵng — View sông Hàn & biển", h1En: "Luxury Penthouses & Sky Residences for Rent in Da Nang", descVi: "Bộ sưu tập Penthouse & căn hộ hạng sang view toàn cảnh sông Hàn, cầu Rồng & biển Mỹ Khê (The Filmore, The Panoma, Azura) →", descEn: "Exclusive luxury penthouses & sky residences in Da Nang with panoramic Han River & ocean views →" },
-  { slug: "mua-ban-nha-dat", isBuy: true, vi: "Mua bán Căn hộ & Nhà đất", en: "Buy Property & Investment", h1Vi: "Tư vấn Mua bán & Đầu tư Căn hộ, Biệt thự, Nhà đất Đà Nẵng — Pháp lý minh bạch", h1En: "Buy Apartments, Condos & Villas in Da Nang — Investment & Resale Advisory", descVi: "Tư vấn mua bán & chuyển nhượng căn hộ chung cư, penthouse, biệt thự và nhà phố Đà Nẵng (sổ hồng & suất người nước ngoài SPA) →", descEn: "Advisory for buying apartments, penthouses & villas in Da Nang (pink book & 30% foreigner quota SPA) →" }
+  { slug: "can-ho-gan-bien-my-khe", tag: "Gần biển", vi: "Căn hộ gần biển Mỹ Khê", en: "Near My Khe Beach", h1Vi: "Cho thuê Căn hộ, Studio & Biệt thự gần biển Mỹ Khê Đà Nẵng", h1En: "Beachside Apartments, Studios & Villas Near My Khe Beach", descVi: "Tổng hợp căn hộ, studio, nhà nguyên căn & villa đi bộ 3–5 phút ra biển Mỹ Khê, An Thượng, Võ Nguyên Giáp →", descEn: "Walk 3–5 minutes to My Khe Beach: verified condos, studios & pool villas →" },
+  { slug: "can-ho-view-song-han", tag: "View sông Hàn", vi: "Căn hộ view sông Hàn", en: "Han River View", h1Vi: "Cho thuê Căn hộ & Penthouse View Sông Hàn, Cầu Rồng Đà Nẵng", h1En: "Han Riverfront & Dragon Bridge View Residences in Da Nang", descVi: "Căn hộ chung cư & penthouse view trực diện sông Hàn, Cầu Rồng & pháo hoa DIFF (Filmore, Panoma, Hiyori, Monarchy) →", descEn: "Panoramic Han River & Dragon Bridge view condos in Da Nang →" },
+  { slug: "can-ho-cho-nuoi-thu-cung", tag: "Thú cưng", vi: "Cho nuôi thú cưng (Pet)", en: "Pet-Friendly Homes", h1Vi: "Cho thuê Căn hộ, Nhà nguyên căn & Villa Cho Nuôi Thú Cưng Đà Nẵng", h1En: "Pet-Friendly Apartments, Houses & Garden Villas in Da Nang", descVi: "Danh sách căn hộ (The Monarchy, An Thượng), nhà nguyên căn & biệt thự cho phép nuôi chó mèo tại Đà Nẵng →", descEn: "Verified pet-friendly apartments, townhouses & garden villas welcoming cats and dogs →" },
+  { slug: "mua-ban-nha-dat", isBuy: true, vi: "Mua bán Căn hộ & Nhà đất", en: "Buy Property & Investment", h1Vi: "Tư vấn Mua bán & Đầu tư Căn hộ, Biệt thự, Nhà đất Đà Nẵng — Pháp lý minh bạch", h1En: "Buy Apartments, Condos & Villas in Da Nang — Investment & Resale Advisory", descVi: "Tư vấn mua bán & chuyển nhượng căn hộ chung cư, penthouse, biệt thự và nhà phố Đà Nẵng (sổ hồng & suất người nước ngoài SPA) →", descEn: "Advisory for buying apartments, penthouses & villas in Da Nang (pink book & 30% foreigner quota SPA) →" },
+  { slug: "ky-gui-cho-thue-nha-da-nang", isBuy: true, vi: "Ký gửi Cho thuê & Bán", en: "List Your Property", h1Vi: "Nhận Ký Gửi Cho Thuê & Mua Bán Căn Hộ, Nhà Nguyên Căn, Biệt Thự Đà Nẵng", h1En: "Landlord Services — Lease or Sell Your Da Nang Residence", descVi: "Nhận ký gửi cho thuê dài hạn & mua bán căn hộ, nhà nguyên căn, biệt thự tại Đà Nẵng ✓ Tệp khách chuyên gia uy tín →", descEn: "Partner with KIN Estates Da Nang to lease or sell your property →" }
 ];
 
 const SEO_PILLAR_GUIDES: Array<{
@@ -1037,20 +1041,24 @@ export const App: React.FC = () => {
         typeof activeApt.title === "string"
           ? activeApt.title
           : activeApt.title?.[lang] || activeApt.title?.vi || activeApt.title?.en || activeApt.code;
-      const priceStr = `$${activeApt.priceUsd}/${lang === "vi" ? "tháng" : "mo"}`;
+      const vndTr = activeApt.priceVnd ? `${(Number(activeApt.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/tháng` : "";
+      const priceStr = lang === "vi" && vndTr ? vndTr : `$${activeApt.priceUsd}/${lang === "vi" ? "tháng" : "mo"}`;
       const mentionsDn = /đà nẵng|da nang|danang/i.test(rawTitle);
       pageTitle = mentionsDn
         ? `${rawTitle} (${priceStr}) | KIN Estates`
         : `${rawTitle} (${priceStr}) — ${lang === "vi" ? "Đà Nẵng" : "Da Nang"} | KIN Estates`;
+      const pt = String(activeApt.propertyType || "condo").toLowerCase();
+      const leadVi =
+        pt === "house" ? "Cho thuê nhà nguyên căn" : pt === "villa" ? "Cho thuê biệt thự / Villa" : pt === "apartment" ? "Cho thuê căn hộ dịch vụ" : pt === "penthouse" ? "Cho thuê Penthouse" : "Cho thuê căn hộ chung cư";
       const noteTxt =
         typeof activeApt.architecturalNotes === "string"
           ? activeApt.architecturalNotes
           : activeApt.architecturalNotes?.[lang] || activeApt.architecturalNotes?.vi || activeApt.architecturalNotes?.en || rawTitle;
       pageDesc =
         lang === "vi"
-          ? `Cho thuê căn hộ tại ${activeApt.areaName || "Đà Nẵng"} (${activeApt.bedrooms ?? 1}PN · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`
-          : `For rent in ${activeApt.areaName || "Da Nang"} (${activeApt.bedrooms ?? 1}BR · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 90)} ✓ KIN Estates →`;
-      pageKeywords = `${rawTitle}, ${activeApt.building || ""}, thuê căn hộ ${activeApt.areaName || "Đà Nẵng"} Đà Nẵng, ${activeApt.code}, KIN Estates, kinestatesdanang`;
+          ? `${leadVi} tại ${activeApt.areaName || "Đà Nẵng"} (${activeApt.bedrooms ?? 1}PN · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 88)} ✓ KIN Estates →`
+          : `For rent in ${activeApt.areaName || "Da Nang"} (${activeApt.bedrooms ?? 1}BR · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 88)} ✓ KIN Estates →`;
+      pageKeywords = `${rawTitle}, ${activeApt.building || ""}, ${leadVi.toLowerCase()} ${activeApt.areaName || "Đà Nẵng"} Đà Nẵng, thuê căn hộ Đà Nẵng, ${activeApt.code}, KIN Estates, kinestatesdanang`;
     } else if (activePropSeo) {
       pageTitle = lang === "vi" ? `${activePropSeo.vi} Đà Nẵng 2026 | KIN Estates` : `${activePropSeo.en} in Da Nang 2026 | KIN Estates`;
       pageDesc = lang === "vi" ? activePropSeo.descVi : activePropSeo.descEn;
@@ -6571,7 +6579,7 @@ export const App: React.FC = () => {
               <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" style={{ color: "#F5D9B8", textDecoration: "none", fontWeight: 700 }}>
                 Telegram: @KIN_Estates
               </a>
-              <span>VI · EN · 中文 · RU · KO · JA</span>
+              <span>kinestatesdanang.com · 19 khu vực Đà Nẵng</span>
             </div>
           </div>
         </div>

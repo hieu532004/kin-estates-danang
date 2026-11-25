@@ -86,9 +86,9 @@ function toAbsoluteUrl(origin, maybeRelative) {
 const ROUTE_META = {
   "/": {
     vi: {
-      title: "Cho Thuê Căn Hộ, Nhà & Biệt Thự Đà Nẵng | KIN Estates 2026",
-      description: "Thuê căn hộ chung cư, studio, nhà nguyên căn, penthouse, biệt thự hồ bơi & mua bán nhà đất Đà Nẵng ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ 19 khu vực Đà Nẵng →",
-      keywords: "thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, thuê biệt thự Đà Nẵng, thuê villa hồ bơi Đà Nẵng, mua bán căn hộ Đà Nẵng, thuê chung cư Đà Nẵng, căn hộ Mỹ Khê, An Thượng, Sơn Trà, Hải Châu, Hòa Xuân, Cẩm Lệ, The Filmore, The Panoma, Hiyori, Monarchy, KIN Estates, kinestatesdanang"
+      title: "Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự Đà Nẵng | KIN Estates",
+      description: "Thuê căn hộ chung cư, căn hộ dịch vụ, studio, nhà nguyên căn, penthouse, biệt thự hồ bơi & mua bán nhà đất tại 19 khu vực Đà Nẵng ✓ Giá trực tiếp chủ nhà ✓ Điện EVN →",
+      keywords: "thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng, căn hộ cho thuê Đà Nẵng, thuê nhà Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, cho thuê nhà phố Đà Nẵng, thuê biệt thự Đà Nẵng, thuê villa hồ bơi Đà Nẵng, thuê chung cư Đà Nẵng, thuê căn hộ thường Đà Nẵng, thuê căn hộ mini Đà Nẵng, thuê studio Đà Nẵng, mua bán căn hộ Đà Nẵng, mua nhà Đà Nẵng, ký gửi nhà đất Đà Nẵng, căn hộ Mỹ Khê, An Thượng, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Thanh Khê, Liên Chiểu, FPT City, The Filmore, The Panoma Sun Cosmo, Sun Ponte, Hiyori, The Monarchy, Azura, Blooming Tower, FPT Plaza, Ori Garden, Euro Village, KIN Estates, kinestatesdanang, kinestatesdanang.com"
     },
     en: {
       title: "Da Nang Apartments, Houses & Villas for Rent | KIN Estates",
@@ -514,6 +514,10 @@ function buildApartmentSchema(origin, apt, lang = "vi") {
   if (apt.electricityRate) amenities.push({ "@type": "LocationFeatureSpecification", name: `Electricity (${apt.electricityRate})`, value: true });
   if (apt.remoteWorkSetup) amenities.push({ "@type": "LocationFeatureSpecification", name: "Remote Work Desk", value: true });
   if (apt.petPolicy) amenities.push({ "@type": "LocationFeatureSpecification", name: `Pet Policy: ${apt.petPolicy}`, value: true });
+  if (apt.frontageRoad) amenities.push({ "@type": "LocationFeatureSpecification", name: `Frontage Road: ${apt.frontageRoad}`, value: true });
+  if (apt.poolInfo) amenities.push({ "@type": "LocationFeatureSpecification", name: `Pool & Garden: ${apt.poolInfo}`, value: true });
+  if (apt.parking) amenities.push({ "@type": "LocationFeatureSpecification", name: `Parking: ${apt.parking}`, value: true });
+  if (apt.furnishing) amenities.push({ "@type": "LocationFeatureSpecification", name: `Furnishing: ${apt.furnishing}`, value: true });
 
   const crumbs = [
     { name: "KIN Estates Đà Nẵng", url: localizedUrl(origin, "/", lang) },
@@ -613,6 +617,42 @@ function filterApartmentsForArea(apartments, areaObj) {
   });
 }
 
+function filterApartmentsForPropLanding(apartments, propObj) {
+  if (!propObj?.filter) return apartments || [];
+  const f = propObj.filter;
+  const list = (apartments || []).filter((a) => {
+    if (f.propertyType && (a.propertyType || "condo") !== f.propertyType) return false;
+    if (f.bedrooms) {
+      const br = Number(f.bedrooms);
+      if (br >= 3 ? Number(a.bedrooms || 0) < 3 : Number(a.bedrooms || 0) !== br) return false;
+    }
+    if (f.tag) {
+      const needle = f.tag.toLowerCase();
+      const hasTag = (a.tags || []).some((t) => String(t).toLowerCase().includes(needle));
+      const hay = `${locVal(a.title, "vi")} ${locVal(a.architecturalNotes, "vi")} ${a.petPolicy || ""} ${a.poolInfo || ""}`.toLowerCase();
+      if (!hasTag && !hay.includes(needle)) return false;
+    }
+    return true;
+  });
+  return list.length ? list : apartments || [];
+}
+
+function propTypeSeoPhrase(propertyType, lang = "vi") {
+  const pt = String(propertyType || "condo").toLowerCase();
+  if (lang === "vi") {
+    if (pt === "house") return "Cho thuê nhà nguyên căn";
+    if (pt === "villa") return "Cho thuê biệt thự / Villa";
+    if (pt === "apartment") return "Cho thuê căn hộ dịch vụ";
+    if (pt === "penthouse") return "Cho thuê Penthouse";
+    return "Cho thuê căn hộ chung cư";
+  }
+  if (pt === "house") return "Whole house for rent";
+  if (pt === "villa") return "Private pool villa for rent";
+  if (pt === "apartment") return "Serviced apartment for rent";
+  if (pt === "penthouse") return "Luxury penthouse for rent";
+  return "Condominium for rent";
+}
+
 function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apartments = [], about = null }) {
   const parsed = parseLocalizedPath(pathname, lang);
   const effectiveLang = parsed.hasPrefix ? parsed.lang : resolveLang(lang);
@@ -639,12 +679,19 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
     const matchedArea = findAreaByName(`${apartment.areaName || ""} ${apartment.district || ""} ${rawTitle}`);
     const areaDisplay =
       effectiveLang === "vi" ? matchedArea?.vi || apartment.areaName || "Đà Nẵng" : matchedArea?.en || apartment.areaName || "Da Nang";
-    const priceShort = apartment.priceVnd
-      ? `${(Number(apartment.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/th · $${apartment.priceUsd}`
-      : `$${apartment.priceUsd}/${effectiveLang === "vi" ? "tháng" : "mo"}`;
+    const vndTr = apartment.priceVnd ? (Number(apartment.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "") : "";
+    const priceShort =
+      effectiveLang === "vi"
+        ? vndTr
+          ? `${vndTr}tr/tháng`
+          : `$${apartment.priceUsd}/tháng`
+        : `$${apartment.priceUsd}/mo`;
+    const isHouseOrVilla = apartment.propertyType === "house" || apartment.propertyType === "villa";
     const specs = [
       apartment.bedrooms ? `${apartment.bedrooms}${effectiveLang === "vi" ? "PN" : "BR"}` : "",
+      apartment.landAreaM2 ? `${effectiveLang === "vi" ? "Đất " : "Land "}${apartment.landAreaM2}m²` : "",
       apartment.sizeM2 ? `${apartment.sizeM2}m²` : "",
+      apartment.floor && isHouseOrVilla ? `${apartment.floor} ${effectiveLang === "vi" ? "tầng" : "floors"}` : "",
       areaDisplay
     ]
       .filter(Boolean)
@@ -655,19 +702,22 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
       ? `${rawTitle} (${priceShort}) | KIN Estates`
       : `${rawTitle} (${priceShort}) — ${effectiveLang === "vi" ? "Đà Nẵng" : "Da Nang"} | KIN Estates`;
 
-    const noteSnippet = (locVal(apartment.architecturalNotes, effectiveLang) || rawTitle).slice(0, 88).trim();
+    const typeLead = propTypeSeoPhrase(apartment.propertyType, effectiveLang);
+    const extraHighlight = [apartment.frontageRoad, apartment.poolInfo, apartment.furnishing].filter(Boolean)[0] || "";
+    const noteSnippet = (extraHighlight ? `${extraHighlight} · ` : "") + (locVal(apartment.architecturalNotes, effectiveLang) || rawTitle);
     description =
       effectiveLang === "vi"
-        ? `Cho thuê căn hộ tại ${areaDisplay}, Đà Nẵng (${specs}, giá ${priceShort}) ✓ ${noteSnippet} ✓ Giá trực tiếp chủ nhà, đặt lịch xem cùng KIN Estates →`
-        : `For rent in ${areaDisplay}, Da Nang (${specs}, ${priceShort}) ✓ ${noteSnippet} ✓ Direct owner pricing & verified tour by KIN Estates →`;
+        ? `${typeLead} tại ${areaDisplay}, Đà Nẵng (${specs}, giá ${priceShort}) ✓ ${noteSnippet.slice(0, 84).trim()} ✓ Giá trực tiếp chủ nhà, KIN Estates →`
+        : `${typeLead} in ${areaDisplay}, Da Nang (${specs}, ${priceShort}) ✓ ${noteSnippet.slice(0, 84).trim()} ✓ Direct owner pricing by KIN Estates →`;
 
     keywords = [
       rawTitle,
       apartment.building || "",
+      `${typeLead.toLowerCase()} ${matchedArea?.vi || apartment.areaName || "Đà Nẵng"} Đà Nẵng`,
       `thuê căn hộ ${matchedArea?.vi || apartment.areaName || "Đà Nẵng"} Đà Nẵng`,
-      `cho thuê nhà ${matchedArea?.vi || "Đà Nẵng"}`,
-      apartment.bedrooms ? `thuê căn hộ ${apartment.bedrooms} phòng ngủ Đà Nẵng` : "",
-      `apartment for rent ${matchedArea?.en || "Da Nang"}`,
+      `cho thuê nhà nguyên căn ${matchedArea?.vi || "Đà Nẵng"} Đà Nẵng`,
+      apartment.bedrooms ? `thuê nhà ${apartment.bedrooms} phòng ngủ Đà Nẵng` : "",
+      `apartment house villa for rent ${matchedArea?.en || "Da Nang"}`,
       apartment.code,
       "KIN Estates Đà Nẵng",
       "kinestatesdanang"
@@ -684,13 +734,14 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
     description = propObj.descriptions[effectiveLang] || propObj.descriptions.en || propObj.descriptions.vi;
     keywords = `${propObj.keywords[effectiveLang] || propObj.keywords.vi}, KIN Estates Đà Nẵng, kinestatesdanang`;
     ogImageAlt = title;
+    const propUnits = filterApartmentsForPropLanding(apartments, propObj);
     schemas.push(
       buildBreadcrumbSchema([
         { name: "KIN Estates Đà Nẵng", url: localizedUrl(origin, "/", effectiveLang) },
         { name: effectiveLang === "vi" ? "Danh mục BĐS Đà Nẵng" : "Da Nang Properties", url: localizedUrl(origin, "/apartments", effectiveLang) },
         { name: title.split("|")[0].trim(), url: canonicalUrl }
       ]),
-      buildItemListSchema(origin, apartments, effectiveLang, title.split("|")[0].trim()),
+      buildItemListSchema(origin, propUnits, effectiveLang, title.split("|")[0].trim()),
       buildFaqSchema(effectiveLang)
     );
   } else if (guideObj) {
@@ -788,6 +839,7 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
     `<meta name="geo.position" content="16.0544;108.2022" />`,
     `<meta name="ICBM" content="16.0544, 108.2022" />`,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
+    `<link rel="alternate" type="application/rss+xml" title="KIN Estates Đà Nẵng — Kho BĐS Mới Nhất" href="${escapeHtml(origin)}/rss.xml" />`,
     buildHreflangLinks(origin, cleanPath),
     `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="KIN Estates Đà Nẵng" />`,
@@ -874,7 +926,11 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
   }
 
   const avail = (apartments || []).filter((a) => a.status === "Available" && a.isVisible !== false);
-  const displayUnits = areaObj ? filterApartmentsForArea(avail, areaObj) : avail;
+  const displayUnits = areaObj
+    ? filterApartmentsForArea(avail, areaObj)
+    : propObj
+      ? filterApartmentsForPropLanding(avail, propObj)
+      : avail;
   const unitsToRender = (displayUnits.length ? displayUnits : avail).slice(0, 20);
 
   const aptLinks = unitsToRender
@@ -964,6 +1020,7 @@ function generateRobotsTxt(origin) {
     "Allow: /",
     "",
     `Sitemap: ${origin}/sitemap.xml`,
+    `Sitemap: ${origin}/rss.xml`,
     ""
   ].join("\n");
 }
@@ -1003,43 +1060,54 @@ function generateSitemapXml(origin, apartments = []) {
     pushUrl(localizedUrl(origin, page.path, "vi"), page.path, page.priority, page.changefreq);
   }
 
-  // 2. International Localized Hub Pages (/en, /ko, /zh, /ru, /ja + /apartments)
+  // 2. International Localized Hub Pages (/en, /ko, /zh, /ru, /ja + core hubs)
   for (const l of NON_DEFAULT_LANGS) {
     pushUrl(localizedUrl(origin, "/", l), "/", "0.95", "daily");
     pushUrl(localizedUrl(origin, "/apartments", l), "/apartments", "0.90", "daily");
+    pushUrl(localizedUrl(origin, "/areas", l), "/areas", "0.85", "weekly");
+    pushUrl(localizedUrl(origin, "/guides", l), "/guides", "0.85", "weekly");
+    pushUrl(localizedUrl(origin, "/how-to-rent", l), "/how-to-rent", "0.82", "monthly");
+    pushUrl(localizedUrl(origin, "/about", l), "/about", "0.80", "weekly");
   }
 
-  // 3. 8 Property Type & Buy/Rent Landing Pages (/property/:slug)
+  // 3. 14 Property Type & Buy/Rent Landing Pages (/property/:slug + /en + /ko)
   for (const prop of PROPERTY_TYPE_LANDINGS) {
     const p = `/property/${prop.slug}`;
-    pushUrl(localizedUrl(origin, p, "vi"), p, "0.92", "daily");
+    pushUrl(localizedUrl(origin, p, "vi"), p, "0.94", "daily");
+    pushUrl(localizedUrl(origin, p, "en"), p, "0.88", "daily");
+    pushUrl(localizedUrl(origin, p, "ko"), p, "0.86", "daily");
   }
 
-  // 4. 19 Da Nang Neighborhood Landing Pages (/areas/:slug)
+  // 4. 19 Da Nang Neighborhood Landing Pages (/areas/:slug + /en + /ko)
   for (const areaObj of DANANG_SEO_AREAS) {
     const p = `/areas/${areaObj.slug}`;
-    pushUrl(localizedUrl(origin, p, "vi"), p, "0.88", "daily");
+    pushUrl(localizedUrl(origin, p, "vi"), p, "0.90", "daily");
+    pushUrl(localizedUrl(origin, p, "en"), p, "0.86", "daily");
+    pushUrl(localizedUrl(origin, p, "ko"), p, "0.84", "daily");
   }
 
-  // 5. 6 Deep Pillar SEO Articles (/guides/:slug)
+  // 5. 6 Deep Pillar SEO Articles (/guides/:slug + /en)
   for (const g of SEO_GUIDE_ARTICLES) {
     const p = `/guides/${g.slug}`;
-    pushUrl(localizedUrl(origin, p, "vi"), p, "0.88", "weekly", g.dateModified || today);
+    pushUrl(localizedUrl(origin, p, "vi"), p, "0.90", "weekly", g.dateModified || today);
+    pushUrl(localizedUrl(origin, p, "en"), p, "0.86", "weekly", g.dateModified || today);
   }
 
-  // 6. All Live Public Residences (/apartments/:code) with Image Sitemap tags
+  // 6. All Live Public Residences (/apartments/:code) with Image Sitemap tags & Pinned Priority
   for (const apt of apartments || []) {
     if (!apt?.code || apt.isVisible === false || apt.status === "Hidden") continue;
     const aptPath = `/apartments/${encodeURIComponent(apt.code)}`;
-    const lastmod = String(apt.updatedAt || apt.createdAt || today).slice(0, 10);
+    const lastmod = String(apt.boostedAt || apt.updatedAt || apt.createdAt || today).slice(0, 10);
+    const prio = apt.isPinned && apt.status === "Available" ? "0.98" : apt.status === "Available" ? "0.94" : "0.78";
     const imgTags = (apt.images || [])
-      .slice(0, 5)
+      .slice(0, 6)
       .map((img) => {
         const absImg = toAbsoluteUrl(origin, img);
         return `\n    <image:image>\n      <image:loc>${escapeXml(absImg)}</image:loc>\n      <image:title>${escapeXml(locVal(apt.title, "vi") || apt.code)}</image:title>\n    </image:image>`;
       })
       .join("");
-    pushUrl(localizedUrl(origin, aptPath, "vi"), aptPath, "0.92", "daily", lastmod, imgTags);
+    pushUrl(localizedUrl(origin, aptPath, "vi"), aptPath, prio, "daily", lastmod, imgTags);
+    pushUrl(localizedUrl(origin, aptPath, "en"), aptPath, "0.88", "daily", lastmod);
   }
 
   return [
@@ -1049,6 +1117,98 @@ function generateSitemapXml(origin, apartments = []) {
     '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
     ...urlBlocks,
     "</urlset>",
+    ""
+  ].join("\n");
+}
+
+function generateRssFeedXml(origin, apartments = []) {
+  const visibleApts = (apartments || [])
+    .filter((a) => a?.code && a.isVisible !== false && a.status !== "Hidden")
+    .sort((a, b) => {
+      const aPin = Boolean(a.isPinned) && a.status === "Available" ? 1 : 0;
+      const bPin = Boolean(b.isPinned) && b.status === "Available" ? 1 : 0;
+      if (aPin !== bPin) return bPin - aPin;
+      const aTime = Date.parse(a.boostedAt || a.updatedAt || a.createdAt || 0) || 0;
+      const bTime = Date.parse(b.boostedAt || b.updatedAt || b.createdAt || 0) || 0;
+      return bTime - aTime;
+    });
+
+  const nowRfc = new Date().toUTCString();
+  const items = [];
+
+  for (const apt of visibleApts.slice(0, 50)) {
+    const codeUrl = `${origin}/apartments/${encodeURIComponent(apt.code)}`;
+    const titleVi = locVal(apt.title, "vi") || apt.code;
+    const leadPhrase = propTypeSeoPhrase(apt.propertyType, "vi");
+    const vndTr = apt.priceVnd ? (Number(apt.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "") : "";
+    const priceLabel = vndTr ? `${vndTr}tr/tháng` : apt.priceUsd ? `$${apt.priceUsd}/tháng` : "";
+    const matchedArea = findAreaByName(`${apt.areaName || ""} ${apt.district || ""} ${titleVi}`);
+    const areaLabel = matchedArea?.vi || apt.areaName || "Đà Nẵng";
+    const pubTime = Date.parse(apt.boostedAt || apt.updatedAt || apt.createdAt || Date.now());
+    const pubDate = Number.isFinite(pubTime) ? new Date(pubTime).toUTCString() : nowRfc;
+    const notesVi = locVal(apt.architecturalNotes, "vi");
+    const cover = apt.images?.[0] ? toAbsoluteUrl(origin, apt.images[0]) : "";
+    const specText = [
+      priceLabel ? `Giá: ${priceLabel}` : "",
+      apt.bedrooms != null ? `${apt.bedrooms}PN` : "",
+      apt.bathrooms != null ? `${apt.bathrooms}WC` : "",
+      apt.landAreaM2 ? `Đất ${apt.landAreaM2}m²` : "",
+      apt.sizeM2 ? `${apt.sizeM2}m²` : "",
+      apt.frontageRoad || "",
+      apt.poolInfo || ""
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const desc = `${leadPhrase} tại ${areaLabel}, Đà Nẵng (${titleVi}). ${specText}. ${notesVi || "Giá trực tiếp chủ nhà, hỗ trợ xem nhà thực tế & tạm trú NA17."}`.slice(0, 600);
+
+    items.push(
+      [
+        "    <item>",
+        `      <title>${escapeXml(`${titleVi}${priceLabel ? ` (${priceLabel})` : ""} — ${areaLabel}, Đà Nẵng | KIN Estates`)}</title>`,
+        `      <link>${escapeXml(codeUrl)}</link>`,
+        `      <guid isPermaLink="true">${escapeXml(codeUrl)}</guid>`,
+        `      <pubDate>${escapeXml(pubDate)}</pubDate>`,
+        `      <category>${escapeXml(leadPhrase)}</category>`,
+        `      <description>${escapeXml(desc)}</description>`,
+        cover ? `      <enclosure url="${escapeXml(cover)}" type="image/jpeg" length="0" />` : "",
+        "    </item>"
+      ]
+        .filter(Boolean)
+        .join("\n")
+    );
+  }
+
+  for (const g of SEO_GUIDE_ARTICLES) {
+    const gUrl = `${origin}/guides/${g.slug}`;
+    const gDate = g.dateModified ? new Date(g.dateModified).toUTCString() : nowRfc;
+    items.push(
+      [
+        "    <item>",
+        `      <title>${escapeXml(g.titles.vi)}</title>`,
+        `      <link>${escapeXml(gUrl)}</link>`,
+        `      <guid isPermaLink="true">${escapeXml(gUrl)}</guid>`,
+        `      <pubDate>${escapeXml(gDate)}</pubDate>`,
+        "      <category>Cẩm nang BĐS Đà Nẵng</category>",
+        `      <description>${escapeXml(g.descriptions.vi)}</description>`,
+        "    </item>"
+      ].join("\n")
+    );
+  }
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+    "  <channel>",
+    "    <title>KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà Nguyên Căn &amp; Biệt Thự Đà Nẵng</title>",
+    `    <link>${escapeXml(origin)}/</link>`,
+    "    <description>Cập nhật căn hộ chung cư, căn hộ dịch vụ, nhà nguyên căn, biệt thự hồ bơi &amp; penthouse cho thuê dài hạn mới nhất tại 19 khu vực Đà Nẵng — KIN Estates (kinestatesdanang.com).</description>",
+    "    <language>vi-vn</language>",
+    `    <lastBuildDate>${escapeXml(nowRfc)}</lastBuildDate>`,
+    '    <atom:link href="https://pubsubhubbub.appspot.com/" rel="hub" />',
+    `    <atom:link href="${escapeXml(origin)}/rss.xml" rel="self" type="application/rss+xml" />`,
+    ...items,
+    "  </channel>",
+    "</rss>",
     ""
   ].join("\n");
 }
@@ -1113,5 +1273,6 @@ module.exports = {
   injectSeoIntoHtml,
   generateRobotsTxt,
   generateSitemapXml,
+  generateRssFeedXml,
   generateLlmsTxt
 };

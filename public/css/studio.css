@@ -1309,9 +1309,54 @@ svg {
   border-top: 1px dashed var(--border);
 }
 
+.st-apt-priority-strip--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .st-apt-priority-strip .st-btn-mini {
   width: 100%;
   justify-content: center;
+  padding-inline: 6px;
+}
+
+.st-seo-panel {
+  border-color: rgba(20, 25, 31, 0.16);
+  background: linear-gradient(180deg, #f8fafd 0%, #ffffff 100%);
+}
+
+.st-seo-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.st-seo-pill {
+  font-size: 10.8px;
+  font-weight: 700;
+  color: var(--navy);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.st-seo-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.st-seo-actions .st-btn-mini {
+  width: 100%;
+  justify-content: center;
+  padding: 8px 8px;
+}
+
+@media (max-width: 370px) {
+  .st-seo-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .st-pin-banner {

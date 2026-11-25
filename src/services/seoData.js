@@ -411,7 +411,7 @@ const PROPERTY_TYPE_LANDINGS = [
   },
   {
     slug: "biet-thu-villa",
-    filter: { tag: "Biệt thự" },
+    filter: { propertyType: "villa" },
     titles: {
       vi: "Thuê Biệt Thự & Villa Hồ Bơi Đà Nẵng Dài Hạn | KIN Estates",
       en: "Private Pool Villas for Rent in Da Nang (Monthly) | KIN",
@@ -443,7 +443,7 @@ const PROPERTY_TYPE_LANDINGS = [
   },
   {
     slug: "nha-nguyen-can",
-    filter: { query: "" },
+    filter: { propertyType: "house" },
     titles: {
       vi: "Thuê Nhà Nguyên Căn Đà Nẵng Đẹp Giá Tốt 2026 | KIN Estates",
       en: "Houses for Rent in Da Nang — Long-Term Homes | KIN Estates",
@@ -475,7 +475,7 @@ const PROPERTY_TYPE_LANDINGS = [
   },
   {
     slug: "penthouse",
-    filter: { bedrooms: "3" },
+    filter: { propertyType: "penthouse" },
     titles: {
       vi: "Thuê Penthouse & Căn Hộ Hạng Sang Đà Nẵng | KIN Estates",
       en: "Luxury Penthouses & Executive Condos Da Nang | KIN Estates",
@@ -535,6 +535,134 @@ const PROPERTY_TYPE_LANDINGS = [
       ru: "Покупка квартир, вилл и недвижимости в Дананге",
       ko: "다낭 아파트 · 풀빌라 매매 및 부동산 투자 컨설팅",
       ja: "ダナン コンドミニアム・ヴィラ購入＆不動産投資"
+    }
+  },
+  {
+    slug: "can-ho-gan-bien-my-khe",
+    filter: { tag: "Gần biển" },
+    titles: {
+      vi: "Thuê Căn Hộ, Studio & Villa Gần Biển Mỹ Khê Đà Nẵng | KIN Estates",
+      en: "Beachside Apartments & Villas Near My Khe Beach Da Nang | KIN",
+      zh: "岘港美溪海滩旁海景公寓与别墅长租 | KIN Estates",
+      ru: "Квартиры и Виллы у Пляжа Ми Кхе в Дананге | KIN Estates",
+      ko: "다낭 미케비치 도보권 오션뷰 아파트 & 풀빌라 임대 | KIN",
+      ja: "ダナン ミーケービーチ徒歩圏内の賃貸アパート＆ヴィラ | KIN"
+    },
+    descriptions: {
+      vi: "Tổng hợp căn hộ, studio, nhà nguyên căn & villa đi bộ 3–5 phút ra biển Mỹ Khê, An Thượng, Võ Nguyên Giáp, Phạm Văn Đồng ✓ Đầy đủ nội thất, giá chủ nhà →",
+      en: "Walk 3–5 minutes to My Khe Beach: verified beachfront condos, studios & pool villas in An Thuong, My An & Phuoc My ✓ Direct owner rates →",
+      zh: "步行3–5分钟直达美溪海滩：精选安上区与武元甲大道海景公寓、Studio及泳池别墅长租 →",
+      ru: "3–5 минут пешком до пляжа Ми Кхе: проверенные квартиры, студии и виллы в Ан Тхыонг и Фыок Ми →",
+      ko: "미케비치 도보 3~5분 거리 검증된 오션뷰 아파트·스튜디오·풀빌라 장기 임대 ✓ 집주인 직거래 →",
+      ja: "ミーケービーチまで徒歩3〜5分の厳選アパート・スタジオ・プールヴィラ長期賃貸 →"
+    },
+    keywords: {
+      vi: "thuê căn hộ gần biển Mỹ Khê Đà Nẵng, căn hộ view biển Đà Nẵng, thuê nhà gần biển Mỹ Khê, căn hộ Võ Nguyên Giáp Phạm Văn Đồng An Thượng",
+      en: "beachfront apartment Da Nang, rent apartment near My Khe Beach, ocean view condo Da Nang"
+    },
+    h1: {
+      vi: "Cho thuê Căn hộ, Studio & Biệt thự gần biển Mỹ Khê Đà Nẵng — Đi bộ ra biển",
+      en: "Beachside Apartments, Studios & Villas Near My Khe Beach, Da Nang",
+      zh: "岘港美溪海滩步行圈精选公寓与别墅",
+      ru: "Квартиры и виллы рядом с пляжем Ми Кхе в Дананге",
+      ko: "다낭 미케비치 도보권 오션뷰 아파트 & 빌라",
+      ja: "ミーケービーチ近くの賃貸マンション＆ヴィラ"
+    }
+  },
+  {
+    slug: "can-ho-view-song-han",
+    filter: { tag: "View sông Hàn" },
+    titles: {
+      vi: "Thuê Căn Hộ & Chung Cư View Sông Hàn, Cầu Rồng Đà Nẵng | KIN",
+      en: "Han River & Dragon Bridge View Condos Da Nang | KIN Estates",
+      zh: "岘港韩江景与龙桥全景高端公寓长租 | KIN Estates",
+      ru: "Квартиры с Видом на Реку Хан и Мост Дракона Дананг | KIN",
+      ko: "다낭 한강뷰 & 용다리 조망 고급 아파트 장기 임대 | KIN",
+      ja: "ダナン ハン川＆ドラゴンブリッジ眺望マンション賃貸 | KIN"
+    },
+    descriptions: {
+      vi: "Bộ sưu tập căn hộ chung cư & penthouse view trực diện sông Hàn, ngắm pháo hoa DIFF & Cầu Rồng (The Filmore, The Panoma, Hiyori, Monarchy, Azura, Indochina) →",
+      en: "Panoramic Han River, Dragon Bridge & DIFF fireworks view condos in Da Nang (The Filmore, The Panoma, Hiyori, Monarchy, Azura) ✓ Official EVN rates →",
+      zh: "直面韩江、龙桥与国际烟花节全景高端公寓（The Filmore、The Panoma、Hiyori、Monarchy、Azura）长租精选 →",
+      ru: "Видовые квартиры на реку Хан и Мост Дракона в лучших ЖК Дананга (Filmore, Panoma, Hiyori, Monarchy, Azura) →",
+      ko: "한강·용다리·불꽃축제 파노라마 뷰 아파트 (더 필모어, 더 파노마, 히요리, 모나키, 아주라) 장기 임대 →",
+      ja: "ハン川・ドラゴンブリッジ・花火大会を一望する高級賃貸マンション（The Filmore・The Panoma等）→"
+    },
+    keywords: {
+      vi: "thuê căn hộ view sông Hàn Đà Nẵng, căn hộ ngắm Cầu Rồng, căn hộ xem pháo hoa Đà Nẵng, chung cư bờ sông Hàn Bạch Đằng Trần Hưng Đạo",
+      en: "Han River view apartment Da Nang, Dragon Bridge condo Da Nang, riverfront luxury apartment Da Nang"
+    },
+    h1: {
+      vi: "Cho thuê Căn hộ & Penthouse View Sông Hàn, Cầu Rồng Đà Nẵng",
+      en: "Han Riverfront & Dragon Bridge View Residences in Da Nang",
+      zh: "岘港韩江与龙桥全景公寓长租",
+      ru: "Квартиры с панорамным видом на реку Хан в Дананге",
+      ko: "다낭 한강뷰 & 용다리 파노라마 레지던스",
+      ja: "ハン川＆ドラゴンブリッジ眺望レジデンス"
+    }
+  },
+  {
+    slug: "can-ho-cho-nuoi-thu-cung",
+    filter: { tag: "Thú cưng" },
+    titles: {
+      vi: "Thuê Căn Hộ & Nhà Cho Nuôi Thú Cưng (Pet-Friendly) Đà Nẵng",
+      en: "Pet-Friendly Apartments, Houses & Villas Da Nang | KIN Estates",
+      zh: "岘港允许养宠物 (Pet-Friendly) 公寓与别墅长租 | KIN Estates",
+      ru: "Квартиры и Виллы Можно с Животными в Дананге | KIN Estates",
+      ko: "다낭 반려동물 동반 가능 (Pet-Friendly) 아파트·주택 임대 | KIN",
+      ja: "ダナン ペット可（Pet-Friendly）賃貸アパート・一軒家 | KIN"
+    },
+    descriptions: {
+      vi: "Danh sách căn hộ chung cư (The Monarchy, An Thượng), nhà nguyên căn & biệt thự sân vườn cho phép nuôi chó mèo tại Đà Nẵng ✓ Cam kết rõ trong hợp đồng →",
+      en: "Verified pet-friendly apartments, condos (The Monarchy), townhouses & garden villas welcoming cats and dogs in Da Nang ✓ Written landlord approval →",
+      zh: "精选岘港允许养猫狗的宠物友好型公寓（The Monarchy、安上区）、整栋住宅与花园别墅，合同明确写入养宠许可 →",
+      ru: "Проверенные pet-friendly квартиры (The Monarchy), дома и виллы с садом в Дананге, где разрешено проживание с кошками и собаками →",
+      ko: "강아지·고양이 동반 입주가 계약서에 명시되는 다낭 펫프렌들리 아파트(더 모나키)·단독주택·정원 풀빌라 →",
+      ja: "犬・猫の飼育が契約書で保証されるダナンのペット可マンション・庭付きヴィラ特集 →"
+    },
+    keywords: {
+      vi: "thuê căn hộ cho nuôi thú cưng Đà Nẵng, căn hộ pet friendly Đà Nẵng, thuê nhà nuôi chó mèo Đà Nẵng, chung cư Monarchy nuôi thú cưng",
+      en: "pet friendly apartment Da Nang, dog friendly house rental Da Nang, cat friendly condo Da Nang"
+    },
+    h1: {
+      vi: "Cho thuê Căn hộ, Nhà nguyên căn & Villa Cho Nuôi Thú Cưng tại Đà Nẵng",
+      en: "Pet-Friendly Apartments, Houses & Garden Villas in Da Nang",
+      zh: "岘港宠物友好型 (Pet-Friendly) 公寓与花园别墅",
+      ru: "Pet-Friendly квартиры, дома и виллы в Дананге",
+      ko: "다낭 반려동물 동반 가능 아파트 & 정원 주택",
+      ja: "ダナン ペット飼育可能な賃貸マンション＆ヴィラ"
+    }
+  },
+  {
+    slug: "ky-gui-cho-thue-nha-da-nang",
+    filter: { query: "" },
+    titles: {
+      vi: "Nhận Ký Gửi Cho Thuê & Mua Bán Căn Hộ, Nhà, Villa Đà Nẵng | KIN",
+      en: "List Your Da Nang Property — Landlord Leasing & Sales | KIN",
+      zh: "岘港房东委托出租与出售服务（公寓・别墅管理）| KIN Estates",
+      ru: "Сдать или Продать Недвижимость в Дананге — Для Собственников",
+      ko: "다낭 부동산 임대·매매 위탁 접수 (집주인 전용) | KIN Estates",
+      ja: "ダナン不動産オーナー様向け賃貸・売却委託サービス | KIN"
+    },
+    descriptions: {
+      vi: "Dịch vụ nhận ký gửi cho thuê dài hạn & mua bán căn hộ chung cư, tòa căn hộ, nhà nguyên căn, biệt thự tại Đà Nẵng ✓ Chụp ảnh thực tế, tệp khách chuyên gia uy tín →",
+      en: "Partner with KIN Estates Da Nang to lease or sell your condo, apartment building, house, or pool villa to vetted long-term expat & executive tenants →",
+      zh: "委托 KIN Estates 出租或出售您在岘港的公寓、整栋住宅或泳池别墅：专业实拍、精准匹配优质长租外籍专家与家庭客户 →",
+      ru: "Доверьте сдачу или продажу вашей квартиры, дома или виллы в Дананге агентству KIN Estates: проверенные долгосрочные арендаторы →",
+      ko: "다낭 아파트·단독주택·풀빌라 임대 및 매매 위탁: 검증된 외국인 주재원·장기 임차인 빠른 매칭 →",
+      ja: "ダナンのマンション・ヴィラの賃貸募集・売却サポート：優良な長期入居者を迅速にご紹介 →"
+    },
+    keywords: {
+      vi: "ký gửi căn hộ Đà Nẵng, nhận ký gửi nhà đất Đà Nẵng, ký gửi cho thuê nhà nguyên căn biệt thự Đà Nẵng, tìm khách thuê căn hộ Đà Nẵng",
+      en: "list property Da Nang, property management Da Nang, rent out apartment Da Nang"
+    },
+    h1: {
+      vi: "Nhận Ký Gửi Cho Thuê & Mua Bán Căn Hộ, Nhà Nguyên Căn, Biệt Thự Đà Nẵng",
+      en: "Landlord Services — Lease or Sell Your Da Nang Residence with KIN Estates",
+      zh: "岘港房东房产委托出租与出售中心",
+      ru: "Услуги для собственников недвижимости в Дананге",
+      ko: "다낭 부동산 임대 · 매매 위탁 센터",
+      ja: "ダナン不動産 賃貸・売却オーナー様窓口"
     }
   }
 ];

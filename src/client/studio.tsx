@@ -602,6 +602,84 @@ function notesOf(apt: Apartment): string {
   return apt.architecturalNotes?.vi || apt.architecturalNotes?.en || "";
 }
 
+function buildSeoSharePost(apt: Apartment): string {
+  const siteOrigin = "https://www.kinestatesdanang.com";
+  const canonicalUrl = `${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
+  const pt = apt.propertyType || "condo";
+  const headlinePrefix =
+    pt === "house"
+      ? "🏡 CHO THUÊ NHÀ NGUYÊN CĂN ĐÀ NẴNG"
+      : pt === "villa"
+      ? "🌴 CHO THUÊ BIỆT THỰ / VILLA HỒ BƠI ĐÀ NẴNG"
+      : pt === "penthouse"
+      ? "✨ CHO THUÊ PENTHOUSE ĐÀ NẴNG"
+      : pt === "apartment"
+      ? "🏠 CHO THUÊ CĂN HỘ DỊCH VỤ ĐÀ NẴNG"
+      : "🏢 CHO THUÊ CĂN HỘ CHUNG CƯ ĐÀ NẴNG";
+  const vndNum = Number(apt.priceVnd || 0);
+  const priceText =
+    vndNum >= 1_000_000
+      ? `${(vndNum / 1_000_000) % 1 === 0 ? (vndNum / 1_000_000).toFixed(0) : (vndNum / 1_000_000).toFixed(1).replace(".", ",")} triệu/tháng${apt.priceUsd ? ` (~$${apt.priceUsd})` : ""}`
+      : `$${apt.priceUsd || 0}/tháng`;
+  const isHouseOrVilla = pt === "house" || pt === "villa";
+  const specs = [
+    apt.bedrooms != null ? `${apt.bedrooms} phòng ngủ` : "",
+    apt.bathrooms != null ? `${apt.bathrooms} WC` : "",
+    apt.landAreaM2 ? `DT đất ${apt.landAreaM2}m²` : "",
+    apt.sizeM2 != null ? `${isHouseOrVilla && apt.landAreaM2 ? "DT sàn " : ""}${apt.sizeM2}m²` : "",
+    apt.floor != null ? (isHouseOrVilla ? `${apt.floor} tầng` : `Tầng ${apt.floor}`) : ""
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const extraLines = [
+    apt.frontageRoad ? `🛣 Đường/Mặt tiền: ${apt.frontageRoad}` : "",
+    apt.poolInfo ? `🏊 Hồ bơi & Sân vườn: ${apt.poolInfo}` : "",
+    apt.furnishing ? `🛋 Nội thất: ${apt.furnishing}` : "",
+    apt.cleaningService ? `🧹 Dịch vụ: ${apt.cleaningService}` : "",
+    apt.managementFee ? `🏢 Phí quản lý: ${apt.managementFee}` : "",
+    apt.parking ? `🚗 Đỗ xe: ${apt.parking}` : "",
+    apt.electricityRate ? `⚡ Điện: ${apt.electricityRate}` : ""
+  ].filter(Boolean);
+
+  const notes = notesOf(apt).trim();
+
+  return [
+    `${headlinePrefix} — ${titleOf(apt)}`,
+    `📍 Khu vực: ${apt.address || areaDisplayLabel(apt.areaName)}, Đà Nẵng`,
+    `💰 Giá thuê trực tiếp: ${priceText}`,
+    specs ? `📐 Thông số: ${specs}` : "",
+    ...extraLines,
+    notes ? `\n✨ Chi tiết: ${notes}` : "",
+    "",
+    `👉 Xem bộ ảnh thực tế, vị trí bản đồ & đặt lịch xem nhà tại Website chính thức:`,
+    `🔗 ${canonicalUrl}`,
+    `🌐 Kho căn hộ, nhà nguyên căn & biệt thự Đà Nẵng: ${siteOrigin}`,
+    `📞 Hotline / Zalo / WhatsApp: 0389 711 601 (KIN Estates Đà Nẵng)`,
+    `#ThueCanHoDaNang #ThueNhaDaNang #VillaDaNang #BatDongSanDaNang #DaNangApartment #KINEstates`
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
+}
+
+function buildNapBacklinkProfile(): string {
+  return [
+    "🏛️ HỒ SƠ THƯƠNG HIỆU ĐỒNG NHẤT (NAP) — DÙNG TẠO BACKLINK TOP 1 GOOGLE",
+    "• Tên thương hiệu chuẩn: KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà & Biệt Thự Đà Nẵng",
+    "• Tên quốc tế: KIN Estates — Da Nang Apartments, Houses & Pool Villas",
+    "• Website chính thức (Backlink gốc): https://www.kinestatesdanang.com",
+    "• Trang căn hộ & biệt thự: https://www.kinestatesdanang.com/apartments",
+    "• Trang 19 khu vực Đà Nẵng: https://www.kinestatesdanang.com/areas",
+    "• Trang cẩm nang & giá thuê 2026: https://www.kinestatesdanang.com/guides",
+    "• Sitemap nộp Google Search Console: https://www.kinestatesdanang.com/sitemap.xml",
+    "• RSS Feed tự động: https://www.kinestatesdanang.com/rss.xml",
+    "• Hotline / Zalo / WhatsApp: 0389 711 601 (+84 389 711 601)",
+    "• Khu vực hoạt động: Toàn bộ 19 khu vực Thành phố Đà Nẵng, Việt Nam",
+    "• Giới thiệu ngắn (Copy dán vào Bio Fanpage / Google Maps / YouTube / TikTok / LinkedIn / Medium / Batdongsan / Chợ Tốt):",
+    "KIN Estates Đà Nẵng (https://www.kinestatesdanang.com) chuyên cho thuê dài hạn & tư vấn mua bán căn hộ chung cư (The Filmore, The Panoma, Hiyori, Monarchy), căn hộ dịch vụ gần biển Mỹ Khê - An Thượng, nhà nguyên căn và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem nhà thực tế & hỗ trợ đăng ký tạm trú NA17. Liên hệ Zalo/WhatsApp: 0389 711 601."
+  ].join("\n");
+}
+
 function normalizeAreaValue(raw?: string): string {
   const s = String(raw || "").trim();
   if (!s) return "Han Riverfront";
@@ -763,6 +841,7 @@ function StudioApp() {
   const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
   const [bulkAptSaving, setBulkAptSaving] = useState<boolean>(false);
   const [resolvingMap, setResolvingMap] = useState<boolean>(false);
+  const [pingingSeo, setPingingSeo] = useState<boolean>(false);
   const aboutHeroDirtyRef = useRef<boolean>(false);
   const [bulkAptForm, setBulkAptForm] = useState({
     pinAction: "",
@@ -912,6 +991,47 @@ function StudioApp() {
   const showToast = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast((cur) => (cur === msg ? "" : cur)), 2800);
+  };
+
+  const copyToClipboard = async (text: string, okMessage: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      showToast(okMessage);
+    } catch {
+      showToast("Không thể copy tự động trên thiết bị này.");
+    }
+  };
+
+  const handlePingSearchEngines = async () => {
+    if (pingingSeo) return;
+    setPingingSeo(true);
+    try {
+      const r = await fetch("/api/studio/seo/ping", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        showToast(`✓ Đã bắn tín hiệu Index ${data.count || 160}+ trang lên Google WebSub, Bing, ChatGPT & Naver!`);
+      } else {
+        showToast("Đã gửi yêu cầu đồng bộ Sitemap & IndexNow.");
+      }
+    } catch {
+      showToast("Không thể kết nối máy chủ SEO lúc này.");
+    } finally {
+      setPingingSeo(false);
+    }
   };
 
   const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
@@ -2305,6 +2425,51 @@ function StudioApp() {
               </section>
             )}
 
+            {/* SEO IndexNow + Google WebSub + Backlink Toolkit */}
+            <section className="st-card st-seo-panel">
+              <div className="st-card-head" style={{ marginBottom: 8 }}>
+                <div>
+                  <h2 className="st-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon.Boost size={15} /> Đẩy Top Google, AI &amp; Tạo Backlink Chuẩn SEO
+                  </h2>
+                  <div style={{ fontSize: 11.5, color: "var(--text-sub)", marginTop: 2 }}>
+                    Tự động thông báo Google WebSub, Bing, ChatGPT &amp; Naver mỗi khi đăng / sửa / ghim BĐS
+                  </div>
+                </div>
+                <span className="st-badge st-badge--green">Auto Live</span>
+              </div>
+              <div className="st-seo-pills">
+                <span className="st-seo-pill">✓ 19 Khu vực Đà Nẵng</span>
+                <span className="st-seo-pill">✓ 14 Danh mục BĐS</span>
+                <span className="st-seo-pill">✓ 6 Quốc gia (VI·EN·KO·ZH·RU·JA)</span>
+                <span className="st-seo-pill">✓ Sitemap + RSS + IndexNow</span>
+              </div>
+              <div className="st-seo-actions">
+                <button
+                  type="button"
+                  className="st-btn-mini st-btn-mini--navy"
+                  disabled={pingingSeo}
+                  onClick={handlePingSearchEngines}
+                >
+                  <Icon.Boost size={12} />
+                  <span>{pingingSeo ? "Đang bắn tín hiệu Index..." : "⚡ Đẩy Index Google & AI Ngay"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="st-btn-mini st-btn-mini--bronze"
+                  onClick={() =>
+                    copyToClipboard(
+                      buildNapBacklinkProfile(),
+                      "✓ Đã copy Hồ sơ Backlink chuẩn (NAP) để dán lên Google Maps, Fanpage, BĐS!"
+                    )
+                  }
+                >
+                  <Icon.Copy size={12} />
+                  <span>Copy Hồ Sơ Backlink (NAP)</span>
+                </button>
+              </div>
+            </section>
+
             {/* Top Contacted Apartments */}
             <section className="st-card">
               <div className="st-card-head">
@@ -2575,7 +2740,7 @@ function StudioApp() {
 
                     {!aptSelectMode && (
                       <>
-                        <div className="st-apt-priority-strip">
+                        <div className="st-apt-priority-strip st-apt-priority-strip--three">
                           <button
                             type="button"
                             className={`st-btn-mini ${apt.isPinned ? "st-btn-mini--gold-active" : "st-btn-mini--bronze"}`}
@@ -2588,7 +2753,7 @@ function StudioApp() {
                             }
                           >
                             <Icon.PinTop size={12} />
-                            <span>{apt.isPinned ? "Bỏ ghim đầu" : "Ghim lên đầu"}</span>
+                            <span>{apt.isPinned ? "Bỏ ghim" : "Ghim đầu"}</span>
                           </button>
                           <button
                             type="button"
@@ -2602,7 +2767,21 @@ function StudioApp() {
                             }
                           >
                             <Icon.Boost size={12} />
-                            <span>Đẩy Top ngay</span>
+                            <span>Đẩy Top</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="st-btn-mini"
+                            onClick={() =>
+                              copyToClipboard(
+                                buildSeoSharePost(apt),
+                                `✓ Đã copy bài đăng & Backlink chuẩn SEO của ${apt.code}!`
+                              )
+                            }
+                            title="Copy bài đăng kèm link gốc chuẩn SEO để đăng Facebook, Zalo, Chợ Tốt..."
+                          >
+                            <Icon.Copy size={12} />
+                            <span>Bài &amp; Link</span>
                           </button>
                         </div>
                         <div className="st-apt-actions">

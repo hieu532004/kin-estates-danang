@@ -22,6 +22,7 @@ const sheetsService = require("./src/services/googleSheetsService");
 const translationService = require("./src/services/translationService");
 const autoDeployService = require("./src/services/autoDeployService");
 const seoService = require("./src/services/seoService");
+const indexNowService = require("./src/services/indexNowService");
 const { resolveGoogleMapsInput, isMapUrlString } = require("./src/services/apartmentLocation");
 
 const app = express();
@@ -339,6 +340,7 @@ app.post("/api/apartments", requireAdmin, async (req, res) => {
     const created = await db.createApartment(req.body);
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
     void telegramService.notifyStudioMutationToTelegram?.("create", created);
+    void indexNowService.notifyApartmentIndexed(created);
     autoDeployService.scheduleAutoDeploy("Studio create apartment");
     res.status(201).json({
       ok: true,
@@ -357,6 +359,7 @@ app.patch("/api/apartments/:id", requireAdmin, async (req, res) => {
     if (!updated) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated);
     void telegramService.notifyStudioMutationToTelegram?.("update", updated);
+    void indexNowService.notifyApartmentIndexed(updated);
     autoDeployService.scheduleAutoDeploy("Studio update apartment");
     res.json({
       ok: true,
@@ -1573,6 +1576,16 @@ app.post("/api/studio/sync-web", requireAdmin, async (req, res) => {
   res.json({ ok: true, healedCount, liveStatus, result });
 });
 
+app.post("/api/studio/seo/ping", requireAdmin, async (req, res) => {
+  try {
+    const publicApartments = await db.getApartments({ includeHidden: false });
+    const pingResult = await indexNowService.submitAllSiteUrlsToSearchEngines(publicApartments);
+    res.json({ ok: true, ...pingResult });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Private Mobile Admin Dashboard entry (not linked anywhere on public client website)
 app.get(["/kin-studio", "/kin-studio/*"], (req, res) => {
   res.set({
@@ -1605,6 +1618,30 @@ app.get("/sitemap.xml", async (req, res) => {
     res.send(seoService.generateSitemapXml(origin, apartments));
   } catch {
     res.status(500).type("text/plain").send("Unable to generate sitemap");
+  }
+});
+
+app.get(`/${indexNowService.INDEXNOW_KEY}.txt`, (req, res) => {
+  res.set({
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "public, s-maxage=86400"
+  });
+  res.send(indexNowService.INDEXNOW_KEY);
+});
+
+app.get(["/rss.xml", "/feed.xml"], async (req, res) => {
+  try {
+    await ensureInitialized();
+    await db.ensureMongoConnection();
+    const origin = seoService.getSiteOrigin(req);
+    const apartments = await db.getApartments({ includeHidden: false });
+    res.set({
+      "Content-Type": "application/rss+xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+    });
+    res.send(seoService.generateRssFeedXml(origin, apartments));
+  } catch {
+    res.status(500).type("text/plain").send("Unable to generate RSS feed");
   }
 });
 
