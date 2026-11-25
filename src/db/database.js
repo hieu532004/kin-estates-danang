@@ -993,6 +993,9 @@ async function updateApartment(identifier, rawUpdates, { expectedUpdatedAt } = {
     for (const lang of translationService.TARGET_LANGS) {
       if (clearedTranslations[lang]) {
         const copy = { ...clearedTranslations[lang] };
+        if (updates.title !== undefined || updates.architecturalNotes !== undefined) {
+          delete copy.__done;
+        }
         for (const k of ["address", "orientation", "electricityRate", "waterRate", "petPolicy", "remoteWorkSetup", "tags"]) {
           if (updates[k] !== undefined) delete copy[k];
         }
@@ -1551,8 +1554,21 @@ async function createLease(payload) {
     store.leases.unshift(lease);
   }
 
-  // Automatically sync the linked apartment to Rented status + attach currentTenant
+  // Automatically sync the linked apartment to Rented status + attach currentTenant + release any active reservationHold
   if (apt && lease.status === "Active") {
+    const holdCode = apt.reservationHold?.inquiryCode;
+    if (holdCode) {
+      if (isNativeMongoConnected) {
+        await ApartmentModel.updateOne({ _id: apt._id }, { $unset: { reservationHold: 1 } });
+        await InquiryModel.updateOne({ code: holdCode }, { $set: { status: "Rented_Closed" } });
+      }
+      const localApt = findLocalApartment(apt.code);
+      if (localApt) delete localApt.reservationHold;
+      const inqIdx = inquiryIndex(holdCode);
+      if (inqIdx >= 0 && store.inquiries?.[inqIdx]) {
+        store.inquiries[inqIdx] = { ...store.inquiries[inqIdx], status: "Rented_Closed" };
+      }
+    }
     await updateApartment(apt.code, {
       status: "Rented",
       isVisible: lease.hideApartmentOnWeb ? false : apt.isVisible,
@@ -1605,13 +1621,44 @@ async function updateLease(identifier, updates) {
     await LeaseModel.findOneAndUpdate({ code: target.code }, { $set: mongoPatch });
   }
 
-  // If lease ended, automatically set the apartment back to Available & Visible!
-  if (safeUpdates.status === "Ended" && merged.apartmentCode) {
-    await updateApartment(merged.apartmentCode, {
-      status: "Available",
-      isVisible: true,
-      currentTenant: null
-    });
+  // Sync linked apartment status & currentTenant accurately across Active <-> Ended transitions
+  if (merged.apartmentCode) {
+    if (merged.status === "Active") {
+      await updateApartment(merged.apartmentCode, {
+        status: "Rented",
+        currentTenant: {
+          leaseCode: merged.code,
+          tenantName: merged.tenantName,
+          tenantContact: merged.tenantContact,
+          startDate: merged.startDate,
+          endDate: merged.endDate,
+          priceUsd: merged.priceUsd
+        }
+      });
+    } else if (safeUpdates.status === "Ended") {
+      const otherActive = (await getLeases({ status: "Active" })).find(
+        (l) => l.code !== merged.code && String(l.apartmentCode || "").toUpperCase() === String(merged.apartmentCode).toUpperCase()
+      );
+      if (otherActive) {
+        await updateApartment(merged.apartmentCode, {
+          status: "Rented",
+          currentTenant: {
+            leaseCode: otherActive.code,
+            tenantName: otherActive.tenantName,
+            tenantContact: otherActive.tenantContact,
+            startDate: otherActive.startDate,
+            endDate: otherActive.endDate,
+            priceUsd: otherActive.priceUsd
+          }
+        });
+      } else {
+        await updateApartment(merged.apartmentCode, {
+          status: "Available",
+          isVisible: true,
+          currentTenant: null
+        });
+      }
+    }
   }
 
   saveJsonStore();
@@ -1629,11 +1676,28 @@ async function deleteLease(identifier) {
     await LeaseModel.findOneAndDelete({ code: target.code });
   }
   if (target.apartmentCode && target.status === "Active") {
-    await updateApartment(target.apartmentCode, {
-      status: "Available",
-      isVisible: true,
-      currentTenant: null
-    });
+    const otherActive = (await getLeases({ status: "Active" })).find(
+      (l) => l.code !== target.code && String(l.apartmentCode || "").toUpperCase() === String(target.apartmentCode).toUpperCase()
+    );
+    if (otherActive) {
+      await updateApartment(target.apartmentCode, {
+        status: "Rented",
+        currentTenant: {
+          leaseCode: otherActive.code,
+          tenantName: otherActive.tenantName,
+          tenantContact: otherActive.tenantContact,
+          startDate: otherActive.startDate,
+          endDate: otherActive.endDate,
+          priceUsd: otherActive.priceUsd
+        }
+      });
+    } else {
+      await updateApartment(target.apartmentCode, {
+        status: "Available",
+        isVisible: true,
+        currentTenant: null
+      });
+    }
   }
   saveJsonStore();
   return target;

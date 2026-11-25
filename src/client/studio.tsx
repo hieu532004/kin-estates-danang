@@ -161,14 +161,14 @@ interface ReportData {
 
 const RATE_VND = 25480;
 const PROPERTY_CATEGORIES = [
-  { val: "condo", label: "🏢 Căn hộ chung cư", short: "🏢 Chung cư" },
-  { val: "apartment", label: "🏠 Căn hộ thường", short: "🏠 Căn hộ thường" },
-  { val: "house", label: "🏡 Nhà nguyên căn", short: "🏡 Nhà nguyên căn" },
-  { val: "villa", label: "🌴 Biệt thự / Villa", short: "🌴 Villa" },
-  { val: "penthouse", label: "✨ Penthouse", short: "✨ Penthouse" }
+  { val: "condo", label: "Căn hộ chung cư", short: "Chung cư" },
+  { val: "apartment", label: "Căn hộ thường", short: "Căn hộ thường" },
+  { val: "house", label: "Nhà nguyên căn", short: "Nhà nguyên căn" },
+  { val: "villa", label: "Biệt thự / Villa", short: "Villa" },
+  { val: "penthouse", label: "Penthouse", short: "Penthouse" }
 ];
 const getAptCategoryLabel = (pt?: string) =>
-  PROPERTY_CATEGORIES.find((c) => c.val === pt)?.short || "🏢 Chung cư";
+  PROPERTY_CATEGORIES.find((c) => c.val === pt)?.short || "Chung cư";
 
 const AREAS = [
   { val: "Han Riverfront", label: "Ven sông Hàn" },
@@ -476,8 +476,8 @@ function StudioApp() {
   const [selectedApts, setSelectedApts] = useState<string[]>([]);
   const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
   const [bulkAptSaving, setBulkAptSaving] = useState<boolean>(false);
-  const [syncingBotWeb, setSyncingBotWeb] = useState<boolean>(false);
   const [resolvingMap, setResolvingMap] = useState<boolean>(false);
+  const aboutHeroDirtyRef = useRef<boolean>(false);
   const [bulkAptForm, setBulkAptForm] = useState({
     propertyType: "",
     status: "",
@@ -621,8 +621,8 @@ function StudioApp() {
     return h;
   };
 
-  const loadReport = async (overrideToken?: string) => {
-    setLoading(true);
+  const loadReport = async (overrideToken?: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const headers: Record<string, string> = {};
       const activeTok = overrideToken ?? token;
@@ -638,7 +638,7 @@ function StudioApp() {
       const data = await r.json();
       if (data.ok) {
         setReport(data);
-        if (data.aboutContent) {
+        if (data.aboutContent && !aboutHeroDirtyRef.current) {
           const fq = data.aboutContent.founderQuote;
           setAboutHeroForm({
             heroImage: data.aboutContent.heroImage || "",
@@ -653,7 +653,7 @@ function StudioApp() {
     } catch {
       return false;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -820,26 +820,22 @@ function StudioApp() {
     }
   };
 
-  const handleForceSync = async () => {
-    setSyncingBotWeb(true);
-    try {
-      const r = await fetch("/api/studio/sync-web", {
-        method: "POST",
-        headers: authHeaders()
-      });
-      const j = await r.json().catch(() => ({}));
-      await loadReport();
-      showToast(
-        j.healedCount
-          ? `Đã đồng bộ Bot & Web (+sửa ${j.healedCount} link địa chỉ)!`
-          : "Đã đồng bộ tức thì Web & Bot Telegram!"
-      );
-    } catch {
-      showToast("Lỗi kết nối khi đồng bộ.");
-    } finally {
-      setSyncingBotWeb(false);
-    }
-  };
+  // Automatic real-time silent background sync (zero manual sync button needed)
+  useEffect(() => {
+    if (!authed) return;
+    const syncSilently = () => {
+      if (document.visibilityState === "hidden") return;
+      void loadReport(undefined, true);
+    };
+    const interval = window.setInterval(syncSilently, 18_000);
+    window.addEventListener("focus", syncSilently);
+    document.addEventListener("visibilitychange", syncSilently);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", syncSilently);
+      document.removeEventListener("visibilitychange", syncSilently);
+    };
+  }, [authed, token]);
 
   const openCreateEditor = (defaultType = "condo") => {
     setEditingCode(null);
@@ -1568,6 +1564,7 @@ function StudioApp() {
       });
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được.");
+      aboutHeroDirtyRef.current = false;
       showToast("Đã cập nhật ảnh bìa & trích dẫn trang About!");
       await loadReport();
     } catch (err: any) {
@@ -1683,21 +1680,11 @@ function StudioApp() {
             <div className="st-brand-title">KIN STUDIO</div>
             <div className="st-live-pill">
               <span className="st-live-dot" />
-              Cloud 24/7
+              Auto-Sync 24/7
             </div>
           </div>
         </div>
         <div className="st-header-actions">
-          <button
-            type="button"
-            className="st-btn-mini st-btn-mini--bronze"
-            style={{ height: 32, padding: "0 10px", fontSize: 11.5 }}
-            onClick={handleForceSync}
-            disabled={syncingBotWeb}
-            title="Đồng bộ tức thì giữa KIN Studio, Bot Telegram & Web"
-          >
-            {syncingBotWeb ? "Đang ĐB..." : "⚡ Đồng bộ"}
-          </button>
           <a href="/" target="_blank" rel="noreferrer" className="st-icon-circle" title="Xem Web khách">
             <Icon.External />
           </a>
@@ -1969,12 +1956,12 @@ function StudioApp() {
             {/* Category Filter Row (Condo / Apartment / House / Villa / Penthouse) */}
             <div className="st-chips" style={{ marginBottom: 6 }}>
               {[
-                ["all", `Tất cả BĐS (${report?.apartments.length || 0})`],
-                ["condo", `🏢 Chung cư (${kpi?.typeCounts?.condo || 0})`],
-                ["apartment", `🏠 Căn hộ thường (${kpi?.typeCounts?.apartment || 0})`],
-                ["house", `🏡 Nhà nguyên căn (${kpi?.typeCounts?.house || 0})`],
-                ["villa", `🌴 Villa (${kpi?.typeCounts?.villa || 0})`],
-                ["penthouse", `✨ Penthouse (${kpi?.typeCounts?.penthouse || 0})`]
+                ["all", `Tất cả (${report?.apartments.length || 0})`],
+                ["condo", `Chung cư (${kpi?.typeCounts?.condo || 0})`],
+                ["apartment", `Căn hộ thường (${kpi?.typeCounts?.apartment || 0})`],
+                ["house", `Nhà nguyên căn (${kpi?.typeCounts?.house || 0})`],
+                ["villa", `Villa (${kpi?.typeCounts?.villa || 0})`],
+                ["penthouse", `Penthouse (${kpi?.typeCounts?.penthouse || 0})`]
               ].map(([key, lbl]) => (
                 <button
                   key={key}
@@ -2547,31 +2534,38 @@ function StudioApp() {
                       try {
                         const u = await uploadSingleImage(file);
                         if (u) {
-                          setAboutHeroForm((p) => ({ ...p, heroImage: u }));
-                          showToast("Đã tải ảnh bìa mới — bấm Lưu để cập nhật!");
-                        }
-                      } finally {
-                        setUploadingAbout(false);
-                        e.target.value = "";
+                        aboutHeroDirtyRef.current = true;
+                        setAboutHeroForm((p) => ({ ...p, heroImage: u }));
+                        showToast("Đã tải ảnh bìa mới — bấm Lưu để cập nhật!");
                       }
-                    }}
-                  />
-                </label>
-                <div className="st-field">
-                  <label className="st-label">Tên đội ngũ / Người đại diện</label>
-                  <input
-                    className="st-input"
-                    value={aboutHeroForm.founderName}
-                    onChange={(e) => setAboutHeroForm((p) => ({ ...p, founderName: e.target.value }))}
-                  />
-                </div>
-                <div className="st-field">
-                  <label className="st-label">Lời trích dẫn (Viết Tiếng Việt — tự dịch 6 ngôn ngữ)</label>
-                  <textarea
-                    className="st-textarea"
-                    value={aboutHeroForm.founderQuote}
-                    onChange={(e) => setAboutHeroForm((p) => ({ ...p, founderQuote: e.target.value }))}
-                  />
+                    } finally {
+                      setUploadingAbout(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+              <div className="st-field">
+                <label className="st-label">Tên đội ngũ / Người đại diện</label>
+                <input
+                  className="st-input"
+                  value={aboutHeroForm.founderName}
+                  onChange={(e) => {
+                    aboutHeroDirtyRef.current = true;
+                    setAboutHeroForm((p) => ({ ...p, founderName: e.target.value }));
+                  }}
+                />
+              </div>
+              <div className="st-field">
+                <label className="st-label">Lời trích dẫn (Viết Tiếng Việt — tự dịch 6 ngôn ngữ)</label>
+                <textarea
+                  className="st-textarea"
+                  value={aboutHeroForm.founderQuote}
+                  onChange={(e) => {
+                    aboutHeroDirtyRef.current = true;
+                    setAboutHeroForm((p) => ({ ...p, founderQuote: e.target.value }));
+                  }}
+                />
                 </div>
                 <button type="submit" className="st-btn st-btn--primary" disabled={savingAboutBrand}>
                   {savingAboutBrand ? "Đang lưu & dịch 6 ngôn ngữ..." : "Lưu Cập Nhật Trang About"}

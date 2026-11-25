@@ -297,7 +297,7 @@ const handleGetApartments = async (req, res) => {
     }
     res.vary("Authorization");
     if (admin) res.set("Cache-Control", "no-store");
-    else res.set("Cache-Control", "public, s-maxage=2, stale-while-revalidate=10");
+    else res.set("Cache-Control", "public, s-maxage=1, stale-while-revalidate=5");
     res.json({
       ok: true,
       count: apartments.length,
@@ -474,7 +474,7 @@ app.post("/api/inquiries/:id/approve-listing", requireAdmin, async (req, res) =>
 });
 
 // 5. Leases / Active Tenants Management (Quản lý khách đang thuê căn nào, thời hạn)
-app.get("/api/leases", async (req, res) => {
+app.get("/api/leases", requireAdmin, async (req, res) => {
   const leases = await db.getLeases(req.query);
   res.json({ ok: true, count: leases.length, leases });
 });
@@ -553,12 +553,12 @@ app.delete("/api/leases/:id", requireAdmin, async (req, res) => {
 });
 
 // 6. Telegram Bot Management & Webhook Endpoints
-app.get("/api/telegram/history", requireAdmin, (req, res) => {
+app.get("/api/telegram/history", requireAdmin, async (req, res) => {
   res.json({
     ok: true,
     status: telegramService.getBotStatus(),
     history: db.getBotHistory(),
-    dbStatus: db.getDbStatus()
+    dbStatus: await db.getLiveDbStatus()
   });
 });
 
@@ -577,7 +577,7 @@ app.post("/api/telegram/command", requireAdmin, async (req, res) => {
       publicApartments: await db.getApartments(),
       inquiries: await db.getInquiries(),
       leases: await db.getLeases(),
-      dbStatus: db.getDbStatus()
+      dbStatus: await db.getLiveDbStatus()
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -804,7 +804,7 @@ app.get("/api/excel/inquiries.csv", requireAdmin, async (req, res) => {
   res.send(csv);
 });
 
-app.get("/api/excel/leases.csv", async (req, res) => {
+app.get("/api/excel/leases.csv", requireAdmin, async (req, res) => {
   const csv = await sheetsService.generateLeasesCsv(true);
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="KIN_Estates_KhachDangThue_HopDong.csv"');
@@ -836,7 +836,7 @@ app.get("/api/sheets/apps-script", requireAdmin, (req, res) => {
   });
 });
 
-app.post("/api/sheets/sync", async (req, res) => {
+app.post("/api/sheets/sync", requireAdmin, async (req, res) => {
   const result = await sheetsService.pushToGoogleSheetsWebhook("manual_sync", {});
   res.json({ ok: true, result, syncLogs: db.getSyncLogs() });
 });
@@ -1059,7 +1059,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
       inquiries,
       leases,
       aboutContent,
-      dbStatus: db.getDbStatus(),
+      dbStatus: await db.getLiveDbStatus(),
       botStatus: telegramService.getBotStatus()
     });
   } catch (err) {
@@ -1084,6 +1084,10 @@ app.post("/api/studio/reservations/:code/:action", requireAdmin, async (req, res
   try {
     const action = req.params.action === "confirm" ? "confirm" : "cancel";
     const result = await db.transitionReservation(req.params.code, action);
+    if (result?.changed && result.inquiry) {
+      void telegramService.notifyReservationChangeToTelegram?.(action, result.inquiry);
+      void sheetsService.pushToGoogleSheetsWebhook(`reservation_${action}`, result.inquiry);
+    }
     autoDeployService.scheduleAutoDeploy(`Studio reservation ${action}`);
     res.json({ ok: true, ...result });
   } catch (err) {

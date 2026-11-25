@@ -132,3 +132,43 @@ export const IconArrowUpRight: React.FC<IconProps> = ({ size = 16, strokeWidth =
     <polyline points="7 7 17 7 17 17" />
   </svg>
 );
+
+export const IconGridAll: React.FC<IconProps> = ({ size = 15, strokeWidth = 1.75, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="3" y="3" width="7.5" height="7.5" rx="1.8" />
+    <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8" />
+    <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8" />
+    <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8" />
+  </svg>
+);
+
+export const IconCondo: React.FC<IconProps> = ({ size = 15, strokeWidth = 1.75, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16" />
+    <path d="M16 10h2a2 2 0 0 1 2 2v9" />
+    <path d="M3 21h18" />
+    <path d="M8.5 7h1M11.5 7h1M8.5 11h1M11.5 11h1M8.5 15h1M11.5 15h1" />
+  </svg>
+);
+
+export const IconApartment: React.FC<IconProps> = ({ size = 15, strokeWidth = 1.75, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="4" y="4" width="16" height="17" rx="2" />
+    <path d="M9 21v-5h6v5" />
+    <path d="M8 8.5h2.5M13.5 8.5H16M8 12.2h2.5M13.5 12.2H16" />
+  </svg>
+);
+
+export const IconVilla: React.FC<IconProps> = ({ size = 15, strokeWidth = 1.75, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M3 10.5L12 4l9 6.5" />
+    <path d="M5.5 9v7.5h13V9" />
+    <path d="M3 20c1.5.8 3 .8 4.5 0s3-.8 4.5 0 3 .8 4.5 0 3-.8 4.5 0" />
+  </svg>
+);
+
+export const IconPenthouse: React.FC<IconProps> = ({ size = 15, strokeWidth = 1.75, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 3l3.2 4.8L20 9l-3.6 3.8.8 5.2L12 15.6 6.8 18l.8-5.2L4 9l4.8-1.2L12 3z" />
+  </svg>
+);

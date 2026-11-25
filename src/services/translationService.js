@@ -154,6 +154,34 @@ const BUILTIN_GLOSSARY = {
     ru: "Балкон",
     ko: "발코니",
     ja: "バルコニー"
+  },
+  "Gym": {
+    en: "Fitness Gym",
+    zh: "健身房",
+    ru: "Тренажерный зал",
+    ko: "피트니스 짐",
+    ja: "フィットネスジム"
+  },
+  "Thú cưng": {
+    en: "Pet Friendly",
+    zh: "允许宠物",
+    ru: "Можно с питомцами",
+    ko: "반려동물 가능",
+    ja: "ペット可"
+  },
+  "Biệt thự": {
+    en: "Private Villa",
+    zh: "独栋别墅",
+    ru: "Вилла",
+    ko: "풀빌라",
+    ja: "ヴィラ"
+  },
+  "Penthouse": {
+    en: "Penthouse",
+    zh: "顶层豪宅",
+    ru: "Пентхаус",
+    ko: "펜트하우스",
+    ja: "ペントハウス"
   }
 };
 
@@ -183,7 +211,7 @@ async function fetchGoogleTranslate(text, targetLang) {
       const json = await res.json();
       if (Array.isArray(json) && Array.isArray(json[0])) {
         const translated = json[0].map((part) => (Array.isArray(part) ? part[0] : "")).join("").trim();
-        if (translated && translated !== text) return translated;
+        if (translated) return translated;
       }
     }
   } catch {
@@ -201,7 +229,7 @@ async function fetchGoogleTranslate(text, targetLang) {
     if (res2.ok) {
       const json2 = await res2.json();
       const first = Array.isArray(json2) ? (Array.isArray(json2[0]) ? json2[0][0] : json2[0]) : null;
-      if (typeof first === "string" && first.trim() && first.trim() !== text) return first.trim();
+      if (typeof first === "string" && first.trim()) return first.trim();
     }
   } catch {
     // Fall through to Provider 3
@@ -279,8 +307,8 @@ async function translateBatch(items, targetLang) {
     chunks.map(async (chunk) => {
       if (chunk.length === 1) {
         const translated = await fetchGoogleTranslate(chunk[0].text, targetLang);
-        const finalVal = translated || chunk[0].text;
-        if (translated) setCache(chunk[0].cacheKey, finalVal);
+        const finalVal = translated ?? chunk[0].text;
+        if (translated !== null) setCache(chunk[0].cacheKey, finalVal);
         results[chunk[0].index] = finalVal;
         return;
       }
@@ -300,8 +328,8 @@ async function translateBatch(items, targetLang) {
         await Promise.all(
           chunk.map(async (item) => {
             const single = await fetchGoogleTranslate(item.text, targetLang);
-            const finalVal = single || item.text;
-            if (single) setCache(item.cacheKey, finalVal);
+            const finalVal = single ?? item.text;
+            if (single !== null) setCache(item.cacheKey, finalVal);
             results[item.index] = finalVal;
           })
         );
@@ -338,10 +366,10 @@ async function translateApartmentForLanguage(apartment, targetLang) {
     if (str) entries.push({ key, value: str });
   };
 
-  if (needsTranslation(apartment.title, targetLang) || typeof apartment.title === "string") {
+  if (!existingTr.__done && (needsTranslation(apartment.title, targetLang) || typeof apartment.title === "string")) {
     pushField("title", viTitle);
   }
-  if (needsTranslation(apartment.architecturalNotes, targetLang) || typeof apartment.architecturalNotes === "string") {
+  if (!existingTr.__done && (needsTranslation(apartment.architecturalNotes, targetLang) || typeof apartment.architecturalNotes === "string")) {
     pushField("architecturalNotes", viNotes);
   }
 
@@ -373,7 +401,7 @@ async function translateApartmentForLanguage(apartment, targetLang) {
     typeof apartment.architecturalNotes === "object" && apartment.architecturalNotes !== null
       ? { ...apartment.architecturalNotes }
       : { vi: viNotes };
-  const nextLangTr = { ...existingTr };
+  const nextLangTr = { ...existingTr, __done: true };
   const nextTags = needTags ? [...tags] : existingTr.tags;
 
   entries.forEach((entry, idx) => {

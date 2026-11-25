@@ -236,8 +236,7 @@ function getMainMenuButtons() {
     ],
     [
       { text: "📋 Mẫu đăng nhanh", callback_data: "/form" },
-      { text: "📝 Bản nháp", callback_data: "/draft" },
-      { text: "🔄 Đồng bộ", callback_data: "/refresh" }
+      { text: "📝 Bản nháp", callback_data: "/draft" }
     ],
     [
       { text: "👥 Khách & lịch xem", callback_data: "/crm" },
@@ -533,7 +532,7 @@ async function processTelegramCommand(rawText, meta = {}) {
           { text: "🌴 Villa", callback_data: "/list type:villa" }
         ],
         [{ text: "Tất cả", callback_data: "/list" }, { text: "🟢 Trống", callback_data: "/empty" },
-          { text: "🔴 Thuê / Ẩn", callback_data: "/rented" }, { text: "🔄 Làm mới", callback_data: "/refresh" }],
+          { text: "🔴 Thuê / Ẩn", callback_data: "/rented" }],
         [{ text: "➕ Đăng mới", callback_data: "/wizard" }, { text: "📋 Mẫu đăng", callback_data: "/form" }, { text: "🏠 Menu", callback_data: "/menu" }]
       ]
     };
@@ -1577,11 +1576,34 @@ async function notifyStudioSyncToTelegram(liveStatus, healedCount = 0) {
   }
 }
 
+async function notifyReservationChangeToTelegram(action, inquiry) {
+  if (String(process.env.PUBLIC_SITE_URL || "").includes(".invalid")) return;
+  const token = getTelegramToken();
+  const chatId = getTelegramAdminChatId();
+  if (!token || !chatId || !inquiry) return;
+  try {
+    const label = action === "confirm" ? "✅ Đã xác nhận giữ chỗ" : "🔓 Đã hủy giữ chỗ & mở trống";
+    const reply = [
+      `${label} · ${inquiry.code || inquiry._id}`,
+      `👤 Khách: ${inquiry.clientName || "Khách hàng"} (${inquiry.contactHandle || ""})`,
+      inquiry.apartmentCode ? `🏠 BĐS: ${inquiry.apartmentCode}` : ""
+    ].filter(Boolean).join("\n");
+    await deliverTelegramResult(botInstance || new TelegramBot(token), token, chatId, {
+      reply,
+      buttons: inquiry.apartmentCode ? [[{ text: "⚙️ Xem căn trên Bot", callback_data: `/apt ${inquiry.apartmentCode}` }]] : [],
+      parseMode: null
+    });
+  } catch {
+    // Non-blocking
+  }
+}
+
 module.exports = {
   initTelegramBot,
   processTelegramCommand,
   notifyNewInquiryToTelegram,
   notifyStudioMutationToTelegram,
+  notifyReservationChangeToTelegram,
   notifyStudioSyncToTelegram,
   handleTelegramWebhookUpdate,
   sendExcelFilesToTelegramChat,

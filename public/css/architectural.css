@@ -436,10 +436,79 @@ select:focus {
   cursor: pointer;
 }
 
-.mobile-drawer-link.active,
-.mobile-drawer-link:hover {
+.mobile-drawer-link.active {
   background: var(--bg-sand);
   color: var(--accent-bronze-dark);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mobile-drawer-link:hover {
+    background: var(--bg-sand);
+    color: var(--accent-bronze-dark);
+  }
+}
+
+.mobile-drawer-cat-box {
+  background: #F8F6F1;
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 0.72rem;
+  margin: 0.15rem 0 0.9rem;
+}
+
+.mobile-drawer-cat-head {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--accent-bronze-dark);
+  margin-bottom: 0.48rem;
+  padding: 0 0.2rem;
+}
+
+.mobile-drawer-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.mobile-drawer-cat-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.52rem 0.65rem;
+  border-radius: 11px;
+  border: 1px solid rgba(22, 25, 30, 0.08);
+  background: #FFFFFF;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.mobile-drawer-cat-btn svg {
+  color: var(--accent-bronze-dark);
+  flex-shrink: 0;
+}
+
+.mobile-drawer-cat-btn span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-drawer-cat-btn.active {
+  background: var(--bg-navy);
+  color: #FFFFFF;
+  border-color: var(--bg-navy);
+}
+
+.mobile-drawer-cat-btn.active svg {
+  color: #F5DFC6;
 }
 
 /* ============================================================================
@@ -1292,13 +1361,46 @@ select:focus {
 }
 
 .pill-badge-dark {
-  background: rgba(22, 25, 30, 0.82);
-  backdrop-filter: blur(8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  background: rgba(22, 25, 30, 0.84);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #FFFFFF;
-  font-size: 0.68rem;
+  font-size: 0.69rem;
   font-weight: 700;
-  padding: 0.26rem 0.65rem;
+  line-height: 1.2;
+  padding: 0.3rem 0.68rem;
   border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.pill-badge-dark svg {
+  color: #F5DFC6;
+  flex-shrink: 0;
+}
+
+.kin-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kin-status-dot--avail {
+  background: #34D399;
+  box-shadow: 0 0 0 2.5px rgba(52, 211, 153, 0.28);
+}
+
+.kin-status-dot--reserved {
+  background: #FBBF24;
+  box-shadow: 0 0 0 2.5px rgba(251, 191, 36, 0.28);
+}
+
+.kin-status-dot--rented {
+  background: #F87171;
+  box-shadow: 0 0 0 2.5px rgba(248, 113, 113, 0.28);
 }
 
 .save-heart-btn {
@@ -1926,7 +2028,12 @@ select:focus {
 .astryx-select-root {
   position: relative;
   width: 100%;
+  min-width: 0;
   user-select: none;
+}
+
+.astryx-select-root.is-open {
+  z-index: 960;
 }
 
 .astryx-select-label {
@@ -1941,35 +2048,69 @@ select:focus {
 
 .astryx-select-trigger {
   width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.45rem;
   background: #FFFFFF;
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.9rem;
-  min-height: 42px;
+  border-radius: 12px;
+  padding: 0 0.85rem;
+  height: 44px;
+  min-height: 44px;
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.astryx-select-root.is-open .astryx-select-trigger {
+  border-color: var(--accent-bronze);
+  box-shadow: 0 0 0 3px rgba(168, 124, 81, 0.14);
+}
+
+.astryx-select-value {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.astryx-select-chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.astryx-select-chevron.rotated {
+  transform: rotate(180deg);
+  color: var(--accent-bronze-dark);
 }
 
 .astryx-select-popover {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  min-width: 240px;
+  min-width: 100%;
   width: max-content;
-  max-width: min(320px, 90vw);
+  max-width: min(300px, calc(100vw - 28px));
+  max-height: 276px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #FFFFFF;
   border: 1px solid var(--border-medium);
   border-radius: 14px;
-  padding: 0.4rem;
+  padding: 0.38rem;
   box-shadow: 0 20px 48px rgba(22, 25, 30, 0.22);
-  z-index: 950;
+  z-index: 970;
 }
 
 .astryx-select-option {
@@ -2012,14 +2153,15 @@ select:focus {
 
 .modern-search-input {
   width: 100%;
-  padding: 0.62rem 0.9rem;
-  border-radius: var(--radius-sm);
+  padding: 0 0.9rem;
+  border-radius: 12px;
   border: 1px solid var(--border-medium);
   background: #FFFFFF;
   font-family: var(--font-sans);
   font-size: 0.85rem;
   color: var(--text-primary);
-  min-height: 42px;
+  height: 44px;
+  min-height: 44px;
 }
 
 .chips-track {
@@ -2043,7 +2185,7 @@ select:focus {
   gap: 0.38rem;
   background: #FFFFFF;
   border: 1px solid var(--border-medium);
-  padding: 0.42rem 0.9rem;
+  padding: 0.42rem 0.88rem;
   border-radius: var(--radius-pill);
   font-family: var(--font-sans);
   font-size: 0.78rem;
@@ -2053,11 +2195,18 @@ select:focus {
   transition: all 0.18s ease;
 }
 
-.filter-chip-btn.active,
-.filter-chip-btn:hover {
+.filter-chip-btn.active {
   background: var(--bg-navy);
   color: #FFFFFF;
   border-color: var(--bg-navy);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .filter-chip-btn:hover {
+    background: var(--bg-navy);
+    color: #FFFFFF;
+    border-color: var(--bg-navy);
+  }
 }
 
 /* ============================================================================
@@ -4765,8 +4914,85 @@ select:focus {
 }
 
 /* ============================================================================
-   MOBILE-FIRST COMPACT CATALOGUE FILTER & CLEAN EXPAND MAP
+   ARCHITECTURAL SEGMENTED CATEGORY BAR & MOBILE-FIRST COMPACT FILTER SHELL
    ============================================================================ */
+.kin-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: #F2EFE7;
+  border: 1px solid rgba(22, 25, 30, 0.08);
+  padding: 0.32rem;
+  border-radius: 16px;
+  margin-bottom: 0.85rem;
+  max-width: 100%;
+}
+
+.kin-category-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.kin-cat-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  height: 38px;
+  padding: 0 0.85rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kin-cat-pill svg {
+  color: var(--accent-bronze-dark);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.kin-cat-pill__count {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.08rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(22, 25, 30, 0.07);
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.kin-cat-pill.active {
+  background: #16191E;
+  color: #FFFFFF;
+  border-color: rgba(213, 176, 124, 0.3);
+  box-shadow: 0 6px 16px rgba(22, 25, 30, 0.16);
+}
+
+.kin-cat-pill.active svg {
+  color: #F5DFC6;
+}
+
+.kin-cat-pill.active .kin-cat-pill__count {
+  background: rgba(245, 223, 198, 0.18);
+  color: #F5DFC6;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kin-cat-pill:not(.active):hover {
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--text-primary);
+  }
+}
+
 .kin-cat-filter-shell {
   background: #FFFFFF;
   padding: 1.15rem 1.25rem;
@@ -4793,6 +5019,10 @@ select:focus {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.kin-mobile-criteria-label {
+  display: none;
 }
 
 .expand-map-hint {
@@ -4822,42 +5052,69 @@ select:focus {
     padding: 1.15rem 0.85rem 2rem;
   }
   .page-route .section-heading-serif {
-    font-size: 1.55rem;
+    font-size: 1.52rem;
     line-height: 1.24;
   }
+  .kin-category-bar {
+    padding: 0.28rem;
+    border-radius: 14px;
+    margin-bottom: 0.65rem;
+  }
+  .kin-cat-pill {
+    height: 36px;
+    padding: 0 0.76rem;
+    font-size: 0.77rem;
+    border-radius: 10px;
+  }
   .kin-cat-filter-shell {
-    padding: 0.75rem;
+    padding: 0.65rem;
     border-radius: 16px;
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.05rem;
   }
   .kin-mobile-filter-bar {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0;
   }
-  .kin-mobile-search-input {
+  .kin-mobile-search-wrap {
+    position: relative;
     flex: 1;
     min-width: 0;
-    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .kin-mobile-search-icon {
+    position: absolute;
+    left: 11px;
+    color: var(--text-muted);
+    pointer-events: none;
+    display: inline-flex;
+  }
+  .kin-mobile-search-input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
     border-radius: 12px;
     border: 1px solid var(--border-medium);
-    background: #faf8f4;
-    padding: 0 12px;
-    font-size: 0.85rem;
+    background: #FAF8F4;
+    padding: 0 11px 0 33px;
+    font-size: 0.84rem;
+    font-weight: 500;
     color: var(--text-primary);
     outline: none;
+    transition: border-color 0.18s ease, background 0.18s ease;
   }
   .kin-mobile-search-input:focus {
     border-color: var(--accent-bronze);
-    background: #fff;
+    background: #FFFFFF;
   }
   .kin-mobile-filter-btn {
-    height: 40px;
+    height: 42px;
     padding: 0 11px;
     border-radius: 12px;
     border: 1px solid var(--border-medium);
-    background: #fff;
+    background: #FFFFFF;
     color: var(--text-primary);
     font-size: 0.78rem;
     font-weight: 700;
@@ -4866,18 +5123,19 @@ select:focus {
     gap: 5px;
     white-space: nowrap;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .kin-mobile-filter-btn.active {
-    background: #14191f;
-    color: #f3dbb6;
-    border-color: #14191f;
+    background: #16191E;
+    color: #F5DFC6;
+    border-color: #16191E;
   }
   .kin-mobile-filter-badge {
     min-width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: #b38646;
-    color: #fff;
+    background: #B38646;
+    color: #FFFFFF;
     font-size: 0.68rem;
     font-weight: 800;
     display: grid;
@@ -4886,11 +5144,11 @@ select:focus {
   }
   .kin-cat-filter-grid {
     display: none;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
-    margin-top: 0.65rem;
-    margin-bottom: 0.75rem;
-    padding-top: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.7rem;
+    margin-bottom: 0.7rem;
+    padding-top: 0.7rem;
     border-top: 1px solid var(--border-light);
   }
   .kin-cat-filter-grid.is-open {
@@ -4899,13 +5157,46 @@ select:focus {
   .kin-cat-filter-grid .kin-desktop-search-field {
     display: none;
   }
+  /* Prevent right-column custom select popovers from overflowing the right edge on phones */
+  .kin-cat-filter-grid > .kin-form-field:nth-child(3) .astryx-select-popover,
+  .kin-cat-filter-grid > .kin-form-field:nth-child(5) .astryx-select-popover {
+    left: auto;
+    right: 0;
+  }
+  .kin-cat-filter-footer {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+  }
+  .kin-cat-filter-footer.is-open {
+    display: flex;
+  }
+  .kin-mobile-criteria-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .kin-cat-filter-footer .chips-track {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 0.38rem;
+  }
+  .kin-cat-filter-footer .filter-chip-btn {
+    padding: 0.38rem 0.76rem;
+    font-size: 0.75rem;
+  }
   .kin-cat-filter-actions-desktop {
     display: none !important;
   }
   .kin-mobile-filter-drawer-actions {
     display: flex !important;
     gap: 8px;
-    margin-bottom: 0.75rem;
+    margin-top: 0.1rem;
   }
   .kin-cat-map-col-desktop {
     display: none !important;

@@ -93,6 +93,7 @@ async function generateApartmentsCsv(withBom = true) {
   const apartments = await db.getApartments({ includeHidden: true });
   const headers = [
     "Code",
+    "Property_Type",
     "Title_VI",
     "Title_EN",
     "Building",
@@ -116,6 +117,7 @@ async function generateApartmentsCsv(withBom = true) {
 
   const rows = apartments.map((a) => [
     escapeCsvField(a.code),
+    escapeCsvField(a.propertyType || db.inferPropertyType(a)),
     escapeCsvField(a.title?.vi || ""),
     escapeCsvField(a.title?.en || ""),
     escapeCsvField(a.building || ""),
@@ -285,6 +287,9 @@ async function importRowsFromSheetPayload(inputRowsOrCsv) {
     const payload = {
       ...(existing || {}),
       code: codeVal || undefined,
+      ...(row.Property_Type || row.propertyType || row["Loại hình"]
+        ? { propertyType: db.normalizePropertyType(row.Property_Type || row.propertyType || row["Loại hình"]) }
+        : {}),
       title: {
         ...(existing?.title || {}),
         vi: titleVi || existing?.title?.vi || "Căn hộ KIN Estates",

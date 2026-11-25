@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CustomSelect, SelectOption } from "./components/CustomSelect";
 import {
+  IconHome,
   IconMap,
   IconSearch,
   IconMapPin,
   IconArrowUpRight,
   IconCheck,
-  IconChevronDown
+  IconChevronDown,
+  IconGridAll,
+  IconCondo,
+  IconApartment,
+  IconVilla,
+  IconPenthouse
 } from "./components/Icons";
 
 declare const L: any;
@@ -211,7 +217,7 @@ const UI_TEXT: Record<Lang, {
   search_btn: string;
 }> = {
   vi: {
-    nav_apartments: "Căn hộ",
+    nav_apartments: "Bất động sản",
     nav_areas: "Khu vực",
     nav_how: "Cách thuê",
     nav_guides: "Cẩm nang",
@@ -224,7 +230,7 @@ const UI_TEXT: Record<Lang, {
     search_btn: "Tìm"
   },
   en: {
-    nav_apartments: "Apartments",
+    nav_apartments: "Residences",
     nav_areas: "Areas",
     nav_how: "How to rent",
     nav_guides: "Guides",
@@ -237,7 +243,7 @@ const UI_TEXT: Record<Lang, {
     search_btn: "Search"
   },
   zh: {
-    nav_apartments: "精选公寓",
+    nav_apartments: "精选房源",
     nav_areas: "热门区域",
     nav_how: "租房流程",
     nav_guides: "生活指南",
@@ -250,7 +256,7 @@ const UI_TEXT: Record<Lang, {
     search_btn: "搜索"
   },
   ru: {
-    nav_apartments: "Квартиры",
+    nav_apartments: "Резиденции",
     nav_areas: "Районы",
     nav_how: "Как снять",
     nav_guides: "Гиды",
@@ -263,7 +269,7 @@ const UI_TEXT: Record<Lang, {
     search_btn: "Найти"
   },
   ko: {
-    nav_apartments: "아파트",
+    nav_apartments: "전체 매물",
     nav_areas: "지역 가이드",
     nav_how: "임대 절차",
     nav_guides: "가이드",
@@ -963,12 +969,17 @@ export const App: React.FC = () => {
     return () => document.removeEventListener("click", onDocClick);
   }, [lang]);
 
+  const prevRouteRef = useRef<string>(route);
+
   // Sync filters when navigating to dedicated /areas/:slug or /property/:slug SEO landing pages
   useEffect(() => {
+    const prev = prevRouteRef.current;
+    prevRouteRef.current = route;
     const areaM = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
     const matchedArea = areaM ? findSeoAreaBySlug(areaM[1]) : null;
-    if (matchedArea && area !== matchedArea.value) {
-      setArea(matchedArea.value);
+    if (matchedArea) {
+      if (area !== matchedArea.value) setArea(matchedArea.value);
+      return;
     }
     const propM = route.match(/^\/property\/([a-z0-9-]+)\/?$/i);
     const matchedProp = propM ? SEO_PROPERTY_TYPES.find((p) => p.slug === propM[1].toLowerCase()) : null;
@@ -977,6 +988,15 @@ export const App: React.FC = () => {
       setPropCategory(matchedProp.propertyType || "all");
       setBedrooms(matchedProp.bedrooms || "all");
       setTag(matchedProp.tag || "all");
+      return;
+    }
+    if (route === "/apartments" && (/^\/areas\//i.test(prev) || /^\/property\//i.test(prev))) {
+      if (/^\/areas\//i.test(prev)) setArea("all");
+      if (/^\/property\//i.test(prev)) {
+        setPropCategory("all");
+        setBedrooms("all");
+        setTag("all");
+      }
     }
   }, [route]);
 
@@ -1873,12 +1893,31 @@ export const App: React.FC = () => {
 
   const trPropType = (rawType?: string): string => {
     const pt = String(rawType || "condo").toLowerCase();
-    if (pt === "apartment") return tx("🏠 Căn hộ thường", "🏠 Serviced Apt", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스", "🏠 サービスアパート");
-    if (pt === "house") return tx("🏡 Nhà nguyên căn", "🏡 Whole House", "🏡 整栋住宅", "🏡 Дом", "🏡 단독주택", "🏡 一軒家");
-    if (pt === "villa") return tx("🌴 Biệt thự / Villa", "🌴 Pool Villa", "🌴 独栋别墅", "🌴 Вилла", "🌴 풀빌라", "🌴 ヴィラ");
-    if (pt === "penthouse") return tx("✨ Penthouse", "✨ Penthouse", "✨ 顶层豪宅", "✨ Пентхаус", "✨ 펜트하우스", "✨ ペントハウス");
-    return tx("🏢 Căn hộ chung cư", "🏢 Condominium", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム");
+    if (pt === "apartment") return tx("Căn hộ thường", "Serviced Apt", "服务式公寓", "Апартаменты", "레지던스", "サービスアパート");
+    if (pt === "house") return tx("Nhà nguyên căn", "Whole House", "整栋住宅", "Дом", "단독주택", "一軒家");
+    if (pt === "villa") return tx("Biệt thự / Villa", "Pool Villa", "独栋别墅", "Вилла", "풀빌라", "ヴィラ");
+    if (pt === "penthouse") return tx("Penthouse", "Penthouse", "顶层豪宅", "Пентхаус", "펜트하우스", "ペントハウス");
+    return tx("Căn hộ chung cư", "Condominium", "电梯公寓", "ЖК / Кондо", "대단지 아파트", "コンドミニアム");
   };
+
+  const renderPropTypeIcon = (rawType?: string, size = 14) => {
+    const pt = String(rawType || "condo").toLowerCase();
+    if (pt === "all") return <IconGridAll size={size} />;
+    if (pt === "apartment") return <IconApartment size={size} />;
+    if (pt === "house") return <IconHome size={size} />;
+    if (pt === "villa") return <IconVilla size={size} />;
+    if (pt === "penthouse") return <IconPenthouse size={size} />;
+    return <IconCondo size={size} />;
+  };
+
+  const propTypeCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { all: apartments.length, condo: 0, apartment: 0, house: 0, villa: 0, penthouse: 0 };
+    for (const a of apartments) {
+      const pt = String(a.propertyType || "condo").toLowerCase();
+      counts[pt] = (counts[pt] || 0) + 1;
+    }
+    return counts;
+  }, [apartments]);
 
   const homeCatalogueUnits = React.useMemo(() => {
     if (homeChipFilter === "all") return apartments;
@@ -2395,20 +2434,24 @@ export const App: React.FC = () => {
             <div className="apt-modern-card__top-badges">
               <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
                 {isRented ? (
-                  <span className="pill-badge-dark" style={{ background: "rgba(180, 35, 35, 0.92)", color: "#FFF" }}>
-                    {tx("🔴 Đã thuê", "🔴 Rented", "🔴 已租", "🔴 Сдано", "🔴 임대완료", "🔴 成約済")}
+                  <span className="pill-badge-dark" style={{ background: "rgba(155, 28, 28, 0.9)", color: "#FFF" }}>
+                    <span className="kin-status-dot kin-status-dot--rented" />
+                    <span>{tx("Đã thuê", "Rented", "已租", "Сдано", "임대완료", "成約済")}</span>
                   </span>
                 ) : isReserved ? (
-                  <span className="pill-badge-dark" style={{ background: "rgba(180, 115, 20, 0.92)", color: "#FFF" }}>
-                    {tx("🟡 Đã cọc", "🟡 Reserved", "🟡 已预订", "🟡 Бронь", "🟡 예약중", "🟡 予約中")}
+                  <span className="pill-badge-dark" style={{ background: "rgba(161, 98, 7, 0.9)", color: "#FFF" }}>
+                    <span className="kin-status-dot kin-status-dot--reserved" />
+                    <span>{tx("Đã cọc", "Reserved", "已预订", "Бронь", "예약중", "予約中")}</span>
                   </span>
                 ) : (
-                  <span className="pill-badge-dark" style={{ background: "rgba(20, 99, 70, 0.9)", color: "#FFF" }}>
-                    {tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
+                  <span className="pill-badge-dark" style={{ background: "rgba(18, 86, 62, 0.88)", color: "#FFF" }}>
+                    <span className="kin-status-dot kin-status-dot--avail" />
+                    <span>{tx("Đang trống", "Available", "可租", "Свободна", "공실", "空室")}</span>
                   </span>
                 )}
                 <span className="pill-badge-dark">
-                  {trPropType(apt.propertyType)}
+                  {renderPropTypeIcon(apt.propertyType, 12)}
+                  <span>{trPropType(apt.propertyType)}</span>
                 </span>
               </div>
               <button
@@ -2444,8 +2487,8 @@ export const App: React.FC = () => {
               </a>
             </h3>
             {apt.address && !/^https?:\/\//i.test(apt.address.trim()) && (
-              <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                <span>📍</span>
+              <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ color: "var(--accent-bronze-dark)", display: "inline-flex", flexShrink: 0 }}><IconMapPin size={13} /></span>
                 <span>{apt.address}</span>
               </div>
             )}
@@ -2497,6 +2540,26 @@ export const App: React.FC = () => {
     { path: "/how-to-rent", label: t.nav_how },
     { path: "/guides", label: t.nav_guides },
     { path: "/about", label: t.nav_about }
+  ];
+
+  const activeNavPath =
+    route === "/"
+      ? "/"
+      : route.startsWith("/areas")
+        ? "/areas"
+        : route === "/apartments" || route.startsWith("/apartments/") || route.startsWith("/property/")
+          ? "/apartments"
+          : route.startsWith("/guides")
+            ? "/guides"
+            : route;
+
+  const categoryMenuItems = [
+    { key: "all", label: tx("Tất cả BĐS", "All Residences", "全部房源", "Все объекты", "전체 매물", "すべての物件") },
+    { key: "condo", label: tx("Căn hộ chung cư", "Condominium", "电梯公寓", "ЖК / Кондо", "대단지 아파트", "コンドミニアム") },
+    { key: "apartment", label: tx("Căn hộ thường", "Serviced Apt", "服务式公寓", "Апартаменты", "레지던스", "サービスアパート") },
+    { key: "house", label: tx("Nhà nguyên căn", "Whole House", "整栋住宅", "Дом", "단독주택", "一軒家") },
+    { key: "villa", label: tx("Biệt thự / Villa", "Pool Villa", "独栋别墅", "Вилла", "풀빌라", "ヴィラ") },
+    { key: "penthouse", label: tx("Penthouse", "Penthouse", "顶层豪宅", "Пентхаус", "펜트하우스", "ペントハウス") }
   ];
 
   const activeDistrict = neighborhoods[activeDistrictIdx] || neighborhoods[0];
@@ -2566,7 +2629,7 @@ export const App: React.FC = () => {
                   <a
                     href={item.path}
                     style={{ textDecoration: "none" }}
-                    className={`kin-tab-link ${route === item.path || (item.path === "/apartments" && route.startsWith("/apartments/")) || (item.path === "/areas" && route.startsWith("/areas/")) ? "active" : ""}`}
+                    className={`kin-tab-link ${activeNavPath === item.path ? "active" : ""}`}
                     onClick={(e) => {
                       if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                         e.preventDefault();
@@ -2677,22 +2740,57 @@ export const App: React.FC = () => {
           <div className="mobile-drawer-links">
             <button
               type="button"
-              className={`mobile-drawer-link ${route === "/" ? "active" : ""}`}
+              className={`mobile-drawer-link ${activeNavPath === "/" ? "active" : ""}`}
               onClick={() => navigate("/")}
             >
-              <span>{lang === "vi" ? "Trang chủ" : "Home"}</span>
+              <span>{tx("Trang chủ", "Home", "首页", "Главная", "홈", "ホーム")}</span>
               <span>→</span>
             </button>
             {navItems.map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                className={`mobile-drawer-link ${route === item.path ? "active" : ""}`}
-                onClick={() => navigate(item.path)}
-              >
-                <span>{item.label}</span>
-                <span>→</span>
-              </button>
+              <React.Fragment key={item.path}>
+                <button
+                  type="button"
+                  className={`mobile-drawer-link ${activeNavPath === item.path ? "active" : ""}`}
+                  onClick={() => {
+                    if (item.path === "/apartments") {
+                      setPropCategory("all");
+                      setArea("all");
+                    }
+                    navigate(item.path);
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <span>→</span>
+                </button>
+                {item.path === "/apartments" && (
+                  <div className="mobile-drawer-cat-box">
+                    <div className="mobile-drawer-cat-head">
+                      {tx("Danh mục bất động sản", "Property Categories", "房源分类", "Категории жилья", "매물 유형별 보기", "物件カテゴリー")}
+                    </div>
+                    <div className="mobile-drawer-cat-grid">
+                      {categoryMenuItems.map((cat) => {
+                        const isCatActive = isCatalogueRoute && propCategory === cat.key && !activeAreaLanding;
+                        return (
+                          <button
+                            key={cat.key}
+                            type="button"
+                            className={`mobile-drawer-cat-btn ${isCatActive ? "active" : ""}`}
+                            onClick={() => {
+                              setPropCategory(cat.key);
+                              setArea("all");
+                              setMobileMenuOpen(false);
+                              navigate("/apartments");
+                            }}
+                          >
+                            {renderPropTypeIcon(cat.key, 14)}
+                            <span>{cat.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
           <button
@@ -2701,7 +2799,10 @@ export const App: React.FC = () => {
             style={{ width: "100%" }}
             onClick={() => {
               setMobileMenuOpen(false);
-              navigate("/how-to-rent");
+              if (route !== "/") navigate("/");
+              setTimeout(() => {
+                document.getElementById("find-home-section")?.scrollIntoView({ behavior: "smooth" });
+              }, 120);
             }}
           >
             <span>{t.btn_find}</span>
@@ -2771,18 +2872,20 @@ export const App: React.FC = () => {
 
                 <div className="kin-quick-pills">
                   {[
-                    { label: tx("1 phòng ngủ", "1 Bedroom", "1 卧室", "1 спальня", "1베드룸", "1ベッドルーム"), br: "1" },
-                    { label: tx("2 phòng ngủ", "2 Bedrooms", "2 卧室", "2 спальни", "2베드룸", "2ベッドルーム"), br: "2" },
-                    { label: tx("3 phòng ngủ", "3 Bedrooms", "3 卧室", "3 спальни", "3베드룸", "3ベッドルーム"), br: "3" },
-                    { label: tx("Biệt thự & Penthouse", "Villas & Penthouses", "别墅与顶层公寓", "Виллы и пентхаусы", "풀빌라 & 펜트하우스", "ヴィラ＆ペントハウス"), tag: "Biệt thự" }
+                    { label: tx("Căn hộ chung cư", "Condominiums", "电梯公寓", "ЖК / Кондо", "대단지 아파트", "コンドミニアム"), cat: "condo" },
+                    { label: tx("Căn hộ thường", "Serviced Apts", "服务式公寓", "Апартаменты", "레지던스", "サービスアパート"), cat: "apartment" },
+                    { label: tx("Nhà nguyên căn", "Whole Houses", "整栋住宅", "Дома", "단독주택", "一軒家"), cat: "house" },
+                    { label: tx("Biệt thự / Villa", "Pool Villas", "独栋别墅", "Виллы", "풀빌라", "ヴィラ"), cat: "villa" },
+                    { label: tx("2 phòng ngủ", "2 Bedrooms", "2 卧室", "2 спальни", "2베드룸", "2LDK"), br: "2" }
                   ].map((p) => (
                     <button
                       key={p.label}
                       type="button"
                       className="kin-quick-pill"
                       onClick={() => {
-                        if (p.br) setBedrooms(p.br);
-                        if (p.tag) setTag(p.tag);
+                        setPropCategory(p.cat || "all");
+                        setBedrooms(p.br || "all");
+                        setArea("all");
                         navigate("/apartments");
                       }}
                     >
@@ -3074,33 +3177,35 @@ export const App: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div className="chips-track">
-                {[
-                  { key: "all", label: tx("Tất cả BĐS", "All Properties", "全部房源", "Все объекты", "전체 매물", "すべての物件") },
-                  { key: "condo", label: tx("🏢 Căn hộ chung cư", "🏢 Condominiums", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム") },
-                  { key: "apartment", label: tx("🏠 Căn hộ thường", "🏠 Serviced Apts", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스·원룸", "🏠 サービスアパート") },
-                  { key: "house", label: tx("🏡 Nhà nguyên căn", "🏡 Whole Houses", "🏡 整栋住宅", "🏡 Дома", "🏡 단독주택", "🏡 一軒家") },
-                  { key: "villa", label: tx("🌴 Biệt thự / Villa", "🌴 Pool Villas", "🌴 独栋别墅", "🌴 Виллы", "🌴 풀빌라", "🌴 ヴィラ") },
-                  { key: "penthouse", label: tx("✨ Penthouse", "✨ Penthouses", "✨ 顶层豪宅", "✨ Пентхаусы", "✨ 펜트하우스", "✨ ペントハウス") },
-                  { key: "saved", label: `${tx("♥ Đã lưu", "♥ Saved", "♥ 已收藏", "♥ Сохранено", "♥ 저장됨", "♥ 保存済")} (${savedCodes.length})` }
-                ].map((c) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1.35rem" }}>
+              <div className="kin-category-bar" style={{ marginBottom: 0 }}>
+                {categoryMenuItems.map((c) => (
                   <button
                     key={c.key}
                     type="button"
-                    className={`filter-chip-btn ${homeChipFilter === c.key ? "active" : ""}`}
+                    className={`kin-cat-pill ${homeChipFilter === c.key ? "active" : ""}`}
                     onClick={() => setHomeChipFilter(c.key)}
                   >
-                    {c.label}
+                    {renderPropTypeIcon(c.key, 14)}
+                    <span>{c.label}</span>
+                    <span className="kin-cat-pill__count">{propTypeCounts[c.key] ?? 0}</span>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  className={`kin-cat-pill ${homeChipFilter === "saved" ? "active" : ""}`}
+                  onClick={() => setHomeChipFilter("saved")}
+                >
+                  <span>♥ {tx("Đã lưu", "Saved", "已收藏", "Сохранено", "저장됨", "保存済")}</span>
+                  <span className="kin-cat-pill__count">{savedCodes.length}</span>
+                </button>
               </div>
               <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-secondary)" }}>
                 {tx(
-                  `Hiển thị ${homeCatalogueUnits.length} trong ${apartments.length} căn hộ`,
+                  `Hiển thị ${homeCatalogueUnits.length} / ${apartments.length} bất động sản`,
                   `Showing ${homeCatalogueUnits.length} of ${apartments.length} residences`,
                   `显示 ${homeCatalogueUnits.length} / ${apartments.length} 套房源`,
-                  `Показано ${homeCatalogueUnits.length} из ${apartments.length} квартир`,
+                  `Показано ${homeCatalogueUnits.length} из ${apartments.length} объектов`,
                   `총 ${apartments.length}개 중 ${homeCatalogueUnits.length}개 표시`,
                   `${apartments.length} 件中 ${homeCatalogueUnits.length} 件を表示`
                 )}
@@ -3646,40 +3751,42 @@ export const App: React.FC = () => {
               )}
             </div>
 
-            <div className="kin-cat-filter-shell">
-              {/* 1-Tap Product Category Tabs (Condo vs Apartment vs House vs Villa vs Penthouse) */}
-              <div className="chips-track" style={{ marginBottom: "0.75rem", paddingBottom: "0.55rem", borderBottom: "1px solid var(--border-light)" }}>
-                {[
-                  { key: "all", label: tx("Tất cả danh mục", "All Categories", "全部类别", "Все категории", "전체 유형", "すべての種別") },
-                  { key: "condo", label: tx("🏢 Căn hộ chung cư", "🏢 Condominium", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム") },
-                  { key: "apartment", label: tx("🏠 Căn hộ thường", "🏠 Serviced Apt", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스", "🏠 サービスアパート") },
-                  { key: "house", label: tx("🏡 Nhà nguyên căn", "🏡 Whole House", "🏡 整栋住宅", "🏡 Дом", "🏡 단독주택", "🏡 一軒家") },
-                  { key: "villa", label: tx("🌴 Biệt thự / Villa", "🌴 Pool Villa", "🌴 独栋别墅", "🌴 Вилла", "🌴 풀빌라", "🌴 ヴィラ") },
-                  { key: "penthouse", label: tx("✨ Penthouse", "✨ Penthouse", "✨ 顶层豪宅", "✨ Пентхаус", "✨ 펜트하우스", "✨ ペントハウス") }
-                ].map((catItem) => (
-                  <button
-                    key={catItem.key}
-                    type="button"
-                    className={`filter-chip-btn ${propCategory === catItem.key ? "active" : ""}`}
-                    onClick={() => setPropCategory(catItem.key)}
-                  >
-                    {catItem.label}
-                  </button>
-                ))}
-              </div>
+            {/* Architectural Segmented Product Category Bar */}
+            <div className="kin-category-bar" role="tablist" aria-label="Danh mục bất động sản">
+              {categoryMenuItems.map((catItem) => (
+                <button
+                  key={catItem.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={propCategory === catItem.key}
+                  className={`kin-cat-pill ${propCategory === catItem.key ? "active" : ""}`}
+                  onClick={() => setPropCategory(catItem.key)}
+                >
+                  {renderPropTypeIcon(catItem.key, 14)}
+                  <span>{catItem.label}</span>
+                  <span className="kin-cat-pill__count">{propTypeCounts[catItem.key] ?? 0}</span>
+                </button>
+              ))}
+            </div>
 
+            <div className="kin-cat-filter-shell">
               {/* Compact Mobile 1-Row Search + Filter Toggle + Map Bar */}
               <div className="kin-mobile-filter-bar">
-                <input
-                  type="search"
-                  className="kin-mobile-search-input"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={tx("Tìm tòa nhà, khu vực...", "Search building, area...", "搜索大楼或区域...", "Поиск здания, района...", "건물명, 지역 검색...", "建物名・エリア検索...")}
-                />
+                <div className="kin-mobile-search-wrap">
+                  <span className="kin-mobile-search-icon">
+                    <IconSearch size={14} />
+                  </span>
+                  <input
+                    type="search"
+                    className="kin-mobile-search-input"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={tx("Tìm tòa nhà, khu vực...", "Search building, area...", "搜索大楼或区域...", "Поиск здания, района...", "건물명, 지역 검색...", "建物名・エリア検索...")}
+                  />
+                </div>
                 <button
                   type="button"
-                  className={`kin-mobile-filter-btn ${mobileFilterOpen || area !== "all" || bedrooms !== "all" || maxPrice !== "0" || sort !== "featured" ? "active" : ""}`}
+                  className={`kin-mobile-filter-btn ${mobileFilterOpen || area !== "all" || bedrooms !== "all" || maxPrice !== "0" || tag !== "all" || sort !== "featured" ? "active" : ""}`}
                   onClick={() => setMobileFilterOpen((v) => !v)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3687,7 +3794,7 @@ export const App: React.FC = () => {
                   </svg>
                   <span>{tx("Bộ lọc", "Filters", "筛选", "Фильтр", "필터", "絞込")}</span>
                   {(() => {
-                    const cnt = [area !== "all", bedrooms !== "all", maxPrice !== "0", sort !== "featured"].filter(Boolean).length;
+                    const cnt = [area !== "all", bedrooms !== "all", maxPrice !== "0", tag !== "all", sort !== "featured"].filter(Boolean).length;
                     return cnt > 0 ? <span className="kin-mobile-filter-badge">{cnt}</span> : null;
                   })()}
                 </button>
@@ -3717,7 +3824,7 @@ export const App: React.FC = () => {
                   <CustomSelect
                     value={area}
                     options={[
-                      { value: "all", label: tx("Tất cả khu vực Đà Nẵng", "All Da Nang Districts", "岘港所有区域", "Все районы Дананга", "다낭 전체 지역", "ダナン全エリア") },
+                      { value: "all", label: tx("Tất cả khu vực", "All Districts", "全部区域", "Все районы", "전체 지역", "全エリア") },
                       { value: "Han Riverfront", label: trArea("Han Riverfront") },
                       { value: "An Thượng", label: trArea("An Thượng") },
                       { value: "My Khe Beachfront", label: trArea("My Khe Beachfront") },
@@ -3757,10 +3864,10 @@ export const App: React.FC = () => {
                   <CustomSelect
                     value={bedrooms}
                     options={[
-                      { value: "all", label: tx("Bất kỳ phòng ngủ", "Any Bedrooms", "不限卧室", "Любое кол-во", "모든 침실", "すべて") },
+                      { value: "all", label: tx("Mọi phòng ngủ", "Any Bedrooms", "不限卧室", "Любое кол-во", "모든 침실", "すべて") },
                       { value: "1", label: tx("Studio / 1 phòng ngủ", "Studio / 1 Bedroom", "单间 / 1 卧室", "Студия / 1 спальня", "스튜디오 / 1베드룸", "スタジオ / 1LDK") },
                       { value: "2", label: tx("2 phòng ngủ", "2 Bedrooms", "2 卧室", "2 спальни", "2베드룸", "2LDK") },
-                      { value: "3", label: tx("Từ 3 phòng ngủ / Biệt thự", "3+ Bedrooms / Villas", "3+ 卧室 / 别墅", "3+ спальни / Виллы", "3베드룸+ / 풀빌라", "3LDK+ / ヴィラ") }
+                      { value: "3", label: tx("Từ 3 phòng ngủ / Villa", "3+ Bedrooms / Villas", "3+ 卧室 / 别墅", "3+ спальни / Виллы", "3베드룸+ / 풀빌라", "3LDK+ / ヴィラ") }
                     ]}
                     onChange={setBedrooms}
                   />
@@ -3798,38 +3905,12 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {mobileFilterOpen && (
-                <div className="kin-mobile-filter-drawer-actions" style={{ display: "none" }}>
-                  <button
-                    type="button"
-                    className="btn-luxe btn-luxe--outline"
-                    style={{ flex: 1, padding: "0.52rem 0.8rem", fontSize: "0.8rem" }}
-                    onClick={() => {
-                      setQuery("");
-                      setPropCategory("all");
-                      setArea("all");
-                      setBedrooms("all");
-                      setMaxPrice("0");
-                      setTag("all");
-                      setSort("featured");
-                    }}
-                  >
-                    {tx("Đặt lại", "Reset", "重置", "Сбросить", "초기화", "リセット")}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-luxe btn-luxe--navy"
-                    style={{ flex: 2, padding: "0.52rem 0.9rem", fontSize: "0.8rem" }}
-                    onClick={() => setMobileFilterOpen(false)}
-                  >
-                    {tx(`Xem ${filteredApartments.length} căn hộ`, `Show ${filteredApartments.length} homes`, `查看 ${filteredApartments.length} 套房源`, `Показать (${filteredApartments.length})`, `${filteredApartments.length}개 매물 보기`, `${filteredApartments.length}件を表示`)}
-                  </button>
-                </div>
-              )}
-
-              <div className="kin-cat-filter-footer">
+              <div className={`kin-cat-filter-footer ${mobileFilterOpen ? "is-open" : ""}`}>
+                <span className="kin-mobile-criteria-label">
+                  {tx("TIỆN ÍCH & TIÊU CHÍ NỔI BẬT", "KEY AMENITIES & CRITERIA", "热门筛选条件", "КЛЮЧЕВЫЕ КРИТЕРИИ", "주요 편의시설 & 조건", "こだわり条件")}
+                </span>
                 <div className="chips-track">
-                  {["all", "Gần biển", "View sông Hàn", "Bàn làm việc", "Thú cưng", "Điện EVN", "Biệt thự"].map((tChip) => (
+                  {["all", "Gần biển", "View sông Hàn", "Bàn làm việc", "Điện EVN", "Thú cưng", "Hồ bơi vô cực"].map((tChip) => (
                     <button
                       key={tChip}
                       type="button"
@@ -3848,10 +3929,12 @@ export const App: React.FC = () => {
                     style={{ padding: "0.45rem 0.95rem", fontSize: "0.78rem" }}
                     onClick={() => {
                       setQuery("");
+                      setPropCategory("all");
                       setArea("all");
                       setBedrooms("all");
                       setMaxPrice("0");
                       setTag("all");
+                      setSort("featured");
                     }}
                   >
                     {tx("Xoá bộ lọc", "Reset Filters", "重置筛选", "Сбросить", "필터 초기화", "リセット")}
@@ -3866,6 +3949,35 @@ export const App: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {mobileFilterOpen && (
+                <div className="kin-mobile-filter-drawer-actions" style={{ display: "none" }}>
+                  <button
+                    type="button"
+                    className="btn-luxe btn-luxe--outline"
+                    style={{ flex: 1, padding: "0.56rem 0.8rem", fontSize: "0.8rem" }}
+                    onClick={() => {
+                      setQuery("");
+                      setPropCategory("all");
+                      setArea("all");
+                      setBedrooms("all");
+                      setMaxPrice("0");
+                      setTag("all");
+                      setSort("featured");
+                    }}
+                  >
+                    {tx("Đặt lại", "Reset", "重置", "Сбросить", "초기화", "リセット")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-luxe btn-luxe--navy"
+                    style={{ flex: 2, padding: "0.56rem 0.9rem", fontSize: "0.8rem" }}
+                    onClick={() => setMobileFilterOpen(false)}
+                  >
+                    {tx(`Xem ${filteredApartments.length} bất động sản`, `Show ${filteredApartments.length} residences`, `查看 ${filteredApartments.length} 套房源`, `Показать (${filteredApartments.length})`, `${filteredApartments.length}개 매물 보기`, `${filteredApartments.length}件を表示`)}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "7fr 5fr", gap: "1.75rem", alignItems: "start" }} className="catalogue-split-grid">
@@ -3903,14 +4015,16 @@ export const App: React.FC = () => {
                         style={{ padding: "0.45rem 0.95rem", fontSize: "0.8rem" }}
                         onClick={() => {
                           setQuery("");
+                          setPropCategory("all");
                           setArea("all");
                           setBedrooms("all");
                           setMaxPrice("0");
                           setTag("all");
-                          if (activeAreaLanding) navigate("/apartments");
+                          setSort("featured");
+                          if (activeAreaLanding || activePropertyLanding) navigate("/apartments");
                         }}
                       >
-                        {tx("Xem tất cả căn hộ Đà Nẵng", "View All Da Nang Apartments", "查看所有岘港公寓", "Все квартиры Дананга", "다낭 전체 매물 보기", "ダナン全物件を見る")}
+                        {tx("Xem tất cả bất động sản Đà Nẵng", "View All Da Nang Residences", "查看所有岘港房源", "Все объекты Дананга", "다낭 전체 매물 보기", "ダナン全物件を見る")}
                       </button>
                     </div>
                     <div className="cards-grid">
@@ -4191,15 +4305,21 @@ export const App: React.FC = () => {
                 </h1>
 
                 {currentDetailApt.address && (
-                  <div style={{ fontSize: "0.88rem", color: "var(--accent-bronze-dark)", fontWeight: 700, marginBottom: "0.65rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>📍 {getAptField(currentDetailApt, "address")}</span>
+                  <div style={{ fontSize: "0.88rem", color: "var(--accent-bronze-dark)", fontWeight: 700, marginBottom: "0.65rem", display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <IconMapPin size={14} />
+                      <span>{getAptField(currentDetailApt, "address")}</span>
+                    </span>
                     <span>·</span>
-                    <span>
-                      {currentDetailApt.status === "Rented"
-                        ? tx("🔴 Đã thuê", "🔴 Rented", "🔴 已租", "🔴 Сдано", "🔴 임대완료", "🔴 成約済")
-                        : currentDetailApt.status === "Reserved"
-                        ? tx("🟡 Đã cọc", "🟡 Reserved", "🟡 已预订", "🟡 Бронь", "🟡 예약중", "🟡 予約中")
-                        : tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                      <span className={`kin-status-dot ${currentDetailApt.status === "Rented" ? "kin-status-dot--rented" : currentDetailApt.status === "Reserved" ? "kin-status-dot--reserved" : "kin-status-dot--avail"}`} />
+                      <span>
+                        {currentDetailApt.status === "Rented"
+                          ? tx("Đã thuê", "Rented", "已租", "Сдано", "임대완료", "成約済")
+                          : currentDetailApt.status === "Reserved"
+                          ? tx("Đã cọc", "Reserved", "已预订", "Бронь", "예약중", "予約中")
+                          : tx("Đang trống", "Available", "可租", "Свободна", "공실", "空室")}
+                      </span>
                     </span>
                   </div>
                 )}
@@ -4217,7 +4337,8 @@ export const App: React.FC = () => {
                     {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor}
                   </span>}
                   <span className="apt-compact-info-pill">
-                    {trPropType(currentDetailApt.propertyType)}
+                    {renderPropTypeIcon(currentDetailApt.propertyType, 14)}
+                    <span>{trPropType(currentDetailApt.propertyType)}</span>
                   </span>
                   {currentDetailApt.electricityRate && <span className="apt-compact-info-pill">
                     {getAptField(currentDetailApt, "electricityRate")}

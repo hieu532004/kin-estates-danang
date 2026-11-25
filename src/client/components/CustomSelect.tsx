@@ -32,13 +32,22 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const selected = options.find((o) => o.value === value) || options[0];
 
   useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside, { passive: true });
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, []);
 
   return (
@@ -53,6 +62,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         className="astryx-select-trigger"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
+        title={selected?.label}
       >
         <span className="astryx-select-value">{selected?.label}</span>
         <span className={`astryx-select-chevron ${open ? "rotated" : ""}`}>
