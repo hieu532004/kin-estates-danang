@@ -1054,7 +1054,9 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
     let confirmedBookingsCount = 0;
     let newLeadsCount = 0;
 
-    for (const inq of inquiries) {
+    const crmInquiries = inquiries.filter((inq) => !isAnonymousContactClick(inq));
+
+    for (const inq of crmInquiries) {
       if (inq.type === "owner_listing") continue;
       const st = inq.status || "New";
       if (statusFunnel[st] !== undefined) statusFunnel[st]++;
@@ -1100,7 +1102,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
         activeRevenueUsd,
         vacantPotentialVnd,
         vacantPotentialUsd,
-        totalInquiries: inquiries.filter((i) => i.type !== "owner_listing").length,
+        totalInquiries: crmInquiries.filter((i) => i.type !== "owner_listing").length,
         newLeadsCount,
         pendingBookingsCount,
         confirmedBookingsCount,
@@ -1113,7 +1115,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
       channels: [...channelStats.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
       expiringSoonLeases,
       apartments: enrichedApartments,
-      inquiries,
+      inquiries: crmInquiries,
       leases,
       aboutContent,
       dbStatus: await db.getLiveDbStatus(),

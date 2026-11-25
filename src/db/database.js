@@ -2255,10 +2255,14 @@ function getDbStatus() {
 async function getLiveDbStatus() {
   if (!isNativeMongoConnected) return getDbStatus();
   try {
+    const realLeadFilter = {
+      type: { $ne: "owner_listing" },
+      $nor: [{ type: "direct_contact", contactHandle: /^bấm liên hệ|^khách bấm|^click/i }]
+    };
     const [apts, totalInq, newInqCount, activeLeasesCount] = await Promise.all([
       ApartmentModel.find({}, "status isVisible isPinned propertyType title building tags").lean(),
-      InquiryModel.countDocuments({ type: { $ne: "owner_listing" } }),
-      InquiryModel.countDocuments({ status: "New", type: { $ne: "owner_listing" } }),
+      InquiryModel.countDocuments(realLeadFilter),
+      InquiryModel.countDocuments({ ...realLeadFilter, status: "New" }),
       LeaseModel.countDocuments({ status: { $ne: "Ended" } })
     ]);
     const availableCount = apts.filter((a) => a.status === "Available" && a.isVisible !== false).length;
