@@ -22,6 +22,7 @@ const sheetsService = require("./src/services/googleSheetsService");
 const translationService = require("./src/services/translationService");
 const autoDeployService = require("./src/services/autoDeployService");
 const seoService = require("./src/services/seoService");
+const { resolveGoogleMapsInput, isMapUrlString } = require("./src/services/apartmentLocation");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -250,7 +251,7 @@ app.get("/api/system/status", async (req, res) => {
   res.json({
     ok: true,
     platform: "KIN ESTATES — Da Nang Private Residences & CRM",
-    database: db.getDbStatus(),
+    database: await db.getLiveDbStatus(),
     telegramBot: admin ? botStatus : { connected: botStatus.connected, mode: botStatus.mode },
     settings: {
       hasTelegramToken: Boolean(configuredTelegramToken()),
@@ -267,7 +268,7 @@ app.get("/api/system/status", async (req, res) => {
 
 // 2. Apartments Catalogue & Full CRUD (Supports Public & Admin views)
 const PUBLIC_APARTMENT_FIELDS = [
-  "_id", "code", "title", "building", "address", "areaName", "district", "priceUsd", "priceVnd",
+  "_id", "code", "propertyType", "title", "building", "address", "areaName", "district", "priceUsd", "priceVnd",
   "bedrooms", "bathrooms", "sizeM2", "floor", "orientation", "minLeaseMonths", "depositMonths",
   "electricityRate", "waterRate", "wifiIncluded", "naturalLightScore", "remoteWorkSetup", "petPolicy",
   "status", "availableFrom", "isVisible", "featured", "locationAccuracy", "coordinates", "architecturalNotes", "translations", "tags", "images", "createdAt", "updatedAt"
@@ -296,12 +297,12 @@ const handleGetApartments = async (req, res) => {
     }
     res.vary("Authorization");
     if (admin) res.set("Cache-Control", "no-store");
-    else res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
+    else res.set("Cache-Control", "public, s-maxage=2, stale-while-revalidate=10");
     res.json({
       ok: true,
       count: apartments.length,
       apartments: admin ? apartments : apartments.map(publicApartment),
-      dbStatus: db.getDbStatus()
+      dbStatus: await db.getLiveDbStatus()
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -315,7 +316,7 @@ app.get("/api/apartments/:id", async (req, res) => {
   const admin = isAdmin(req);
   res.vary("Authorization");
   if (admin) res.set("Cache-Control", "no-store");
-  else res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
+  else res.set("Cache-Control", "public, s-maxage=2, stale-while-revalidate=10");
   let apt = await db.getApartmentByCodeOrId(req.params.id);
   if (!apt || (!db.isPublicApartment(apt) && !admin)) {
     return res.status(404).json({ ok: false, error: "Apartment not found" });
@@ -335,6 +336,7 @@ app.post("/api/apartments", requireAdmin, async (req, res) => {
   try {
     const created = await db.createApartment(req.body);
     await sheetsService.pushToGoogleSheetsWebhook("create_apartment", created);
+    void telegramService.notifyStudioMutationToTelegram?.("create", created);
     autoDeployService.scheduleAutoDeploy("Studio create apartment");
     res.status(201).json({
       ok: true,
@@ -352,6 +354,7 @@ app.patch("/api/apartments/:id", requireAdmin, async (req, res) => {
     const updated = await db.updateApartment(req.params.id, req.body);
     if (!updated) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated);
+    void telegramService.notifyStudioMutationToTelegram?.("update", updated);
     autoDeployService.scheduleAutoDeploy("Studio update apartment");
     res.json({
       ok: true,
@@ -369,6 +372,7 @@ app.delete("/api/apartments/:id", requireAdmin, async (req, res) => {
     const deleted = await db.deleteApartment(req.params.id);
     if (!deleted) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await sheetsService.pushToGoogleSheetsWebhook("delete_apartment", { code: deleted.code });
+    void telegramService.notifyStudioMutationToTelegram?.("delete", deleted);
     autoDeployService.scheduleAutoDeploy("Studio delete apartment");
     res.json({
       ok: true,
@@ -953,9 +957,12 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
     };
 
     const areaMap = new Map();
+    const typeCounts = { condo: 0, apartment: 0, house: 0, villa: 0, penthouse: 0 };
     const enrichedApartments = apartments.map((apt) => {
       const codeUpper = String(apt.code || "").toUpperCase();
       const cs = contactSummaryMap.get(codeUpper) || { people: 0, clicks: 0, bookings: 0 };
+      const pt = apt.propertyType || db.inferPropertyType(apt);
+      typeCounts[pt] = (typeCounts[pt] || 0) + 1;
       const isHidden = apt.isVisible === false || apt.status === "Hidden";
       if (isHidden) hiddenCount++;
       else if (apt.status === "Rented") rentedCount++;
@@ -1030,6 +1037,7 @@ app.get("/api/studio/report", requireAdmin, async (req, res) => {
         rentedCount,
         reservedCount,
         hiddenCount,
+        typeCounts,
         occupancyRate,
         activeLeasesCount: activeLeases.length,
         activeRevenueVnd,
@@ -1126,6 +1134,9 @@ app.post("/api/studio/apartments/bulk", requireAdmin, async (req, res) => {
           }
           if (typeof updates.areaName === "string" && updates.areaName.trim()) {
             patch.areaName = updates.areaName.trim();
+          }
+          if (typeof updates.propertyType === "string" && updates.propertyType.trim()) {
+            patch.propertyType = db.normalizePropertyType(updates.propertyType.trim());
           }
           if (typeof updates.building === "string" && updates.building.trim()) {
             patch.building = updates.building.trim();
@@ -1492,9 +1503,40 @@ app.delete("/api/studio/about/testimonials/:id", requireAdmin, async (req, res) 
   }
 });
 
+app.post("/api/studio/resolve-map", requireAdmin, async (req, res) => {
+  try {
+    const raw = String(req.body?.input || "").trim();
+    if (!raw) return res.status(400).json({ ok: false, error: "Vui lòng dán link Google Maps hoặc tọa độ." });
+    const resolved = await resolveGoogleMapsInput(raw);
+    if (!resolved) {
+      return res.status(422).json({ ok: false, error: "Chưa đọc được vị trí từ link này. Anh có thể chạm trực tiếp lên bản đồ bên dưới." });
+    }
+    const areaName = resolved.address ? db.normalizeAreaName(resolved.address) : undefined;
+    res.json({
+      ok: true,
+      address: resolved.address || "",
+      coordinates: resolved.coordinates || null,
+      areaName
+    });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 app.post("/api/studio/sync-web", requireAdmin, async (req, res) => {
+  // Also auto-heal any existing apartments whose address accidentally contains a raw Google Maps link
+  const allApts = await db.getApartments({ includeHidden: true });
+  let healedCount = 0;
+  for (const apt of allApts) {
+    if (isMapUrlString(apt.address)) {
+      const updated = await db.updateApartment(apt.code, { address: apt.address });
+      if (updated && !isMapUrlString(updated.address)) healedCount++;
+    }
+  }
+  const liveStatus = await db.getLiveDbStatus();
+  void telegramService.notifyStudioSyncToTelegram?.(liveStatus, healedCount);
   const result = await autoDeployService.syncStoreToLiveWeb("Mobile Studio manual sync");
-  res.json({ ok: true, result });
+  res.json({ ok: true, healedCount, liveStatus, result });
 });
 
 // Private Mobile Admin Dashboard entry (not linked anywhere on public client website)
@@ -1588,7 +1630,7 @@ app.get("*", async (req, res) => {
     const html = seoService.injectSeoIntoHtml(baseHtml, seoHead, ssrBody);
     res.set({
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300"
+      "Cache-Control": "public, s-maxage=5, stale-while-revalidate=30"
     });
     res.send(html);
   } catch {

@@ -20,6 +20,7 @@ type TabKey = "report" | "apartments" | "leads" | "leases" | "about";
 interface Apartment {
   _id: string;
   code: string;
+  propertyType?: string;
   title: Record<string, string> | string;
   building: string;
   address?: string;
@@ -133,6 +134,7 @@ interface ReportData {
     rentedCount: number;
     reservedCount: number;
     hiddenCount: number;
+    typeCounts?: Record<string, number>;
     occupancyRate: number;
     activeLeasesCount: number;
     activeRevenueVnd: number;
@@ -158,6 +160,16 @@ interface ReportData {
 }
 
 const RATE_VND = 25480;
+const PROPERTY_CATEGORIES = [
+  { val: "condo", label: "🏢 Căn hộ chung cư", short: "🏢 Chung cư" },
+  { val: "apartment", label: "🏠 Căn hộ thường", short: "🏠 Căn hộ thường" },
+  { val: "house", label: "🏡 Nhà nguyên căn", short: "🏡 Nhà nguyên căn" },
+  { val: "villa", label: "🌴 Biệt thự / Villa", short: "🌴 Villa" },
+  { val: "penthouse", label: "✨ Penthouse", short: "✨ Penthouse" }
+];
+const getAptCategoryLabel = (pt?: string) =>
+  PROPERTY_CATEGORIES.find((c) => c.val === pt)?.short || "🏢 Chung cư";
+
 const AREAS = [
   { val: "Han Riverfront", label: "Ven sông Hàn" },
   { val: "An Thuong", label: "An Thượng" },
@@ -459,11 +471,15 @@ function StudioApp() {
   // Apartments filters & multi-select
   const [aptSearch, setAptSearch] = useState<string>("");
   const [aptFilter, setAptFilter] = useState<string>("all");
+  const [aptTypeFilter, setAptTypeFilter] = useState<string>("all");
   const [aptSelectMode, setAptSelectMode] = useState<boolean>(false);
   const [selectedApts, setSelectedApts] = useState<string[]>([]);
   const [bulkAptModalOpen, setBulkAptModalOpen] = useState<boolean>(false);
   const [bulkAptSaving, setBulkAptSaving] = useState<boolean>(false);
+  const [syncingBotWeb, setSyncingBotWeb] = useState<boolean>(false);
+  const [resolvingMap, setResolvingMap] = useState<boolean>(false);
   const [bulkAptForm, setBulkAptForm] = useState({
+    propertyType: "",
     status: "",
     visibility: "",
     areaName: "",
@@ -560,6 +576,7 @@ function StudioApp() {
   const [savingApt, setSavingApt] = useState<boolean>(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const [form, setForm] = useState({
+    propertyType: "condo",
     title: "",
     building: "",
     areaName: "Han Riverfront",
@@ -572,7 +589,6 @@ function StudioApp() {
     bathrooms: "2",
     sizeM2: "70",
     floor: "15",
-    orientation: "Đông Nam",
     availableFrom: "",
     minLeaseMonths: "6",
     depositMonths: "1",
@@ -769,10 +785,67 @@ function StudioApp() {
   };
 
   /* ======================= APARTMENTS CRUD ======================= */
-  const openCreateEditor = () => {
+  const resolveMapLinkIntoForm = async (rawText: string) => {
+    const trimmed = rawText.trim();
+    if (!trimmed) return;
+    setResolvingMap(true);
+    try {
+      const r = await fetch("/api/studio/resolve-map", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ input: trimmed })
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) {
+        showToast(j.error || "Chưa nhận diện được link bản đồ này.");
+        return;
+      }
+      setForm((prev) => ({
+        ...prev,
+        ...(j.address ? { address: j.address } : {}),
+        ...(j.areaName ? { areaName: normalizeAreaValue(j.areaName) } : {}),
+        ...(j.coordinates
+          ? { lat: Number(j.coordinates.lat), lng: Number(j.coordinates.lng), hasPin: true }
+          : {})
+      }));
+      if (j.coordinates) {
+        markerObjRef.current?.setLatLng([j.coordinates.lat, j.coordinates.lng]);
+        mapObjRef.current?.setView([j.coordinates.lat, j.coordinates.lng], 16);
+      }
+      showToast("✓ Đã tự nhận địa chỉ chính xác & ghim bản đồ!");
+    } catch {
+      showToast("Không kết nối được bộ giải mã bản đồ.");
+    } finally {
+      setResolvingMap(false);
+    }
+  };
+
+  const handleForceSync = async () => {
+    setSyncingBotWeb(true);
+    try {
+      const r = await fetch("/api/studio/sync-web", {
+        method: "POST",
+        headers: authHeaders()
+      });
+      const j = await r.json().catch(() => ({}));
+      await loadReport();
+      showToast(
+        j.healedCount
+          ? `Đã đồng bộ Bot & Web (+sửa ${j.healedCount} link địa chỉ)!`
+          : "Đã đồng bộ tức thì Web & Bot Telegram!"
+      );
+    } catch {
+      showToast("Lỗi kết nối khi đồng bộ.");
+    } finally {
+      setSyncingBotWeb(false);
+    }
+  };
+
+  const openCreateEditor = (defaultType = "condo") => {
     setEditingCode(null);
     setPhotoUrlInput("");
     setForm({
+      propertyType: defaultType,
       title: "",
       building: "",
       areaName: "Han Riverfront",
@@ -784,8 +857,7 @@ function StudioApp() {
       bedrooms: "2",
       bathrooms: "2",
       sizeM2: "70",
-      floor: "15",
-      orientation: "Đông Nam",
+      floor: defaultType === "house" || defaultType === "villa" ? "3" : "15",
       availableFrom: "",
       minLeaseMonths: "6",
       depositMonths: "1",
@@ -793,7 +865,7 @@ function StudioApp() {
       waterRate: "Giá nhà nước",
       wifiIncluded: true,
       petPolicy: "Thương lượng (Cho phép thú cưng nhỏ)",
-      tags: ["View sông Hàn", "Bàn làm việc", "Điện EVN"],
+      tags: ["Bàn làm việc", "Điện EVN"],
       notes: "",
       images: [],
       lat: 16.0545,
@@ -807,11 +879,13 @@ function StudioApp() {
     setEditingCode(apt.code);
     setPhotoUrlInput("");
     const vndTr = apt.priceVnd ? (apt.priceVnd / 1_000_000).toFixed(1).replace(/\.0$/, "") : "";
+    const initAddr = apt.address || "";
     setForm({
+      propertyType: apt.propertyType || "condo",
       title: titleOf(apt),
       building: apt.building || "",
       areaName: normalizeAreaValue(apt.areaName),
-      address: apt.address || "",
+      address: initAddr,
       status: apt.status || "Available",
       isVisible: apt.isVisible !== false && apt.status !== "Hidden",
       priceVndTr: vndTr,
@@ -819,8 +893,7 @@ function StudioApp() {
       bedrooms: String(apt.bedrooms ?? 1),
       bathrooms: String(apt.bathrooms ?? 1),
       sizeM2: String(apt.sizeM2 ?? 60),
-      floor: String(apt.floor ?? 10),
-      orientation: apt.orientation || "",
+      floor: String(apt.floor ?? 1),
       availableFrom: apt.availableFrom || "",
       minLeaseMonths: String(apt.minLeaseMonths ?? 6),
       depositMonths: String(apt.depositMonths ?? 1),
@@ -836,6 +909,10 @@ function StudioApp() {
       hasPin: Boolean(apt.coordinates && apt.locationAccuracy === "exact")
     });
     setEditorOpen(true);
+    // If existing apartment has a raw Google Maps URL stuck in address, auto-resolve it immediately on open!
+    if (/^https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl|(?:www\.|maps\.)?google\.)/i.test(initAddr.trim())) {
+      setTimeout(() => void resolveMapLinkIntoForm(initAddr), 200);
+    }
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, addToLibraryOnly = false) => {
@@ -886,6 +963,7 @@ function StudioApp() {
       const vnd = Math.round(parseFloat(form.priceVndTr.replace(",", ".")) * 1_000_000) || 0;
       const usd = parseInt(form.priceUsd, 10) || Math.round(vnd / RATE_VND);
       const payload: any = {
+        propertyType: form.propertyType || "condo",
         title: form.title.trim(),
         building: form.building.trim() || "KIN Estates Residence",
         areaName: form.areaName,
@@ -897,8 +975,7 @@ function StudioApp() {
         bedrooms: Number(form.bedrooms) || 1,
         bathrooms: Number(form.bathrooms) || 1,
         sizeM2: Number(form.sizeM2) || 60,
-        floor: Number(form.floor) || 10,
-        orientation: form.orientation.trim(),
+        floor: Number(form.floor) || 1,
         availableFrom: form.availableFrom || null,
         minLeaseMonths: Number(form.minLeaseMonths) || 6,
         depositMonths: Number(form.depositMonths) || 1,
@@ -966,6 +1043,7 @@ function StudioApp() {
     e.preventDefault();
     if (!selectedApts.length) return;
     const updates: Record<string, any> = {};
+    if (bulkAptForm.propertyType) updates.propertyType = bulkAptForm.propertyType;
     if (bulkAptForm.status) updates.status = bulkAptForm.status;
     if (bulkAptForm.visibility === "show") updates.isVisible = true;
     if (bulkAptForm.visibility === "hide") updates.isVisible = false;
@@ -1505,16 +1583,17 @@ function StudioApp() {
     const q = aptSearch.trim().toLowerCase();
     return list.filter((a) => {
       const hidden = a.isVisible === false || a.status === "Hidden";
+      if (aptTypeFilter !== "all" && (a.propertyType || "condo") !== aptTypeFilter) return false;
       if (aptFilter === "available" && (hidden || a.status !== "Available")) return false;
       if (aptFilter === "reserved" && a.status !== "Reserved") return false;
       if (aptFilter === "rented" && a.status !== "Rented") return false;
       if (aptFilter === "hidden" && !hidden) return false;
       if (!q) return true;
-      return [a.code, titleOf(a), a.building, a.address, a.areaName, areaDisplayLabel(a.areaName)].some((v) =>
+      return [a.code, titleOf(a), a.building, a.address, a.areaName, areaDisplayLabel(a.areaName), getAptCategoryLabel(a.propertyType)].some((v) =>
         String(v || "").toLowerCase().includes(q)
       );
     });
-  }, [report, aptSearch, aptFilter]);
+  }, [report, aptSearch, aptFilter, aptTypeFilter]);
 
   const filteredLeads = useMemo(() => {
     const all = (report?.inquiries || []).filter((i) => i.type !== "owner_listing");
@@ -1609,6 +1688,16 @@ function StudioApp() {
           </div>
         </div>
         <div className="st-header-actions">
+          <button
+            type="button"
+            className="st-btn-mini st-btn-mini--bronze"
+            style={{ height: 32, padding: "0 10px", fontSize: 11.5 }}
+            onClick={handleForceSync}
+            disabled={syncingBotWeb}
+            title="Đồng bộ tức thì giữa KIN Studio, Bot Telegram & Web"
+          >
+            {syncingBotWeb ? "Đang ĐB..." : "⚡ Đồng bộ"}
+          </button>
           <a href="/" target="_blank" rel="noreferrer" className="st-icon-circle" title="Xem Web khách">
             <Icon.External />
           </a>
@@ -1662,9 +1751,9 @@ function StudioApp() {
 
             {/* Quick 1-Tap CRUD Shortcuts */}
             <section className="st-quick-actions">
-              <button type="button" className="st-quick-btn st-quick-btn--primary" onClick={openCreateEditor}>
+              <button type="button" className="st-quick-btn st-quick-btn--primary" onClick={() => openCreateEditor(aptTypeFilter !== "all" ? aptTypeFilter : "condo")}>
                 <span className="st-quick-icon"><Icon.Plus size={18} /></span>
-                <span>Thêm căn hộ</span>
+                <span>Đăng BĐS mới</span>
               </button>
               <button type="button" className="st-quick-btn" onClick={openCreateLead}>
                 <span className="st-quick-icon"><Icon.Users /></span>
@@ -1877,9 +1966,30 @@ function StudioApp() {
               </div>
             )}
 
+            {/* Category Filter Row (Condo / Apartment / House / Villa / Penthouse) */}
+            <div className="st-chips" style={{ marginBottom: 6 }}>
+              {[
+                ["all", `Tất cả BĐS (${report?.apartments.length || 0})`],
+                ["condo", `🏢 Chung cư (${kpi?.typeCounts?.condo || 0})`],
+                ["apartment", `🏠 Căn hộ thường (${kpi?.typeCounts?.apartment || 0})`],
+                ["house", `🏡 Nhà nguyên căn (${kpi?.typeCounts?.house || 0})`],
+                ["villa", `🌴 Villa (${kpi?.typeCounts?.villa || 0})`],
+                ["penthouse", `✨ Penthouse (${kpi?.typeCounts?.penthouse || 0})`]
+              ].map(([key, lbl]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`st-chip ${aptTypeFilter === key ? "active" : ""}`}
+                  onClick={() => setAptTypeFilter(key)}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+
             <div className="st-chips">
               {[
-                ["all", `Tất cả (${report?.apartments.length || 0})`],
+                ["all", `Mọi trạng thái`],
                 ["available", `Trống (${kpi?.availableCount || 0})`],
                 ["reserved", `Giữ chỗ (${kpi?.reservedCount || 0})`],
                 ["rented", `Đã thuê (${kpi?.rentedCount || 0})`],
@@ -1955,6 +2065,7 @@ function StudioApp() {
                           {apt.bedrooms ?? "-"} PN · {apt.sizeM2 ?? "-"} m² · {areaDisplayLabel(apt.areaName)}
                         </div>
                         <div className="st-apt-badges">
+                          <span className="st-badge st-badge--bronze">{getAptCategoryLabel(apt.propertyType)}</span>
                           {isHidden ? (
                             <span className="st-badge st-badge--gray">Đang ẩn</span>
                           ) : apt.status === "Rented" ? (
@@ -2480,7 +2591,7 @@ function StudioApp() {
               type="button"
               className="st-bulk-btn st-bulk-btn--edit"
               onClick={() => {
-                setBulkAptForm({ status: "", visibility: "", areaName: "", priceMode: "", priceValue: "" });
+                setBulkAptForm({ propertyType: "", status: "", visibility: "", areaName: "", priceMode: "", priceValue: "" });
                 setBulkAptModalOpen(true);
               }}
             >
@@ -2510,8 +2621,8 @@ function StudioApp() {
 
       {/* CONTEXT-AWARE FLOATING ACTION BUTTON */}
       {!hasBulkBar && tab === "apartments" && (
-        <button type="button" className="st-fab" onClick={openCreateEditor}>
-          <Icon.Plus size={16} /> Thêm căn
+        <button type="button" className="st-fab" onClick={() => openCreateEditor(aptTypeFilter !== "all" ? aptTypeFilter : "condo")}>
+          <Icon.Plus size={16} /> Đăng BĐS
         </button>
       )}
       {!hasBulkBar && tab === "leads" && (
@@ -2533,7 +2644,7 @@ function StudioApp() {
         </button>
         <button type="button" className={`st-nav-item ${tab === "apartments" ? "active" : ""}`} onClick={() => setTab("apartments")}>
           <Icon.Home />
-          <span>Căn hộ</span>
+          <span>Kho BĐS</span>
         </button>
         <button type="button" className={`st-nav-item ${tab === "leads" ? "active" : ""}`} onClick={() => setTab("leads")}>
           <Icon.Users />
@@ -2563,9 +2674,19 @@ function StudioApp() {
                 Chỉ những mục anh chọn mới thay đổi. Mục để <b>"Giữ nguyên"</b> sẽ không bị ảnh hưởng.
               </div>
 
+              <div className="st-field">
+                <label className="st-label">Phân loại danh mục sản phẩm</label>
+                <select className="st-select" value={bulkAptForm.propertyType} onChange={(e) => setBulkAptForm((p) => ({ ...p, propertyType: e.target.value }))}>
+                  <option value="">— Giữ nguyên —</option>
+                  {PROPERTY_CATEGORIES.map((c) => (
+                    <option key={c.val} value={c.val}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="st-row-2">
                 <div className="st-field">
-                  <label className="st-label">Trạng thái căn hộ</label>
+                  <label className="st-label">Trạng thái BĐS</label>
                   <select className="st-select" value={bulkAptForm.status} onChange={(e) => setBulkAptForm((p) => ({ ...p, status: e.target.value }))}>
                     <option value="">— Giữ nguyên —</option>
                     <option value="Available">Còn trống</option>
@@ -2747,12 +2868,33 @@ function StudioApp() {
         <div className="st-modal-backdrop" onClick={() => setEditorOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
-              <h2 className="st-sheet-title">{editingCode ? `Sửa căn ${editingCode}` : "Đăng Căn Hộ Mới"}</h2>
+              <h2 className="st-sheet-title">{editingCode ? `Sửa BĐS ${editingCode}` : "Đăng Bất Động Sản Mới"}</h2>
               <button type="button" className="st-close-btn" onClick={() => setEditorOpen(false)}>✕</button>
             </div>
             <form className="st-sheet-body" onSubmit={handleSaveApartment}>
               <div style={{ background: "var(--green-bg)", color: "var(--green)", fontSize: 12, fontWeight: 700, padding: "8px 12px", borderRadius: 12 }}>
-                Lưu thẳng lên Cloud 24/7 — tự động dịch 6 ngôn ngữ & cập nhật Web ngay lập tức.
+                Lưu thẳng Cloud 24/7 — tự đồng bộ sang Bot Telegram & dịch 6 ngôn ngữ lên Web tức thì.
+              </div>
+
+              {/* 1-Tap Product Category Selector */}
+              <div className="st-field">
+                <span className="st-label">Danh mục sản phẩm *</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {PROPERTY_CATEGORIES.map((cat) => {
+                    const active = form.propertyType === cat.val;
+                    return (
+                      <button
+                        key={cat.val}
+                        type="button"
+                        className={`st-chip ${active ? "active" : ""}`}
+                        style={{ height: 32, fontSize: 12, fontWeight: 700 }}
+                        onClick={() => setForm((p) => ({ ...p, propertyType: cat.val }))}
+                      >
+                        {active ? "✓ " : ""}{cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Photo CRUD Grid */}
@@ -2832,10 +2974,22 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">Tên căn hộ *</label>
+                <label className="st-label">
+                  {form.propertyType === "house"
+                    ? "Tên nhà nguyên căn *"
+                    : form.propertyType === "villa"
+                      ? "Tên Biệt thự / Villa *"
+                      : form.propertyType === "apartment"
+                        ? "Tên căn hộ thường / Studio *"
+                        : "Tên căn hộ chung cư *"}
+                </label>
                 <input
                   className="st-input"
-                  placeholder="VD: The Panoma 2 — Căn góc 2PN View Sông Hàn"
+                  placeholder={
+                    form.propertyType === "house" || form.propertyType === "villa"
+                      ? "VD: Cho thuê nhà 3 tầng đầy đủ nội thất / Villa hồ bơi riêng"
+                      : "VD: The Panoma 2 — Căn góc 2PN View Sông Hàn"
+                  }
                   value={form.title}
                   onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   required
@@ -2844,8 +2998,15 @@ function StudioApp() {
 
               <div className="st-row-2">
                 <div className="st-field">
-                  <label className="st-label">Tòa nhà / Dự án</label>
-                  <input className="st-input" placeholder="VD: The Panoma" value={form.building} onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))} />
+                  <label className="st-label">
+                    {form.propertyType === "house" || form.propertyType === "villa" ? "Tên đường / Khu dân cư" : "Tòa nhà / Dự án"}
+                  </label>
+                  <input
+                    className="st-input"
+                    placeholder={form.propertyType === "house" || form.propertyType === "villa" ? "VD: Khu đảo VIP Hòa Xuân / Đỗ Nhuận" : "VD: The Panoma"}
+                    value={form.building}
+                    onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))}
+                  />
                 </div>
                 <div className="st-field">
                   <label className="st-label">Khu vực</label>
@@ -2881,13 +3042,37 @@ function StudioApp() {
               </div>
 
               <div className="st-field">
-                <label className="st-label">Địa chỉ hiển thị</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <label className="st-label">Địa chỉ hiển thị (hoặc dán link Google Maps vào đây)</label>
+                  {/^https?:\/\//i.test(form.address.trim()) && (
+                    <button
+                      type="button"
+                      className="st-btn-mini st-btn-mini--bronze"
+                      style={{ height: 24, fontSize: 11 }}
+                      disabled={resolvingMap}
+                      onClick={() => void resolveMapLinkIntoForm(form.address)}
+                    >
+                      {resolvingMap ? "Đang lấy địa chỉ..." : "📍 Nhận địa chỉ từ Link"}
+                    </button>
+                  )}
+                </div>
                 <input
                   className="st-input"
-                  placeholder="VD: 58 Trần Thị Lý, Ngũ Hành Sơn, Đà Nẵng"
+                  placeholder="Nhập địa chỉ hoặc dán link https://maps.app.goo.gl/... tự nhận"
                   value={form.address}
-                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((p) => ({ ...p, address: val }));
+                    if (/^https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl|(?:www\.|maps\.)?google\.)/i.test(val.trim())) {
+                      void resolveMapLinkIntoForm(val);
+                    }
+                  }}
                 />
+                {resolvingMap && (
+                  <div style={{ fontSize: 11.5, color: "var(--bronze)", fontWeight: 700, marginTop: 2 }}>
+                    ⏳ Đang giải mã link Google Maps sang địa chỉ đường phố & tọa độ chính xác...
+                  </div>
+                )}
               </div>
 
               {/* Map Picker */}
@@ -2975,7 +3160,7 @@ function StudioApp() {
 
               <div className="st-row-3">
                 <div className="st-field">
-                  <label className="st-label">Tầng</label>
+                  <label className="st-label">{form.propertyType === "house" || form.propertyType === "villa" ? "Số tầng nhà" : "Tầng"}</label>
                   <input className="st-input" inputMode="numeric" value={form.floor} onChange={(e) => setForm((p) => ({ ...p, floor: e.target.value }))} />
                 </div>
                 <div className="st-field">
@@ -2988,15 +3173,9 @@ function StudioApp() {
                 </div>
               </div>
 
-              <div className="st-row-2">
-                <div className="st-field">
-                  <label className="st-label">Hướng / View</label>
-                  <input className="st-input" value={form.orientation} onChange={(e) => setForm((p) => ({ ...p, orientation: e.target.value }))} />
-                </div>
-                <div className="st-field">
-                  <label className="st-label">Ngày vào ở</label>
-                  <input type="date" className="st-input" value={form.availableFrom} onChange={(e) => setForm((p) => ({ ...p, availableFrom: e.target.value }))} />
-                </div>
+              <div className="st-field">
+                <label className="st-label">Ngày có thể vào ở (Tùy chọn)</label>
+                <input type="date" className="st-input" value={form.availableFrom} onChange={(e) => setForm((p) => ({ ...p, availableFrom: e.target.value }))} />
               </div>
 
               <div className="st-row-2">

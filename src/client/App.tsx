@@ -14,6 +14,7 @@ declare const L: any;
 export interface Apartment {
   _id: string;
   code: string;
+  propertyType?: string;
   title: Record<string, string> | string;
   building: string;
   address?: string;
@@ -648,6 +649,7 @@ const findSeoAreaByValue = (val?: string | null) => {
 
 const SEO_PROPERTY_TYPES: Array<{
   slug: string;
+  propertyType?: string;
   bedrooms?: string;
   tag?: string;
   isBuy?: boolean;
@@ -658,13 +660,15 @@ const SEO_PROPERTY_TYPES: Array<{
   descVi: string;
   descEn: string;
 }> = [
+  { slug: "can-ho-chung-cu", propertyType: "condo", vi: "Căn hộ chung cư", en: "Condominiums", h1Vi: "Cho thuê Căn hộ Chung cư Đà Nẵng — Hồ bơi, an ninh 24/7 & điện EVN", h1En: "High-Rise Condominiums for Rent in Da Nang — Pools, Security & EVN Rates", descVi: "Cho thuê căn hộ chung cư thương mại Đà Nẵng (The Filmore, The Panoma, Hiyori, Monarchy, Azura, FPT Plaza) ✓ Điện nhà nước EVN →", descEn: "Rent verified high-rise condominiums in Da Nang (The Filmore, Panoma, Hiyori, Monarchy, Azura) ✓ State EVN rates →" },
+  { slug: "can-ho-thuong", propertyType: "apartment", vi: "Căn hộ thường & Dịch vụ", en: "Serviced Apartments", h1Vi: "Cho thuê Căn hộ thường & Căn hộ dịch vụ Đà Nẵng — Đầy đủ nội thất, giá tốt", h1En: "Serviced & Boutique Apartments for Rent in Da Nang", descVi: "Cho thuê căn hộ thường, căn hộ dịch vụ & mini Đà Nẵng đầy đủ nội thất, miễn phí Wi-Fi ✓ Mỹ Khê, An Thượng, Hải Châu, Hòa Xuân →", descEn: "Boutique & serviced apartments in Da Nang with full furniture, fast Wi-Fi & flexible 3–12+ month leases →" },
   { slug: "studio", bedrooms: "1", vi: "Căn hộ Studio", en: "Studio Apartments", h1Vi: "Cho thuê căn hộ Studio Đà Nẵng — Đầy đủ nội thất, giá chủ nhà", h1En: "Studio Apartments for Rent in Da Nang — Furnished & Direct Owner Pricing", descVi: "Cho thuê căn hộ Studio Đà Nẵng đẹp, ban công thoáng, gần biển Mỹ Khê, An Thượng, Sơn Trà, Hòa Xuân ✓ Giá trực tiếp chủ nhà từ 7tr/tháng →", descEn: "Furnished studio apartments for rent in Da Nang near My Khe Beach, An Thuong, Han River & Hoa Xuan ✓ From $300/mo →" },
   { slug: "1-phong-ngu", bedrooms: "1", vi: "Căn hộ 1 phòng ngủ", en: "1-Bedroom Apartments", h1Vi: "Cho thuê căn hộ 1 phòng ngủ (1PN) Đà Nẵng — Riêng tư & hiện đại", h1En: "1-Bedroom Apartments for Rent in Da Nang — Separate Living & Kitchen", descVi: "Tổng hợp căn hộ 1PN cho thuê dài hạn Đà Nẵng: phòng khách riêng, bếp nấu, máy giặt, điện EVN ✓ Mỹ Khê, An Thượng, The Filmore, The Panoma →", descEn: "Curated 1-bedroom long-term apartments in Da Nang with separate living room, kitchen & fiber Wi-Fi →" },
   { slug: "2-phong-ngu", bedrooms: "2", vi: "Căn hộ 2 phòng ngủ", en: "2-Bedroom Condos", h1Vi: "Cho thuê căn hộ 2 phòng ngủ (2PN) Đà Nẵng — Hiyori, Monarchy, The Panoma, The Filmore", h1En: "2-Bedroom Condos & Apartments for Rent in Da Nang", descVi: "Cho thuê chung cư 2PN Đà Nẵng tại The Filmore, The Panoma, Hiyori, Monarchy, Azura ✓ View sông Hàn & biển Mỹ Khê ✓ Giá trực tiếp chủ nhà →", descEn: "Spacious 2-bedroom condos in Da Nang's top towers (Filmore, Panoma, Hiyori, Monarchy, Azura) ✓ EVN rates →" },
   { slug: "3-phong-ngu", bedrooms: "3", vi: "Căn hộ 3 phòng ngủ", en: "3-Bedroom Family Condos", h1Vi: "Cho thuê căn hộ 3 phòng ngủ (3PN) Đà Nẵng — Rộng rãi cho gia đình & chuyên gia", h1En: "3-Bedroom Family Condos & Residences for Rent in Da Nang", descVi: "Cho thuê căn hộ 3PN rộng 95–150m² tại Đà Nẵng cho gia đình & chuyên gia ✓ Hồ bơi, gym, gần trường quốc tế & biển Mỹ Khê →", descEn: "Spacious 3-bedroom family condos (95–150m²) in Da Nang near international schools, pools & beach →" },
-  { slug: "biet-thu-villa", tag: "Biệt thự", vi: "Biệt thự & Villa hồ bơi", en: "Private Pool Villas", h1Vi: "Cho thuê Biệt thự & Villa hồ bơi riêng tại Đà Nẵng — Dài hạn 3–12+ tháng", h1En: "Private Pool Villas & Garden Residences for Rent in Da Nang", descVi: "Cho thuê biệt thự hồ bơi riêng & villa sân vườn Đà Nẵng (3–5PN) tại Nam Việt Á, Euro Village, Đảo Xanh, Sơn Trà, Mỹ Khê, Hòa Xuân →", descEn: "Private saltwater pool villas & garden homes (3–5BR) for long-term rent in Da Nang: Nam Viet A, Euro Village, Son Tra & Hoa Xuan →" },
-  { slug: "nha-nguyen-can", vi: "Nhà nguyên căn", en: "Whole Houses", h1Vi: "Cho thuê Nhà nguyên căn & Nhà phố Đà Nẵng — Dài hạn trực tiếp chủ nhà", h1En: "Whole Houses & Townhouses for Long-Term Rent in Da Nang", descVi: "Cho thuê nhà nguyên căn, nhà phố sân vườn & shophouse Đà Nẵng tại Hải Châu, Sơn Trà, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê →", descEn: "Whole houses, modern townhouses & garden homes for long-term rent across Da Nang →" },
-  { slug: "penthouse", bedrooms: "3", vi: "Penthouse hạng sang", en: "Luxury Penthouses", h1Vi: "Cho thuê Penthouse & Căn hộ hạng sang Đà Nẵng — View sông Hàn & biển", h1En: "Luxury Penthouses & Sky Residences for Rent in Da Nang", descVi: "Bộ sưu tập Penthouse & căn hộ hạng sang view toàn cảnh sông Hàn, cầu Rồng & biển Mỹ Khê (The Filmore, The Panoma, Azura) →", descEn: "Exclusive luxury penthouses & sky residences in Da Nang with panoramic Han River & ocean views →" },
+  { slug: "biet-thu-villa", propertyType: "villa", vi: "Biệt thự & Villa hồ bơi", en: "Private Pool Villas", h1Vi: "Cho thuê Biệt thự & Villa hồ bơi riêng tại Đà Nẵng — Dài hạn 3–12+ tháng", h1En: "Private Pool Villas & Garden Residences for Rent in Da Nang", descVi: "Cho thuê biệt thự hồ bơi riêng & villa sân vườn Đà Nẵng (3–5PN) tại Nam Việt Á, Euro Village, Đảo Xanh, Sơn Trà, Mỹ Khê, Hòa Xuân →", descEn: "Private saltwater pool villas & garden homes (3–5BR) for long-term rent in Da Nang: Nam Viet A, Euro Village, Son Tra & Hoa Xuan →" },
+  { slug: "nha-nguyen-can", propertyType: "house", vi: "Nhà nguyên căn", en: "Whole Houses", h1Vi: "Cho thuê Nhà nguyên căn & Nhà phố Đà Nẵng — Dài hạn trực tiếp chủ nhà", h1En: "Whole Houses & Townhouses for Long-Term Rent in Da Nang", descVi: "Cho thuê nhà nguyên căn, nhà phố sân vườn & shophouse Đà Nẵng tại Hải Châu, Sơn Trà, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Thanh Khê →", descEn: "Whole houses, modern townhouses & garden homes for long-term rent across Da Nang →" },
+  { slug: "penthouse", propertyType: "penthouse", vi: "Penthouse hạng sang", en: "Luxury Penthouses", h1Vi: "Cho thuê Penthouse & Căn hộ hạng sang Đà Nẵng — View sông Hàn & biển", h1En: "Luxury Penthouses & Sky Residences for Rent in Da Nang", descVi: "Bộ sưu tập Penthouse & căn hộ hạng sang view toàn cảnh sông Hàn, cầu Rồng & biển Mỹ Khê (The Filmore, The Panoma, Azura) →", descEn: "Exclusive luxury penthouses & sky residences in Da Nang with panoramic Han River & ocean views →" },
   { slug: "mua-ban-nha-dat", isBuy: true, vi: "Mua bán Căn hộ & Nhà đất", en: "Buy Property & Investment", h1Vi: "Tư vấn Mua bán & Đầu tư Căn hộ, Biệt thự, Nhà đất Đà Nẵng — Pháp lý minh bạch", h1En: "Buy Apartments, Condos & Villas in Da Nang — Investment & Resale Advisory", descVi: "Tư vấn mua bán & chuyển nhượng căn hộ chung cư, penthouse, biệt thự và nhà phố Đà Nẵng (sổ hồng & suất người nước ngoài SPA) →", descEn: "Advisory for buying apartments, penthouses & villas in Da Nang (pink book & 30% foreigner quota SPA) →" }
 ];
 
@@ -881,6 +885,7 @@ export const App: React.FC = () => {
     return new URLSearchParams(window.location.search).get("area") || "all";
   });
   const [bedrooms, setBedrooms] = useState<string>("all");
+  const [propCategory, setPropCategory] = useState<string>("all");
   const [maxPrice, setMaxPrice] = useState<string>("0");
   const [tag, setTag] = useState<string>("all");
   const [sort, setSort] = useState<string>("featured");
@@ -969,6 +974,7 @@ export const App: React.FC = () => {
     const matchedProp = propM ? SEO_PROPERTY_TYPES.find((p) => p.slug === propM[1].toLowerCase()) : null;
     if (matchedProp) {
       setArea("all");
+      setPropCategory(matchedProp.propertyType || "all");
       setBedrooms(matchedProp.bedrooms || "all");
       setTag(matchedProp.tag || "all");
     }
@@ -1865,9 +1871,21 @@ export const App: React.FC = () => {
   }, [apartments]);
   const heroPinUnits = heroMapLocations.find(({ units }) => units.includes(activeShowcaseApt))?.units ?? [];
 
+  const trPropType = (rawType?: string): string => {
+    const pt = String(rawType || "condo").toLowerCase();
+    if (pt === "apartment") return tx("🏠 Căn hộ thường", "🏠 Serviced Apt", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스", "🏠 サービスアパート");
+    if (pt === "house") return tx("🏡 Nhà nguyên căn", "🏡 Whole House", "🏡 整栋住宅", "🏡 Дом", "🏡 단독주택", "🏡 一軒家");
+    if (pt === "villa") return tx("🌴 Biệt thự / Villa", "🌴 Pool Villa", "🌴 独栋别墅", "🌴 Вилла", "🌴 풀빌라", "🌴 ヴィラ");
+    if (pt === "penthouse") return tx("✨ Penthouse", "✨ Penthouse", "✨ 顶层豪宅", "✨ Пентхаус", "✨ 펜트하우스", "✨ ペントハウス");
+    return tx("🏢 Căn hộ chung cư", "🏢 Condominium", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム");
+  };
+
   const homeCatalogueUnits = React.useMemo(() => {
     if (homeChipFilter === "all") return apartments;
     if (homeChipFilter === "saved") return apartments.filter((a) => savedCodes.includes(a.code));
+    if (["condo", "apartment", "house", "villa", "penthouse"].includes(homeChipFilter)) {
+      return apartments.filter((a) => (a.propertyType || "condo") === homeChipFilter);
+    }
     if (homeChipFilter === "1" || homeChipFilter === "2" || homeChipFilter === "3") {
       const br = Number(homeChipFilter);
       return apartments.filter((a) => a.bedrooms != null && (br === 3 ? a.bedrooms >= 3 : a.bedrooms === br));
@@ -1893,6 +1911,9 @@ export const App: React.FC = () => {
 
   const filteredApartments = React.useMemo(() => {
     let list = [...apartments];
+    if (propCategory !== "all") {
+      list = list.filter((a) => (a.propertyType || "condo") === propCategory);
+    }
     if (area !== "all") {
       const foldVn = (v: string) =>
         String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
@@ -1935,7 +1956,7 @@ export const App: React.FC = () => {
     else if (sort === "price-desc") list.sort((a, b) => b.priceUsd - a.priceUsd);
     else if (sort === "size-desc") list.sort((a, b) => (b.sizeM2 || 0) - (a.sizeM2 || 0));
     return list;
-  }, [apartments, area, bedrooms, maxPrice, tag, query, sort, lang]);
+  }, [apartments, propCategory, area, bedrooms, maxPrice, tag, query, sort, lang]);
 
   const expandMapUnits = isCatalogueRoute ? (filteredApartments.length ? filteredApartments : apartments) : apartments;
   const expandMapAptIdx = Math.max(0, expandMapUnits.findIndex((apt) => apt.code === expandMapAptCode));
@@ -2386,11 +2407,9 @@ export const App: React.FC = () => {
                     {tx("🟢 Đang trống", "🟢 Available", "🟢 可租", "🟢 Свободна", "🟢 공실", "🟢 空室")}
                   </span>
                 )}
-                {getAptTags(apt).slice(0, 1).map((t) => (
-                  <span key={t} className="pill-badge-dark">
-                    {t}
-                  </span>
-                ))}
+                <span className="pill-badge-dark">
+                  {trPropType(apt.propertyType)}
+                </span>
               </div>
               <button
                 type="button"
@@ -2424,7 +2443,7 @@ export const App: React.FC = () => {
                 {title}
               </a>
             </h3>
-            {apt.address && (
+            {apt.address && !/^https?:\/\//i.test(apt.address.trim()) && (
               <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "4px" }}>
                 <span>📍</span>
                 <span>{apt.address}</span>
@@ -2918,7 +2937,7 @@ export const App: React.FC = () => {
                                         {u.bedrooms} {tx("phòng ngủ", "BR", "室", "сп.", "침실", "LDK")} · {u.sizeM2} m²
                                       </strong>
                                       <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                                        {getAptField(u, "orientation") || trArea(u.areaName)}
+                                        {trPropType(u.propertyType)} · {trArea(u.areaName)}
                                       </div>
                                     </div>
                                     <strong style={{ color: "var(--accent-bronze-dark)", fontSize: "0.86rem" }}>
@@ -3058,14 +3077,13 @@ export const App: React.FC = () => {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
               <div className="chips-track">
                 {[
-                  { key: "all", label: tx("Tất cả", "All", "全部", "Все", "전체", "すべて") },
-                  { key: "Gần biển", label: tx("Gần biển", "Near Beach", "靠近海滩", "У пляжа", "해변 근처", "ビーチ近く") },
-                  { key: "View sông Hàn", label: tx("View sông Hàn", "Han River View", "韩江景观", "Вид на реку", "한강 뷰", "ハン川ビュー") },
-                  { key: "1", label: tx("1 phòng ngủ", "1 Bedroom", "1 卧室", "1 спальня", "1베드룸", "1ベッドルーム") },
-                  { key: "2", label: tx("2 phòng ngủ", "2 Bedrooms", "2 卧室", "2 спальни", "2베드룸", "2ベッドルーム") },
-                  { key: "3", label: tx("3 phòng ngủ", "3 Bedrooms", "3 卧室", "3 спальни", "3베드룸", "3ベッドルーム") },
-                  { key: "Biệt thự", label: tx("Biệt thự", "Villas", "独栋别墅", "Виллы", "풀빌라", "ヴィラ") },
-                  { key: "saved", label: `${tx("Đã lưu", "Saved", "已收藏", "Сохранено", "저장됨", "保存済")} (${savedCodes.length})` }
+                  { key: "all", label: tx("Tất cả BĐS", "All Properties", "全部房源", "Все объекты", "전체 매물", "すべての物件") },
+                  { key: "condo", label: tx("🏢 Căn hộ chung cư", "🏢 Condominiums", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム") },
+                  { key: "apartment", label: tx("🏠 Căn hộ thường", "🏠 Serviced Apts", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스·원룸", "🏠 サービスアパート") },
+                  { key: "house", label: tx("🏡 Nhà nguyên căn", "🏡 Whole Houses", "🏡 整栋住宅", "🏡 Дома", "🏡 단독주택", "🏡 一軒家") },
+                  { key: "villa", label: tx("🌴 Biệt thự / Villa", "🌴 Pool Villas", "🌴 独栋别墅", "🌴 Виллы", "🌴 풀빌라", "🌴 ヴィラ") },
+                  { key: "penthouse", label: tx("✨ Penthouse", "✨ Penthouses", "✨ 顶层豪宅", "✨ Пентхаусы", "✨ 펜트하우스", "✨ ペントハウス") },
+                  { key: "saved", label: `${tx("♥ Đã lưu", "♥ Saved", "♥ 已收藏", "♥ Сохранено", "♥ 저장됨", "♥ 保存済")} (${savedCodes.length})` }
                 ].map((c) => (
                   <button
                     key={c.key}
@@ -3629,6 +3647,27 @@ export const App: React.FC = () => {
             </div>
 
             <div className="kin-cat-filter-shell">
+              {/* 1-Tap Product Category Tabs (Condo vs Apartment vs House vs Villa vs Penthouse) */}
+              <div className="chips-track" style={{ marginBottom: "0.75rem", paddingBottom: "0.55rem", borderBottom: "1px solid var(--border-light)" }}>
+                {[
+                  { key: "all", label: tx("Tất cả danh mục", "All Categories", "全部类别", "Все категории", "전체 유형", "すべての種別") },
+                  { key: "condo", label: tx("🏢 Căn hộ chung cư", "🏢 Condominium", "🏢 电梯公寓", "🏢 ЖК / Кондо", "🏢 대단지 아파트", "🏢 コンドミニアム") },
+                  { key: "apartment", label: tx("🏠 Căn hộ thường", "🏠 Serviced Apt", "🏠 服务式公寓", "🏠 Апартаменты", "🏠 레지던스", "🏠 サービスアパート") },
+                  { key: "house", label: tx("🏡 Nhà nguyên căn", "🏡 Whole House", "🏡 整栋住宅", "🏡 Дом", "🏡 단독주택", "🏡 一軒家") },
+                  { key: "villa", label: tx("🌴 Biệt thự / Villa", "🌴 Pool Villa", "🌴 独栋别墅", "🌴 Вилла", "🌴 풀빌라", "🌴 ヴィラ") },
+                  { key: "penthouse", label: tx("✨ Penthouse", "✨ Penthouse", "✨ 顶层豪宅", "✨ Пентхаус", "✨ 펜트하우스", "✨ ペントハウス") }
+                ].map((catItem) => (
+                  <button
+                    key={catItem.key}
+                    type="button"
+                    className={`filter-chip-btn ${propCategory === catItem.key ? "active" : ""}`}
+                    onClick={() => setPropCategory(catItem.key)}
+                  >
+                    {catItem.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Compact Mobile 1-Row Search + Filter Toggle + Map Bar */}
               <div className="kin-mobile-filter-bar">
                 <input
@@ -3767,6 +3806,7 @@ export const App: React.FC = () => {
                     style={{ flex: 1, padding: "0.52rem 0.8rem", fontSize: "0.8rem" }}
                     onClick={() => {
                       setQuery("");
+                      setPropCategory("all");
                       setArea("all");
                       setBedrooms("all");
                       setMaxPrice("0");
@@ -4176,9 +4216,9 @@ export const App: React.FC = () => {
                   {currentDetailApt.floor != null && <span className="apt-compact-info-pill">
                     {tx("Tầng", "Floor", "楼层", "Этаж", "층", "階")} {currentDetailApt.floor}
                   </span>}
-                  {currentDetailApt.orientation && <span className="apt-compact-info-pill">
-                    {getAptField(currentDetailApt, "orientation")}
-                  </span>}
+                  <span className="apt-compact-info-pill">
+                    {trPropType(currentDetailApt.propertyType)}
+                  </span>
                   {currentDetailApt.electricityRate && <span className="apt-compact-info-pill">
                     {getAptField(currentDetailApt, "electricityRate")}
                   </span>}

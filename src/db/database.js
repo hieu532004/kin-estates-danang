@@ -4,6 +4,45 @@ const { createHash, randomUUID } = require("node:crypto");
 const mongoose = require("mongoose");
 const { initialApartments, initialBuildings, neighborhoods } = require("../data/seedData");
 const translationService = require("../services/translationService");
+const { resolveGoogleMapsInput, isMapUrlString } = require("../services/apartmentLocation");
+
+const PROPERTY_TYPES = ["condo", "apartment", "house", "villa", "penthouse"];
+
+function normalizePropertyType(raw, context = {}) {
+  const s = String(raw || "").trim();
+  if (s) {
+    const f = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+    if (f === "condo" || f.includes("chung cu") || f.includes("condominium")) return "condo";
+    if (f === "apartment" || f.includes("can ho thuong") || f.includes("dich vu") || f.includes("studio") || f === "can ho") return "apartment";
+    if (f === "house" || f.includes("nha nguyen can") || f.includes("nha pho") || f.includes("townhouse") || f === "nha") return "house";
+    if (f === "villa" || f.includes("biet thu")) return "villa";
+    if (f === "penthouse" || f.includes("sky villa")) return "penthouse";
+  }
+  return inferPropertyType(context);
+}
+
+function inferPropertyType(apt = {}) {
+  const explicit = String(apt.propertyType || "").trim().toLowerCase();
+  if (PROPERTY_TYPES.includes(explicit)) return explicit;
+  const titleStr = typeof apt.title === "string" ? apt.title : `${apt.title?.vi || ""} ${apt.title?.en || ""}`;
+  const tagsStr = Array.isArray(apt.tags) ? apt.tags.join(" ") : String(apt.tags || "");
+  const bldgStr = String(apt.building || "");
+  const hay = `${titleStr} ${bldgStr} ${tagsStr}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase();
+
+  if (/\b(villa|biet thu)\b/.test(hay)) return "villa";
+  if (/\bpenthouse\b/.test(hay)) return "penthouse";
+  if (/\b(thue nha|nha nguyen can|nha pho|nha \d|townhouse|whole house)\b/.test(hay) && !hay.includes("can ho") && !hay.includes("chung cu")) {
+    return "house";
+  }
+  if (/\b(panoma|filmore|hiyori|monarchy|azura|blooming|indochina|fpt plaza|ori garden|muong thanh|chung cu|condo|tower|residence)\b/.test(hay) && !hay.includes("kin estates residence")) {
+    return "condo";
+  }
+  return "apartment";
+}
 
 const STORE_PATH = process.env.KIN_STORE_PATH
   ? path.resolve(process.env.KIN_STORE_PATH)
@@ -14,6 +53,7 @@ const TELEGRAM_TOKEN_URL = /api\.telegram\.org\/(?:file\/)?bot\d+(?::|%3a)[\w-]+
 const ApartmentSchema = new mongoose.Schema(
   {
     code: { type: String, required: true, unique: true },
+    propertyType: { type: String, default: "condo" }, // condo | apartment | house | villa | penthouse
     title: {
       vi: String,
       en: String,
@@ -407,6 +447,10 @@ async function getApartments(filters = {}) {
   if (filters.area && filters.area !== "all") {
     list = list.filter((a) => (a.areaName || "").toLowerCase() === filters.area.toLowerCase());
   }
+  if (filters.propertyType && filters.propertyType !== "all") {
+    const wanted = String(filters.propertyType).toLowerCase();
+    list = list.filter((a) => (a.propertyType || inferPropertyType(a)) === wanted);
+  }
   if (filters.bedrooms && filters.bedrooms !== "all") {
     const br = Number(filters.bedrooms);
     if (br >= 3) {
@@ -501,6 +545,7 @@ function withSafeApartmentImages(apartment) {
 function apartmentForRead(apartment) {
   return withSafeApartmentImages({
     ...apartment,
+    propertyType: inferPropertyType(apartment),
     ...normalizeApartmentLocation(apartment.locationAccuracy === "exact" ? "exact" : "area", apartment.coordinates)
   });
 }
@@ -693,10 +738,16 @@ function normalizeApartmentPayload(payload, { sparse = false } = {}) {
   const address =
     payload.address ||
     `${building}, ${areaName}, Đà Nẵng`;
+  const propertyType = normalizePropertyType(payload.propertyType, {
+    title: titleObj,
+    building,
+    tags
+  });
 
   return {
     _id: payload._id || `apt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     code,
+    propertyType,
     title: titleObj,
     building,
     address,
@@ -740,7 +791,32 @@ function apartmentAlreadyExists() {
   return Object.assign(new Error("An apartment with this code already exists"), { code: "APARTMENT_EXISTS" });
 }
 
-async function createApartment(payload, { insertOnly = false, durable = false } = {}) {
+async function enrichPayloadMapLink(input) {
+  if (!input || typeof input !== "object") return input;
+  const copy = { ...input };
+  const rawAddr = typeof copy.address === "string" ? copy.address.trim() : "";
+  const rawMap = typeof copy.mapUrl === "string" ? copy.mapUrl.trim() : "";
+  const candidate = rawMap || (isMapUrlString(rawAddr) ? rawAddr : "");
+  if (!candidate) return copy;
+
+  const resolved = await resolveGoogleMapsInput(candidate);
+  if (resolved) {
+    if (resolved.address && (!rawAddr || isMapUrlString(rawAddr))) {
+      copy.address = resolved.address;
+    }
+    if (resolved.coordinates) {
+      copy.coordinates = resolved.coordinates;
+      copy.locationAccuracy = "exact";
+    }
+    if (resolved.address && !copy.areaName) {
+      copy.areaName = normalizeAreaName(resolved.address);
+    }
+  }
+  return copy;
+}
+
+async function createApartment(rawPayload, { insertOnly = false, durable = false } = {}) {
+  const payload = await enrichPayloadMapLink(rawPayload);
   const baseNormalized = normalizeApartmentPayload(payload, { sparse: durable && payload.source === "telegram" });
   const normalized = await translationService.translateApartmentAllLanguages(baseNormalized);
   if (!insertOnly) {
@@ -861,6 +937,9 @@ function normalizeApartmentUpdates(target, { _id, reservationHold, ...updates })
       .filter(Boolean);
   }
 
+  if (updates.propertyType !== undefined) {
+    updates.propertyType = normalizePropertyType(updates.propertyType, { ...target, ...updates });
+  }
   if (updates.status === "Hidden") {
     updates.isVisible = false;
   } else if (updates.status === "Available" && updates.isVisible === undefined) {
@@ -900,7 +979,8 @@ function mirrorApartmentUpdate(target, updated, durable = false) {
   }
 }
 
-async function updateApartment(identifier, updates, { expectedUpdatedAt } = {}) {
+async function updateApartment(identifier, rawUpdates, { expectedUpdatedAt } = {}) {
+  const updates = await enrichPayloadMapLink(rawUpdates);
   const conditional = expectedUpdatedAt !== undefined;
   const expected = apartmentRevision(expectedUpdatedAt);
   const textKeys = ["title", "architecturalNotes", "address", "orientation", "electricityRate", "waterRate", "petPolicy", "remoteWorkSetup", "tags"];
@@ -1888,7 +1968,46 @@ function getDbStatus() {
   };
 }
 
+async function getLiveDbStatus() {
+  if (!isNativeMongoConnected) return getDbStatus();
+  try {
+    const [apts, totalInq, newInqCount, activeLeasesCount] = await Promise.all([
+      ApartmentModel.find({}, "status isVisible propertyType title building tags").lean(),
+      InquiryModel.countDocuments({ type: { $ne: "owner_listing" } }),
+      InquiryModel.countDocuments({ status: "New", type: { $ne: "owner_listing" } }),
+      LeaseModel.countDocuments({ status: { $ne: "Ended" } })
+    ]);
+    const availableCount = apts.filter((a) => a.status === "Available" && a.isVisible !== false).length;
+    const rentedCount = apts.filter((a) => a.status === "Rented").length;
+    const hiddenCount = apts.filter((a) => a.isVisible === false || a.status === "Hidden").length;
+    const typeCounts = { condo: 0, apartment: 0, house: 0, villa: 0, penthouse: 0 };
+    for (const a of apts) {
+      const pt = inferPropertyType(a);
+      typeCounts[pt] = (typeCounts[pt] || 0) + 1;
+    }
+    return {
+      isNativeMongoConnected,
+      mongoConnectionMode,
+      storePath: STORE_PATH,
+      totalApartments: apts.length,
+      availableCount,
+      rentedCount,
+      hiddenCount,
+      typeCounts,
+      totalBuildings: (store.buildings || []).length,
+      totalInquiries: totalInq,
+      newInquiriesCount: newInqCount,
+      activeLeasesCount
+    };
+  } catch {
+    return getDbStatus();
+  }
+}
+
 module.exports = {
+  PROPERTY_TYPES,
+  normalizePropertyType,
+  inferPropertyType,
   initDatabase,
   ensureMongoConnection,
   persistApartmentLanguageCache,
@@ -1931,6 +2050,7 @@ module.exports = {
   logSyncEvent,
   getSyncLogs,
   getDbStatus,
+  getLiveDbStatus,
   parsePriceInput,
   normalizeAreaName
 };

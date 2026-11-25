@@ -215,8 +215,72 @@ const DANANG_SEO_AREAS = [
   }
 ];
 
-// 8 High-Intent Property Type & Transaction Landing Pages (/property/:slug)
+// High-Intent Property Type & Transaction Landing Pages (/property/:slug)
 const PROPERTY_TYPE_LANDINGS = [
+  {
+    slug: "can-ho-chung-cu",
+    filter: { propertyType: "condo" },
+    titles: {
+      vi: "Thuê Căn Hộ Chung Cư Đà Nẵng Cao Cấp 2026 | KIN Estates",
+      en: "Condominiums & High-Rise Apartments Da Nang | KIN Estates",
+      zh: "岘港高端电梯公寓与小区长租（带泳池健身房）| KIN Estates",
+      ru: "Аренда Квартир в Жилых Комплексах Дананга | KIN Estates",
+      ko: "다낭 고급 주상복합·대단지 아파트 장기 임대 | KIN Estates",
+      ja: "ダナン 高級コンドミニアム・タワーマンション賃貸 | KIN"
+    },
+    descriptions: {
+      vi: "Cho thuê căn hộ chung cư thương mại Đà Nẵng (The Filmore, The Panoma, Hiyori, Monarchy, Azura, FPT Plaza) ✓ Hồ bơi, gym, an ninh 24/7, điện nhà nước EVN →",
+      en: "Rent verified high-rise condominiums in Da Nang (The Filmore, Panoma, Hiyori, Monarchy, Azura, FPT Plaza) ✓ Pool, gym, 24/7 security & state EVN rates →",
+      zh: "精选岘港高端商业小区公寓（The Filmore、The Panoma、Hiyori、Monarchy），配泳池健身房与24小时安保，国家EVN标准电价 →",
+      ru: "Квартиры в современных ЖК Дананга (Filmore, Panoma, Hiyori, Monarchy, Azura) с бассейном, охраной 24/7 и гостарифом EVN →",
+      ko: "더 필모어, 더 파노마, 히요리, 모나키 등 다낭 최고급 대단지 아파트 장기 임대 ✓ 수영장·피트니스·24시간 보안·EVN 전기요금 →",
+      ja: "The Filmore・Hiyori・Monarchy等の高級コンドミニアム長期賃貸 ✓ プール・ジム・24時間警備・EVN公定電気料金 →"
+    },
+    keywords: {
+      vi: "thuê căn hộ chung cư Đà Nẵng, cho thuê chung cư cao cấp Đà Nẵng, thuê chung cư Sơn Trà Hải Châu Ngũ Hành Sơn Hòa Xuân, Hiyori Filmore Panoma Monarchy",
+      en: "condo for rent Da Nang, luxury condominium Da Nang, Hiyori Filmore Panoma Monarchy rent"
+    },
+    h1: {
+      vi: "Cho thuê Căn hộ Chung cư Đà Nẵng — Tiện ích cao cấp, điện giá nhà nước EVN",
+      en: "High-Rise Condominiums for Rent in Da Nang — Pools, Security & EVN Rates",
+      zh: "岘港高端商业公寓小区 (Condo) 长租精选",
+      ru: "Аренда квартир в лучших ЖК и кондоминиумах Дананга",
+      ko: "다낭 프리미엄 대단지 아파트 & 주상복합 장기 임대",
+      ja: "ダナン 高級コンドミニアム・タワーマンション長期賃貸"
+    }
+  },
+  {
+    slug: "can-ho-thuong",
+    filter: { propertyType: "apartment" },
+    titles: {
+      vi: "Thuê Căn Hộ Thường & Căn Hộ Dịch Vụ Đà Nẵng | KIN Estates",
+      en: "Serviced & Boutique Apartments for Rent Da Nang | KIN",
+      zh: "岘港精品服务式公寓与高性价比长租房 | KIN Estates",
+      ru: "Сервисные Апартаменты и Квартиры в Дананге | KIN Estates",
+      ko: "다낭 가성비 레지던스 & 서비스드 아파트 월세 | KIN Estates",
+      ja: "ダナン サービスアパートメント・ブティック賃貸 | KIN"
+    },
+    descriptions: {
+      vi: "Cho thuê căn hộ thường, căn hộ dịch vụ & mini Đà Nẵng đầy đủ nội thất, miễn phí Wi-Fi & dọn phòng ✓ Gần biển Mỹ Khê, An Thượng, Hải Châu, Sơn Trà, Hòa Xuân →",
+      en: "Boutique & serviced apartments in Da Nang with full furniture, fast Wi-Fi & flexible 3–12+ month leases ✓ Walk to My Khe Beach, An Thuong, Hai Chau & Hoa Xuan →",
+      zh: "精选岘港高性价比服务式公寓，拎包入住、包高速Wi-Fi与定期保洁，覆盖美溪海滩、安上区、海洲与和春 →",
+      ru: "Уютные сервисные апартаменты в Дананге с полной меблировкой, бесплатным Wi-Fi и уборкой ✓ Рядом с пляжем Ми Кхе и центром →",
+      ko: "다낭 미케비치·안트엉·하이쩌우·호아쑤언 풀옵션 서비스드 아파트 및 가성비 레지던스 월세 ✓ 빠른 Wi-Fi·청소 서비스 →",
+      ja: "ダナンの家具付きサービスアパートメント賃貸 ✓ 無料Wi-Fi・清掃付きで快適長期滞在 →"
+    },
+    keywords: {
+      vi: "thuê căn hộ Đà Nẵng giá tốt, thuê căn hộ dịch vụ Đà Nẵng, cho thuê căn hộ mini Đà Nẵng, căn hộ thường Đà Nẵng đầy đủ nội thất",
+      en: "serviced apartment Da Nang monthly, boutique apartment for rent Da Nang, affordable apartment Da Nang"
+    },
+    h1: {
+      vi: "Cho thuê Căn hộ thường & Căn hộ dịch vụ Đà Nẵng — Đầy đủ nội thất, dọn vào ở ngay",
+      en: "Serviced & Boutique Apartments for Rent in Da Nang",
+      zh: "岘港精品服务式公寓长租精选",
+      ru: "Сервисные и бутик-апартаменты в аренду в Дананге",
+      ko: "다낭 풀옵션 레지던스 & 서비스드 아파트 임대",
+      ja: "ダナン サービスアパートメント＆ブティック賃貸"
+    }
+  },
   {
     slug: "studio",
     filter: { bedrooms: "1" },

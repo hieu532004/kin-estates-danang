@@ -1,9 +1,16 @@
 const { randomBytes } = require("node:crypto");
 const db = require("../db/database");
 const sheets = require("./googleSheetsService");
-const { parseApartmentCoordinates, apartmentMapUrl } = require("./apartmentLocation");
+const { parseApartmentCoordinates, resolveGoogleMapsInput, isMapUrlString, apartmentMapUrl } = require("./apartmentLocation");
 
 const PHOTO_LIMIT = 20;
+const propTypes = [
+  ["condo", "🏢 Chung cư"],
+  ["apartment", "🏠 Căn hộ thường"],
+  ["house", "🏡 Nhà nguyên căn"],
+  ["villa", "🌴 Biệt thự / Villa"],
+  ["penthouse", "✨ Penthouse"]
+];
 const areas = [
   ["an", "An Thuong", "An Thượng"],
   ["son", "Son Tra", "Sơn Trà"],
@@ -100,7 +107,15 @@ function screen(session, note = "") {
     );
   }
   if (session.step === "identity") {
-    return result(prefix + `1/4 · Tên căn hộ và tòa nhà\nNhập Tên căn hộ | Tên tòa nhà\nVí dụ: Căn 2PN view sông | The Panoma${countLine ? "\n" + countLine : ""}`, footer);
+    const curType = propTypes.find(([k]) => k === (session.details?.propertyType || "condo"))?.[1] || "🏢 Chung cư";
+    const typeRows = [
+      propTypes.slice(0, 2).map(([k, lbl]) => button(session.details?.propertyType === k ? `✓ ${lbl}` : lbl, `/draft_type ${session.id} ${k}`)),
+      propTypes.slice(2, 5).map(([k, lbl]) => button(session.details?.propertyType === k ? `✓ ${lbl}` : lbl, `/draft_type ${session.id} ${k}`))
+    ];
+    return result(
+      prefix + `1/4 · Loại hình (${curType}) · Tên & Dự án/Đường\nChọn loại hình bên dưới (tùy chọn), sau đó nhập:\nTên bài đăng | Tòa nhà hoặc Tên đường\nVí dụ: Căn 2PN view sông | The Panoma${countLine ? "\n" + countLine : ""}`,
+      [...typeRows, ...footer]
+    );
   }
   if (session.step === "location") {
     return result(prefix + `2/4 · Vị trí\nNhập Khu vực | Số nhà, đường, phường, thành phố hoặc chọn khu vực trước rồi bổ sung địa chỉ ở bước xem trước.\nGửi ghim bằng 📎 → Vị trí.${countLine ? "\n" + countLine : ""}`,
@@ -162,7 +177,7 @@ function preview(session) {
 }
 
 const fieldNames = {
-  title: "Tên", titleEn: "Tên tiếng Anh", building: "Tòa nhà", areaName: "Khu vực", address: "Địa chỉ", district: "Quận",
+  propertyType: "Loại hình", title: "Tên", titleEn: "Tên tiếng Anh", building: "Tòa nhà", areaName: "Khu vực", address: "Địa chỉ", district: "Quận",
   price: "Giá", bedrooms: "Phòng ngủ", bathrooms: "Phòng tắm", sizeM2: "Diện tích",
   floor: "Tầng", architecturalNotes: "Mô tả", electricityRate: "Điện", waterRate: "Nước", wifiIncluded: "Wi-Fi",
   availableFrom: "Ngày có thể vào", minLeaseMonths: "Thuê tối thiểu", depositMonths: "Cọc",
@@ -414,6 +429,14 @@ async function handleListingWorkflow({ text, photos, userKey, parseListing, quic
       for (let i = 0; i < options.length; i += 4) rows.push(options.slice(i, i + 4));
       return result(remove ? "Chọn ảnh muốn bỏ theo thứ tự trong bộ ảnh." : "Chọn ảnh muốn dùng làm ảnh bìa.", [...rows, cancelButtons(session)]);
     }
+    if (command === "/draft_type" && session.mode === "listing") {
+      const picked = propTypes.find(([key]) => key === choice);
+      if (picked) {
+        return persist({ ...session, details: { ...session.details, propertyType: picked[0] } }, (updated) =>
+          screen(updated, `Đã chọn loại hình: ${picked[1]}`)
+        );
+      }
+    }
     if (command === "/draft_area" && session.mode === "listing" && session.step === "location") {
       const area = areas.find(([key]) => key === choice);
       if (area) return persist(applyDetails(session, { areaName: area[1] }));
@@ -456,6 +479,21 @@ async function handleListingWorkflow({ text, photos, userKey, parseListing, quic
   const parsed = template || (pinLine || session.mode === "fields" || session.step === "details" ? parseListing(text) : null);
   if (parsed || quickListing) {
     const details = listingDetails(parsed || quickListing);
+    // Support shortened Google Maps links (maps.app.goo.gl) or address URLs in live production
+    const candidateMapUrl = parsed?.mapInput || (isMapUrlString(details.address) ? details.address : "");
+    if (candidateMapUrl && !details.coordinates && !String(process.env.PUBLIC_SITE_URL || "").includes(".invalid")) {
+      const resolved = await resolveGoogleMapsInput(candidateMapUrl);
+      if (resolved) {
+        if (resolved.coordinates) {
+          details.coordinates = resolved.coordinates;
+          details.locationAccuracy = "exact";
+        }
+        if (resolved.address && (!details.address || isMapUrlString(details.address))) {
+          details.address = resolved.address.slice(0, 250);
+          if (!details.areaName) details.areaName = db.normalizeAreaName(resolved.address);
+        }
+      }
+    }
     const invalidPin = Boolean(parsed?.mapInput && !details.coordinates);
     const pinHint = "Chưa đọc được ghim. Gửi vị trí qua 📎 hoặc nhập cặp vĩ độ, kinh độ.";
     if (session.mode === "fields") {

@@ -527,6 +527,13 @@ function buildApartmentSchema(origin, apt, lang = "vi") {
   }
   crumbs.push({ name: title, url });
 
+  const schemaPropertyType =
+    apt.propertyType === "villa"
+      ? "SingleFamilyResidence"
+      : apt.propertyType === "house"
+        ? "House"
+        : "Apartment";
+
   return [
     {
       "@context": "https://schema.org",
@@ -546,7 +553,7 @@ function buildApartmentSchema(origin, apt, lang = "vi") {
         url
       },
       mainEntity: {
-        "@type": "Apartment",
+        "@type": schemaPropertyType,
         name: title,
         description: desc,
         numberOfRooms: Number(apt.bedrooms || 1),
