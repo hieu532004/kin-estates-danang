@@ -2103,12 +2103,16 @@ const DEFAULT_ABOUT_CONTENT = {
 
 function normalizeAboutContent(raw) {
   const src = raw && typeof raw === "object" ? raw : {};
+  const cleanEntityLinks = Array.isArray(src.entityLinks)
+    ? [...new Set(src.entityLinks.map((u) => String(u || "").trim()).filter((u) => /^https?:\/\//i.test(u)))].slice(0, 60)
+    : [];
   return {
     heroImage: typeof src.heroImage === "string" && src.heroImage.trim() ? src.heroImage.trim() : DEFAULT_ABOUT_CONTENT.heroImage,
     founderName: typeof src.founderName === "string" && src.founderName.trim() ? src.founderName.trim() : DEFAULT_ABOUT_CONTENT.founderName,
     founderQuote: src.founderQuote && typeof src.founderQuote === "object" ? src.founderQuote : DEFAULT_ABOUT_CONTENT.founderQuote,
     clientTourPhotos: Array.isArray(src.clientTourPhotos) ? src.clientTourPhotos : DEFAULT_ABOUT_CONTENT.clientTourPhotos,
     testimonials: Array.isArray(src.testimonials) ? src.testimonials : DEFAULT_ABOUT_CONTENT.testimonials,
+    entityLinks: cleanEntityLinks,
     updatedAt: src.updatedAt || new Date().toISOString()
   };
 }

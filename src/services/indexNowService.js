@@ -1,4 +1,4 @@
-const { DANANG_SEO_AREAS, PROPERTY_TYPE_LANDINGS, SEO_GUIDE_ARTICLES, NON_DEFAULT_LANGS } = require("./seoData");
+const { DANANG_SEO_AREAS, DANANG_SEO_BUILDINGS, PROPERTY_TYPE_LANDINGS, SEO_GUIDE_ARTICLES, NON_DEFAULT_LANGS } = require("./seoData");
 
 const DEFAULT_ORIGIN = "https://www.kinestatesdanang.com";
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY || "a8f4c291e7b04d6392c5f18e7a3b40d9";
@@ -42,6 +42,9 @@ function buildCoreSeoUrlList(apartments = [], origin = getEffectiveOrigin()) {
   }
   for (const area of DANANG_SEO_AREAS) {
     urls.add(`${origin}/areas/${area.slug}`);
+  }
+  for (const bldg of DANANG_SEO_BUILDINGS || []) {
+    urls.add(`${origin}/buildings/${bldg.slug}`);
   }
   for (const guide of SEO_GUIDE_ARTICLES) {
     urls.add(`${origin}/guides/${guide.slug}`);

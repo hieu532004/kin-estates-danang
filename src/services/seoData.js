@@ -927,6 +927,8 @@ const SEO_GUIDE_ARTICLES = [
   }
 ];
 
+const { DANANG_SEO_BUILDINGS, EXTRA_SEO_GUIDES, findBuildingBySlug } = require("./seoExtendedContent");
+
 function findAreaBySlug(slug) {
   const clean = String(slug || "").trim().toLowerCase();
   return DANANG_SEO_AREAS.find((a) => a.slug === clean) || null;
@@ -958,19 +960,23 @@ function findPropertyTypeBySlug(slug) {
   return PROPERTY_TYPE_LANDINGS.find((p) => p.slug === clean) || null;
 }
 
+const ALL_SEO_GUIDE_ARTICLES = [...SEO_GUIDE_ARTICLES, ...EXTRA_SEO_GUIDES];
+
 function findGuideArticleBySlug(slug) {
   const clean = String(slug || "").trim().toLowerCase();
-  return SEO_GUIDE_ARTICLES.find((g) => g.slug === clean) || null;
+  return ALL_SEO_GUIDE_ARTICLES.find((g) => g.slug === clean) || null;
 }
 
 module.exports = {
   SUPPORTED_LANGS,
   NON_DEFAULT_LANGS,
   DANANG_SEO_AREAS,
+  DANANG_SEO_BUILDINGS,
   PROPERTY_TYPE_LANDINGS,
-  SEO_GUIDE_ARTICLES,
+  SEO_GUIDE_ARTICLES: ALL_SEO_GUIDE_ARTICLES,
   findAreaBySlug,
   findAreaByName,
+  findBuildingBySlug,
   findPropertyTypeBySlug,
   findGuideArticleBySlug
 };

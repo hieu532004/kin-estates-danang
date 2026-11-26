@@ -602,6 +602,57 @@ function notesOf(apt: Apartment): string {
   return apt.architecturalNotes?.vi || apt.architecturalNotes?.en || "";
 }
 
+import { DANANG_SEO_BUILDINGS, EXTRA_SEO_GUIDES } from "../services/seoExtendedContent";
+
+const HIGH_DR_ENTITY_SOURCES = [
+  { name: "Google Business Profile (Maps)", dr: "DR 99", url: "https://business.google.com/", note: "Ưu tiên #1 — Lên khung Bản đồ Địa điểm Google" },
+  { name: "Facebook Fanpage chính thức", dr: "DR 99", url: "https://www.facebook.com/pages/create", note: "Gắn link kinestatesdanang.com vào phần Giới thiệu" },
+  { name: "YouTube Channel (@kinestatesdanang)", dr: "DR 99", url: "https://www.youtube.com/", note: "Đăng Shorts/Video quay căn hộ kèm link ở mô tả" },
+  { name: "LinkedIn Company Page", dr: "DR 98", url: "https://www.linkedin.com/", note: "Lên Top rất nhanh với từ khóa tiếng Anh Expat" },
+  { name: "TikTok Business (@kinestatesdanang)", dr: "DR 97", url: "https://www.tiktok.com/", note: "Gắn Website & SĐT 0389711601 trên Bio" },
+  { name: "Instagram (@kinestatesdanang)", dr: "DR 97", url: "https://www.instagram.com/", note: "Đồng bộ ảnh BĐS thực tế & Bio link" },
+  { name: "Medium Blog (medium.com)", dr: "DR 95", url: "https://medium.com/new-story", note: "Dán bài PR đầy đủ bên Tab 2 để lấy Backlink chất" },
+  { name: "Pinterest Business", dr: "DR 94", url: "https://www.pinterest.com/", note: "Ghim ảnh căn hộ/villa trỏ thẳng về trang chi tiết" },
+  { name: "Google Sites (sites.google.com)", dr: "DR 94", url: "https://sites.google.com/", note: "Tạo trang vệ tinh Google chính chủ trỏ về web" },
+  { name: "Linktree / Bio.link", dr: "DR 93", url: "https://linktr.ee/", note: "Tạo cây liên kết trỏ về 5 danh mục BĐS Đà Nẵng" },
+  { name: "Substack Newsletter", dr: "DR 92", url: "https://substack.com/", note: "Đăng bài Cẩm nang giá thuê Đà Nẵng 2026" },
+  { name: "Notion Public Page", dr: "DR 91", url: "https://www.notion.so/", note: "Public bảng giá & hồ sơ năng lực KIN Estates" },
+  { name: "Tumblr Blog", dr: "DR 91", url: "https://www.tumblr.com/", note: "Index bài đăng kèm backlink cực nhanh" },
+  { name: "Behance Portfolio", dr: "DR 92", url: "https://www.behance.net/", note: "Đăng bộ ảnh kiến trúc căn hộ/villa Đà Nẵng" },
+  { name: "About.me Profile", dr: "DR 90", url: "https://about.me/", note: "Hồ sơ thực thể thương hiệu cá nhân/công ty" },
+  { name: "Threads (@kinestatesdanang)", dr: "DR 92", url: "https://www.threads.net/", note: "Gắn link trực tiếp trong từng bài đăng ngắn" }
+];
+
+function buildAllCanonicalSeoUrlsText(apartments: Apartment[] = []): string {
+  const origin = "https://www.kinestatesdanang.com";
+  const core = ["/", "/apartments", "/areas", "/guides", "/how-to-rent", "/about", "/en", "/ko", "/zh", "/ru", "/ja"];
+  const cats = [
+    "can-ho-chung-cu", "can-ho-thuong", "studio", "1-phong-ngu", "2-phong-ngu", "3-phong-ngu",
+    "biet-thu-villa", "nha-nguyen-can", "penthouse", "can-ho-gan-bien-my-khe",
+    "can-ho-view-song-han", "can-ho-cho-nuoi-thu-cung", "mua-ban-nha-dat", "ky-gui-cho-thue-nha-da-nang"
+  ].map((s) => `/property/${s}`);
+  const areas = [
+    "an-thuong", "bien-my-khe", "ven-song-han", "son-tra", "hai-chau", "ngu-hanh-son",
+    "hoa-xuan", "cam-le", "nam-viet-a", "my-an", "phuoc-my", "khue-my", "thanh-khe",
+    "lien-chieu", "hoa-khanh", "fpt-city-hoa-hai", "tho-quang", "thuan-phuoc", "hoa-vang"
+  ].map((s) => `/areas/${s}`);
+  const bldgs = (DANANG_SEO_BUILDINGS as any[]).map((b) => `/buildings/${b.slug}`);
+  const baseGuides = [
+    "gia-thue-can-ho-da-nang-2026",
+    "so-sanh-khu-vuc-thue-nha-da-nang",
+    "kinh-nghiem-thue-biet-thu-nha-nguyen-can-da-nang",
+    "huong-dan-thue-can-ho-da-nang-cho-nguoi-nuoc-ngoai",
+    "mua-ban-dau-tu-can-ho-da-nang-2026",
+    "chi-phi-song-dien-nuoc-evn-da-nang",
+    ...(EXTRA_SEO_GUIDES as any[]).map((g) => g.slug)
+  ].map((s) => `/guides/${s}`);
+  const aptPaths = (apartments || [])
+    .filter((a) => a.code && a.isVisible !== false && a.status !== "Hidden")
+    .map((a) => `/apartments/${encodeURIComponent(a.code)}`);
+  const all = [...core, ...cats, ...areas, ...bldgs, ...baseGuides, ...aptPaths].map((p) => `${origin}${p}`);
+  return all.join("\n");
+}
+
 function buildSeoSharePost(apt: Apartment): string {
   const siteOrigin = "https://www.kinestatesdanang.com";
   const canonicalUrl = `${siteOrigin}/apartments/${encodeURIComponent(apt.code)}`;
@@ -925,6 +976,9 @@ function StudioApp() {
   const [resolvingMap, setResolvingMap] = useState<boolean>(false);
   const [backlinkModalOpen, setBacklinkModalOpen] = useState<boolean>(false);
   const [backlinkDraft, setBacklinkDraft] = useState<string>("");
+  const [seoHubTab, setSeoHubTab] = useState<"entity" | "article" | "urls">("entity");
+  const [entityLinksText, setEntityLinksText] = useState<string>("");
+  const [savingEntityLinks, setSavingEntityLinks] = useState<boolean>(false);
   const [leaseSourceLeadCode, setLeaseSourceLeadCode] = useState<string>("");
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string;
@@ -1115,9 +1169,35 @@ function StudioApp() {
     }
   };
 
-  const openBacklinkArticleModal = () => {
+  const openBacklinkArticleModal = (initialTab: "entity" | "article" | "urls" = "entity") => {
     setBacklinkDraft(buildFullAiBacklinkArticle(report?.apartments || []));
+    const existingLinks: string[] = (report as any)?.aboutContent?.entityLinks || [];
+    setEntityLinksText(existingLinks.join("\n"));
+    setSeoHubTab(initialTab);
     setBacklinkModalOpen(true);
+  };
+
+  const handleSaveEntitySameAs = async () => {
+    setSavingEntityLinks(true);
+    try {
+      const entityLinks = entityLinksText
+        .split(/[\r\n,\s]+/)
+        .map((u) => u.trim())
+        .filter((u) => /^https?:\/\//i.test(u));
+      const r = await fetch("/api/studio/about", {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ entityLinks })
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Không lưu được danh sách Entity.");
+      showToast(`✓ Đã gắn ${j.about?.entityLinks?.length || 0} link Entity vào Schema sameAs trên Web!`);
+      await loadReport(undefined, true);
+    } catch (err: any) {
+      showToast(err?.message || "Lỗi lưu Entity links.");
+    } finally {
+      setSavingEntityLinks(false);
+    }
   };
 
   const authHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
@@ -2655,40 +2735,35 @@ function StudioApp() {
               </section>
             )}
 
-            {/* Long-Form Backlink & AI Profile Generator (IndexNow Auto-Push runs silently on every mutation) */}
+            {/* SEO Dominance Hub: Keyword Clusters, 2-Way Entity Backlink Schema & Full AI Profile */}
             <section className="st-card st-seo-panel">
               <div className="st-card-head" style={{ marginBottom: 6 }}>
                 <div>
                   <h2 className="st-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon.Copy size={14} /> Bài Viết Backlink &amp; Hồ Sơ AI Chi Tiết
+                    <Icon.Copy size={14} /> Trung Tâm SEO Top 1, Entity &amp; Backlink
                   </h2>
                   <div style={{ fontSize: 11.5, color: "var(--text-sub)", marginTop: 2 }}>
-                    Mọi căn mới đăng / sửa / ghim đều tự động đẩy Index ngầm lên Google, Bing &amp; AI 24/7
+                    Phủ tự động 16 Tòa nhà · 19 Khu vực · 23+ Bài từ khóa · 65+ Ảnh SEO `.jpg` &amp; Schema `sameAs`
                   </div>
                 </div>
-                <span className="st-badge st-badge--green">Tự động 100%</span>
+                <span className="st-badge st-badge--green">Auto 24/7</span>
               </div>
               <div className="st-seo-actions">
                 <button
                   type="button"
                   className="st-btn-mini st-btn-mini--navy"
-                  onClick={openBacklinkArticleModal}
+                  onClick={() => openBacklinkArticleModal("entity")}
                 >
                   <Icon.Edit size={12} />
-                  <span>Xem Bài Backlink &amp; AI Đầy Đủ</span>
+                  <span>Entity Backlink &amp; Bộ URL</span>
                 </button>
                 <button
                   type="button"
                   className="st-btn-mini st-btn-mini--bronze"
-                  onClick={() =>
-                    copyToClipboard(
-                      buildFullAiBacklinkArticle(report.apartments),
-                      "✓ Đã copy trọn bộ bài viết Backlink & Hồ sơ AI chi tiết!"
-                    )
-                  }
+                  onClick={() => openBacklinkArticleModal("article")}
                 >
                   <Icon.Copy size={12} />
-                  <span>Copy Toàn Bộ Bài</span>
+                  <span>Bài PR &amp; Hồ Sơ AI</span>
                 </button>
               </div>
             </section>
@@ -4897,31 +4972,180 @@ function StudioApp() {
         </div>
       )}
 
-      {/* ================= MODAL 9: LONG-FORM AI & SEO BACKLINK ARTICLE ================= */}
+      {/* ================= MODAL 9: SEO TOP 1, 2-WAY ENTITY BACKLINKS & URL INDEX SUITE ================= */}
       {backlinkModalOpen && (
         <div className="st-modal-backdrop" onClick={() => setBacklinkModalOpen(false)}>
           <div className="st-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="st-sheet-head">
-              <h2 className="st-sheet-title">Bài Viết Backlink &amp; Hồ Sơ AI Đầy Đủ</h2>
+              <h2 className="st-sheet-title">Trung Tâm SEO Top 1 &amp; Entity Backlink</h2>
               <button type="button" className="st-close-btn" onClick={() => setBacklinkModalOpen(false)}>✕</button>
             </div>
             <div className="st-sheet-body">
-              <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.5 }}>
-                Bài viết chuẩn SEO &amp; AI dưới đây đã tự động tổng hợp đầy đủ 5 phân khúc BĐS, 19 khu vực Đà Nẵng, quy trình pháp lý NA17, các căn đang mở cho thuê và trọn bộ Link gốc Canonical. Bạn có thể chỉnh sửa thêm rồi bấm Copy để đăng lên Medium, LinkedIn, Fanpage, Diễn đàn BĐS, Google Sites, Notion...
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                <button
+                  type="button"
+                  className={`st-chip ${seoHubTab === "entity" ? "active" : ""}`}
+                  onClick={() => setSeoHubTab("entity")}
+                >
+                  1. Entity 2 Chiều (DR 90+)
+                </button>
+                <button
+                  type="button"
+                  className={`st-chip ${seoHubTab === "article" ? "active" : ""}`}
+                  onClick={() => setSeoHubTab("article")}
+                >
+                  2. Bài PR &amp; AI Đầy Đủ
+                </button>
+                <button
+                  type="button"
+                  className={`st-chip ${seoHubTab === "urls" ? "active" : ""}`}
+                  onClick={() => setSeoHubTab("urls")}
+                >
+                  3. Bộ URL SEO Kiểm Tra Index
+                </button>
               </div>
-              <textarea
-                className="st-textarea"
-                style={{ minHeight: 310, fontSize: 12.2, lineHeight: 1.55 }}
-                value={backlinkDraft}
-                onChange={(e) => setBacklinkDraft(e.target.value)}
-              />
-              <button
-                type="button"
-                className="st-btn st-btn--primary"
-                onClick={() => copyToClipboard(backlinkDraft, "✓ Đã copy toàn bộ bài viết Backlink & Hồ sơ AI chi tiết!")}
-              >
-                <Icon.Copy size={15} /> Copy Toàn Bộ Bài Viết Này
-              </button>
+
+              {seoHubTab === "entity" && (
+                <>
+                  <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.5 }}>
+                    <b>Bí quyết Entity SEO bền vững (an toàn gấp 10 lần spam blog comment):</b> Tạo hồ sơ thương hiệu trên các nền tảng uy tín DR 90+ bên dưới, gắn link <code>https://www.kinestatesdanang.com</code> vào Bio, sau đó <b>dán link các trang MXH/Entity của anh vào ô dưới</b> để hệ thống tự động đóng dấu xác thực 2 chiều (<code>Organization.sameAs</code> Schema) lên Google!
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="st-btn-mini st-btn-mini--bronze"
+                      onClick={() =>
+                        copyToClipboard(
+                          "KIN Estates Đà Nẵng (https://www.kinestatesdanang.com) — Chuyên cho thuê dài hạn & mua bán căn hộ chung cư, nhà nguyên căn, penthouse, biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà · Zalo/WhatsApp: 0389 711 601.",
+                          "✓ Đã copy Bio chuẩn NAP (Name - Address - Phone - Web)!"
+                        )
+                      }
+                    >
+                      <Icon.Copy size={12} /> Copy Bio Chuẩn NAP
+                    </button>
+                    <button
+                      type="button"
+                      className="st-btn-mini st-btn-mini--navy"
+                      onClick={() =>
+                        copyToClipboard(
+                          '<a href="https://www.kinestatesdanang.com/" rel="dofollow">KIN Estates Đà Nẵng — Cho thuê căn hộ, nhà nguyên căn &amp; biệt thự Đà Nẵng</a>',
+                          "✓ Đã copy mã HTML Anchor Backlink!"
+                        )
+                      }
+                    >
+                      <Icon.Copy size={12} /> Copy HTML Backlink
+                    </button>
+                    <button
+                      type="button"
+                      className="st-btn-mini"
+                      onClick={() =>
+                        copyToClipboard(
+                          "[KIN Estates Đà Nẵng — Cho thuê căn hộ, nhà nguyên căn & biệt thự Đà Nẵng](https://www.kinestatesdanang.com/)",
+                          "✓ Đã copy Markdown Backlink!"
+                        )
+                      }
+                    >
+                      <Icon.Copy size={12} /> Copy Markdown
+                    </button>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>
+                      Dán các link Fanpage, Google Maps, YouTube, TikTok, Medium, LinkedIn... đã tạo (mỗi dòng 1 link https://):
+                    </div>
+                    <textarea
+                      className="st-textarea"
+                      style={{ minHeight: 96, fontSize: 12 }}
+                      placeholder={"https://www.facebook.com/kinestatesdanang\nhttps://www.youtube.com/@kinestatesdanang\nhttps://medium.com/@kinestatesdanang"}
+                      value={entityLinksText}
+                      onChange={(e) => setEntityLinksText(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="st-btn st-btn--primary"
+                      style={{ marginTop: 6 }}
+                      disabled={savingEntityLinks}
+                      onClick={handleSaveEntitySameAs}
+                    >
+                      {savingEntityLinks ? "Đang đồng bộ Schema..." : "Lưu & Gắn Vào Schema sameAs Trên Web"}
+                    </button>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--navy)", marginBottom: 6 }}>
+                      DANH SÁCH 16 KÊNH ENTITY UY TÍN NHẤT (DR 90–99 · MIỄN PHÍ 100%):
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 190, overflowY: "auto" }}>
+                      {HIGH_DR_ENTITY_SOURCES.map((item) => (
+                        <div key={item.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "7px 10px", background: "var(--surface-soft)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12.2, fontWeight: 700, color: "var(--navy)" }}>
+                              {item.name} <span style={{ color: "var(--green)", fontSize: 10.5 }}>({item.dr})</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--text-sub)" }}>{item.note}</div>
+                          </div>
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="st-btn-mini"
+                            style={{ textDecoration: "none", flexShrink: 0 }}
+                          >
+                            Mở ↗
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {seoHubTab === "article" && (
+                <>
+                  <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.5 }}>
+                    Bài viết PR chuẩn SEO &amp; AI tổng hợp 5 phân khúc BĐS, 16 tòa nhà, 19 khu vực Đà Nẵng, pháp lý NA17 và trọn bộ Link gốc Canonical — sẵn sàng đăng lên Medium, LinkedIn, Google Sites, Notion, Fanpage, Diễn đàn BĐS:
+                  </div>
+                  <textarea
+                    className="st-textarea"
+                    style={{ minHeight: 290, fontSize: 12.2, lineHeight: 1.55 }}
+                    value={backlinkDraft}
+                    onChange={(e) => setBacklinkDraft(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="st-btn st-btn--primary"
+                    onClick={() => copyToClipboard(backlinkDraft, "✓ Đã copy toàn bộ bài viết Backlink & Hồ sơ AI chi tiết!")}
+                  >
+                    <Icon.Copy size={15} /> Copy Toàn Bộ Bài Viết Này
+                  </button>
+                </>
+              )}
+
+              {seoHubTab === "urls" && (() => {
+                const allUrlsStr = buildAllCanonicalSeoUrlsText(report?.apartments || []);
+                const urlCount = allUrlsStr.split("\n").filter(Boolean).length;
+                return (
+                  <>
+                    <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.5 }}>
+                      Tổng cộng <b>{urlCount} URL chuyên trang từ khóa gốc</b> đang hoạt động trên <code>kinestatesdanang.com</code> (Trang chủ, 14 loại hình, 19 khu vực, 16 tòa chung cư/villa, 23+ bài cẩm nang &amp; toàn bộ căn hộ thật) — dùng để kiểm tra tỷ lệ Index hoặc chia sẻ đa kênh:
+                    </div>
+                    <textarea
+                      className="st-textarea"
+                      style={{ minHeight: 280, fontSize: 11.5, lineHeight: 1.5, fontFamily: "monospace" }}
+                      readOnly
+                      value={allUrlsStr}
+                    />
+                    <button
+                      type="button"
+                      className="st-btn st-btn--primary"
+                      onClick={() => copyToClipboard(allUrlsStr, `✓ Đã copy toàn bộ ${urlCount} URL chuẩn SEO!`)}
+                    >
+                      <Icon.Copy size={15} /> Copy Toàn Bộ {urlCount} URL
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

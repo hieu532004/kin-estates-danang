@@ -2,10 +2,12 @@ const {
   SUPPORTED_LANGS,
   NON_DEFAULT_LANGS,
   DANANG_SEO_AREAS,
+  DANANG_SEO_BUILDINGS,
   PROPERTY_TYPE_LANDINGS,
   SEO_GUIDE_ARTICLES,
   findAreaBySlug,
   findAreaByName,
+  findBuildingBySlug,
   findPropertyTypeBySlug,
   findGuideArticleBySlug
 } = require("./seoData");
@@ -383,7 +385,7 @@ function buildHreflangLinks(origin, cleanPath) {
   return links.join("\n  ");
 }
 
-function buildLocalBusinessSchema(origin, testimonials = []) {
+function buildLocalBusinessSchema(origin, testimonials = [], entityLinks = []) {
   const reviews = testimonials.slice(0, 6).map((t) => ({
     "@type": "Review",
     author: { "@type": "Person", name: t.clientName || "Resident" },
@@ -464,7 +466,14 @@ function buildLocalBusinessSchema(origin, testimonials = []) {
       areaServed: "VN",
       availableLanguage: ["Vietnamese", "English", "Chinese", "Russian", "Korean", "Japanese"]
     },
-    sameAs: ["https://t.me/KIN_Estates", "https://zalo.me/0389711601", "https://wa.me/84389711601"],
+    sameAs: [
+      ...new Set([
+        "https://t.me/KIN_Estates",
+        "https://zalo.me/0389711601",
+        "https://wa.me/84389711601",
+        ...(Array.isArray(entityLinks) ? entityLinks.filter((u) => /^https?:\/\//i.test(String(u || "").trim())) : [])
+      ])
+    ],
     ...(reviews.length
       ? {
           aggregateRating: {
@@ -772,6 +781,8 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
 
   const areaMatch = cleanPath.match(/^\/areas\/([a-z0-9-]+)$/i);
   const areaObj = areaMatch ? findAreaBySlug(areaMatch[1]) : null;
+  const bldgMatch = cleanPath.match(/^\/buildings\/([a-z0-9-]+)$/i);
+  const bldgObj = bldgMatch ? findBuildingBySlug(bldgMatch[1]) : null;
   const propMatch = cleanPath.match(/^\/property\/([a-z0-9-]+)$/i);
   const propObj = propMatch ? findPropertyTypeBySlug(propMatch[1]) : null;
   const guideMatch = cleanPath.match(/^\/guides\/([a-z0-9-]+)$/i);
@@ -784,7 +795,7 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
   let ogImage = pickFeaturedSiteOgImage(origin, apartments, about);
   let ogImageAlt = "KIN Estates Đà Nẵng (kinestatesdanang.com) — Cho thuê & mua bán căn hộ, nhà nguyên căn, biệt thự Đà Nẵng";
   let ogType = "website";
-  const schemas = [buildLocalBusinessSchema(origin, about?.testimonials || []), buildWebsiteSchema(origin)];
+  const schemas = [buildLocalBusinessSchema(origin, about?.testimonials || [], about?.entityLinks || []), buildWebsiteSchema(origin)];
 
   if (apartment) {
     const rawTitle = locVal(apartment.title, effectiveLang) || apartment.code;
@@ -843,6 +854,37 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
     ogImageAlt = `${rawTitle} (${priceShort}) — KIN Estates Đà Nẵng`;
     ogType = "article";
     schemas.push(...buildApartmentSchema(origin, apartment, effectiveLang));
+  } else if (bldgObj) {
+    title = effectiveLang === "vi" ? `${bldgObj.h1Vi} | KIN Estates` : `${bldgObj.h1En} | KIN Estates`;
+    description = effectiveLang === "vi" ? bldgObj.descVi : bldgObj.descEn;
+    keywords = `${bldgObj.keywordsVi}, ${bldgObj.name}, KIN Estates Đà Nẵng, kinestatesdanang`;
+    ogImageAlt = title;
+    const bldgUnits = (apartments || []).filter((a) =>
+      `${a.building || ""} ${a.areaName || ""} ${locVal(a.title, "vi")}`.toLowerCase().includes(bldgObj.keywordMatch.toLowerCase())
+    );
+    schemas.push(
+      {
+        "@context": "https://schema.org",
+        "@type": bldgObj.type === "villa" ? "GatedResidenceCommunity" : "ApartmentComplex",
+        "@id": `${canonicalUrl}#complex`,
+        name: bldgObj.name,
+        description,
+        url: canonicalUrl,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: bldgObj.areaVi,
+          addressLocality: "Đà Nẵng",
+          addressCountry: "VN"
+        }
+      },
+      buildBreadcrumbSchema([
+        { name: "KIN Estates Đà Nẵng", url: localizedUrl(origin, "/", effectiveLang) },
+        { name: effectiveLang === "vi" ? "Tòa nhà & Dự án Đà Nẵng" : "Da Nang Buildings", url: localizedUrl(origin, "/guides", effectiveLang) },
+        { name: bldgObj.name, url: canonicalUrl }
+      ]),
+      buildItemListSchema(origin, bldgUnits.length ? bldgUnits : apartments, effectiveLang, bldgObj.name),
+      buildFaqSchema(effectiveLang)
+    );
   } else if (propObj) {
     title = propObj.titles[effectiveLang] || propObj.titles.en || propObj.titles.vi;
     description = propObj.descriptions[effectiveLang] || propObj.descriptions.en || propObj.descriptions.vi;
@@ -985,6 +1027,8 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
 
   const areaMatch = cleanPath.match(/^\/areas\/([a-z0-9-]+)$/i);
   const areaObj = areaMatch ? findAreaBySlug(areaMatch[1]) : null;
+  const bldgMatch = cleanPath.match(/^\/buildings\/([a-z0-9-]+)$/i);
+  const bldgObj = bldgMatch ? findBuildingBySlug(bldgMatch[1]) : null;
   const propMatch = cleanPath.match(/^\/property\/([a-z0-9-]+)$/i);
   const propObj = propMatch ? findPropertyTypeBySlug(propMatch[1]) : null;
   const guideMatch = cleanPath.match(/^\/guides\/([a-z0-9-]+)$/i);
@@ -992,6 +1036,10 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
 
   const areaNavLinks = DANANG_SEO_AREAS.map(
     (a) => `<a href="${escapeHtml(localizedUrl(origin, `/areas/${a.slug}`, effectiveLang))}">${escapeHtml(effectiveLang === "vi" ? `Thuê căn hộ ${a.vi}` : `${a.en} Rentals`)}</a>`
+  ).join(" · ");
+
+  const bldgNavLinks = DANANG_SEO_BUILDINGS.map(
+    (b) => `<a href="${escapeHtml(localizedUrl(origin, `/buildings/${b.slug}`, effectiveLang))}">${escapeHtml(b.name)}</a>`
   ).join(" · ");
 
   const propNavLinks = PROPERTY_TYPE_LANDINGS.map(
@@ -1080,11 +1128,13 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
   }
 
   const avail = (apartments || []).filter((a) => a.status === "Available" && a.isVisible !== false);
-  const displayUnits = areaObj
-    ? filterApartmentsForArea(avail, areaObj)
-    : propObj
-      ? filterApartmentsForPropLanding(avail, propObj)
-      : avail;
+  const displayUnits = bldgObj
+    ? avail.filter((a) => `${a.building || ""} ${a.areaName || ""} ${locVal(a.title, "vi")}`.toLowerCase().includes(bldgObj.keywordMatch.toLowerCase()))
+    : areaObj
+      ? filterApartmentsForArea(avail, areaObj)
+      : propObj
+        ? filterApartmentsForPropLanding(avail, propObj)
+        : avail;
   const unitsToRender = (displayUnits.length ? displayUnits : avail).slice(0, 24);
 
   const aptLinks = unitsToRender
@@ -1108,13 +1158,21 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     })
     .join("");
 
-  const heading = propObj
-    ? propObj.h1[effectiveLang] || propObj.h1.en
-    : areaObj
-      ? effectiveLang === "vi"
-        ? `Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự ${areaObj.vi} Đà Nẵng | KIN Estates`
-        : `Apartments, Houses & Villas for Rent in ${areaObj.en}, Da Nang | KIN Estates`
-      : (ROUTE_META[cleanPath]?.[effectiveLang] || ROUTE_META["/"][effectiveLang] || ROUTE_META["/"].en).title;
+  const heading = bldgObj
+    ? effectiveLang === "vi"
+      ? bldgObj.h1Vi
+      : bldgObj.h1En
+    : propObj
+      ? propObj.h1[effectiveLang] || propObj.h1.en
+      : areaObj
+        ? effectiveLang === "vi"
+          ? `Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự ${areaObj.vi} Đà Nẵng | KIN Estates`
+          : `Apartments, Houses & Villas for Rent in ${areaObj.en}, Da Nang | KIN Estates`
+        : (ROUTE_META[cleanPath]?.[effectiveLang] || ROUTE_META["/"][effectiveLang] || ROUTE_META["/"].en).title;
+
+  const bldgIntroHtml = bldgObj
+    ? `<section><p><strong>${escapeHtml(bldgObj.name)} (${escapeHtml(effectiveLang === "vi" ? bldgObj.areaVi : bldgObj.areaEn)})</strong> — ${escapeHtml(effectiveLang === "vi" ? `Tầm giá tham khảo: ${bldgObj.priceRangeVi}. ${bldgObj.highlightsVi}` : `Typical rent range: ${bldgObj.priceRangeEn}. ${bldgObj.descEn}`)}</p></section>`
+    : "";
 
   return (
     `<main style="max-width:1040px;margin:24px auto;padding:0 16px;font-family:sans-serif;color:#14191f">` +
@@ -1127,11 +1185,13 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     `<a href="${escapeHtml(localizedUrl(origin, "/about", effectiveLang))}">${effectiveLang === "vi" ? "Về KIN Estates" : "About"}</a> | ${langNavLinks}` +
     `</nav></header>` +
     `<h1>${escapeHtml(heading)}</h1>` +
+    bldgIntroHtml +
     `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com)</strong> — ${escapeHtml(effectiveLang === "vi" ? "Đơn vị chuyên cho thuê dài hạn (3–12+ tháng) & tư vấn mua bán căn hộ chung cư, căn hộ dịch vụ, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem thực tế & hỗ trợ đăng ký tạm trú NA17. Hotline Zalo/WhatsApp: 0389 711 601 · Telegram: @KIN_Estates." : "Premier long-term apartment, house, pool villa rental & real estate buying advisory across all 19 districts of Da Nang, Vietnam (kinestatesdanang · kinestatesdanang.com). Direct owner pricing, verified inspections & Form NA17 residence registration. WhatsApp/Zalo: +84 389 711 601 · Telegram: @KIN_Estates.")}</p>` +
     (aptLinks ? `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Căn hộ, Nhà nguyên căn & Biệt thự đang trống tại Đà Nẵng" : "Available Residences in Da Nang")}</h2><ul>${aptLinks}</ul></section>` : "") +
+    `<section><h2>${escapeHtml(effectiveLang === "vi" ? "16 Tòa chung cư & Khu biệt thự biểu tượng Đà Nẵng" : "16 Iconic Da Nang Towers & Villa Compounds")}</h2><p>${bldgNavLinks}</p></section>` +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo loại hình (Thuê & Mua bán)" : "Browse by Property Type (Rent & Buy)")}</h2><p>${propNavLinks}</p></section>` +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo 19 khu vực Đà Nẵng" : "Browse 19 Da Nang Neighborhoods")}</h2><p>${areaNavLinks}</p></section>` +
-    `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Cẩm nang bất động sản Đà Nẵng 2026" : "Da Nang Real Estate & Rental Guides 2026")}</h2><ul>${guideNavLinks}</ul></section>` +
+    `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Hệ thống Cẩm nang & Bảng giá BĐS Đà Nẵng 2026" : "Da Nang Real Estate & Rental Guides 2026")}</h2><ul>${guideNavLinks}</ul></section>` +
     `</main>`
   );
 }
@@ -1330,7 +1390,15 @@ function generateSitemapXml(origin, apartments = []) {
     pushUrl(localizedUrl(origin, p, "ko"), p, "0.84", "daily");
   }
 
-  // 5. 6 Deep Pillar SEO Articles (/guides/:slug + /en)
+  // 4B. 16 Iconic Da Nang Building & Villa Compound Hubs (/buildings/:slug + /en + /ko)
+  for (const bldg of DANANG_SEO_BUILDINGS) {
+    const p = `/buildings/${bldg.slug}`;
+    pushUrl(localizedUrl(origin, p, "vi"), p, "0.91", "daily");
+    pushUrl(localizedUrl(origin, p, "en"), p, "0.86", "daily");
+    pushUrl(localizedUrl(origin, p, "ko"), p, "0.84", "daily");
+  }
+
+  // 5. All Deep Pillar & Long-Tail SEO Articles (/guides/:slug + /en)
   for (const g of SEO_GUIDE_ARTICLES) {
     const p = `/guides/${g.slug}`;
     pushUrl(localizedUrl(origin, p, "vi"), p, "0.90", "weekly", g.dateModified || today);
@@ -1508,6 +1576,9 @@ function generateLlmsTxt(origin, apartments = []) {
     "## 5. Bản Đồ 19 Khu Vực & Quận Phường Trọng Điểm Tại Đà Nẵng (Neighborhood Hubs)",
     ...DANANG_SEO_AREAS.map((a) => `- **${a.vi}** (${a.en} · ${a.district}): ${origin}/areas/${a.slug} — ${a.descVi}`),
     "",
+    "## 5B. Hệ Thống 16 Tòa Tháp Căn Hộ & Khu Biệt Thự Biểu Tượng Đà Nẵng (Building Hubs)",
+    ...DANANG_SEO_BUILDINGS.map((b) => `- **${b.name}** (${b.areaVi} · ${b.priceRangeVi}): ${origin}/buildings/${b.slug} — ${b.descVi}`),
+    "",
     "## 6. Cẩm Nang Phân Tích Thị Trường, Pháp Lý & Chi Phí Sống Đà Nẵng 2026",
     ...SEO_GUIDE_ARTICLES.map((g) => `- **${g.titles.vi.split("|")[0].trim()}**: ${origin}/guides/${g.slug} — ${g.descriptions.vi}`),
     "",
@@ -1552,10 +1623,12 @@ module.exports = {
   SUPPORTED_LANGS,
   NON_DEFAULT_LANGS,
   DANANG_SEO_AREAS,
+  DANANG_SEO_BUILDINGS,
   PROPERTY_TYPE_LANDINGS,
   SEO_GUIDE_ARTICLES,
   findAreaBySlug,
   findAreaByName,
+  findBuildingBySlug,
   findPropertyTypeBySlug,
   findGuideArticleBySlug,
   parseLocalizedPath,

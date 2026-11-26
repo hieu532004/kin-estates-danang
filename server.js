@@ -1494,13 +1494,19 @@ app.get("/api/studio/about", requireAdmin, async (req, res) => {
 app.patch("/api/studio/about", requireAdmin, async (req, res) => {
   try {
     const current = await db.getAboutContent();
-    const { heroImage, founderName, founderQuote } = req.body || {};
+    const { heroImage, founderName, founderQuote, entityLinks } = req.body || {};
     if (typeof heroImage === "string" && heroImage.trim()) current.heroImage = heroImage.trim();
     if (typeof founderName === "string" && founderName.trim()) current.founderName = founderName.trim();
     if (typeof founderQuote === "string" && founderQuote.trim()) {
       current.founderQuote = await translateTextAllLangs(founderQuote);
     }
+    if (Array.isArray(entityLinks)) {
+      current.entityLinks = entityLinks
+        .map((u) => String(u || "").trim())
+        .filter((u) => /^https?:\/\//i.test(u));
+    }
     const saved = await db.saveAboutContent(current);
+    void indexNowService.notifyCatalogRefreshed();
     res.json({ ok: true, about: saved });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -1825,7 +1831,7 @@ app.get("*", async (req, res) => {
       if (found && db.isPublicApartment(found)) {
         apartment = found;
       }
-    } else if (cleanPath === "/" || /^\/(apartments|areas|property|guides|how-to-rent|about)(\/|$)/i.test(cleanPath)) {
+    } else if (cleanPath === "/" || /^\/(apartments|areas|property|buildings|guides|how-to-rent|about)(\/|$)/i.test(cleanPath)) {
       apartments = await db.getApartments({ includeHidden: false });
     }
     about = await db.getAboutContent().catch(() => null);

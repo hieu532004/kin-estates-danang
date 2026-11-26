@@ -14,6 +14,7 @@ import {
   IconVilla,
   IconPenthouse
 } from "./components/Icons";
+import { DANANG_SEO_BUILDINGS, EXTRA_SEO_GUIDES } from "../services/seoExtendedContent";
 
 declare const L: any;
 
@@ -842,7 +843,18 @@ const SEO_PILLAR_GUIDES: Array<{
       { h2: "1. Official State EVN Electricity & Water Rates", p: "Commercial condos bill electricity at official EVN rates (~2,500–3,000 VND/kWh), averaging $35–$75/month for 1–2BR units. Municipal water averages $4–$10/month." },
       { h2: "2. Fiber Internet & Parking", p: "300Mbps Fiber Wi-Fi costs $9–$12/month; motorbike parking $3–$6/month; basement car parking $40–$70/month." }
     ]
-  }
+  },
+  ...(EXTRA_SEO_GUIDES as any[]).map((eg) => ({
+    slug: eg.slug,
+    catVi: eg.catVi || "CẨM NANG BĐS",
+    catEn: eg.catEn || "REAL ESTATE GUIDE",
+    titleVi: String(eg.titles?.vi || "").split("|")[0].trim(),
+    titleEn: String(eg.titles?.en || "").split("|")[0].trim(),
+    descVi: eg.descriptions?.vi || "",
+    descEn: eg.descriptions?.en || "",
+    sectionsVi: eg.sections?.vi || [],
+    sectionsEn: eg.sections?.en || []
+  }))
 ];
 
 const parseClientLocalizedPath = (rawPathname: string, rawSearch = ""): { route: string; langFromUrl: Lang | null } => {
@@ -1033,17 +1045,27 @@ export const App: React.FC = () => {
       if (area !== matchedArea.value) setArea(matchedArea.value);
       return;
     }
+    const bldgM = route.match(/^\/buildings\/([a-z0-9-]+)\/?$/i);
+    const matchedBldg = bldgM ? (DANANG_SEO_BUILDINGS as any[]).find((b) => b.slug === bldgM[1].toLowerCase()) : null;
+    if (matchedBldg) {
+      setArea("all");
+      setPropCategory("all");
+      setQuery(matchedBldg.keywordMatch || "");
+      return;
+    }
     const propM = route.match(/^\/property\/([a-z0-9-]+)\/?$/i);
     const matchedProp = propM ? SEO_PROPERTY_TYPES.find((p) => p.slug === propM[1].toLowerCase()) : null;
     if (matchedProp) {
       setArea("all");
+      setQuery("");
       setPropCategory(matchedProp.propertyType || "all");
       setBedrooms(matchedProp.bedrooms || "all");
       setTag(matchedProp.tag || "all");
       return;
     }
-    if (route === "/apartments" && (/^\/areas\//i.test(prev) || /^\/property\//i.test(prev))) {
+    if (route === "/apartments" && (/^\/areas\//i.test(prev) || /^\/property\//i.test(prev) || /^\/buildings\//i.test(prev))) {
       if (/^\/areas\//i.test(prev)) setArea("all");
+      if (/^\/buildings\//i.test(prev)) setQuery("");
       if (/^\/property\//i.test(prev)) {
         setPropCategory("all");
         setBedrooms("all");
@@ -1059,9 +1081,11 @@ export const App: React.FC = () => {
     const cleanPath = route === "/" ? "/" : route.replace(/\/+$/, "");
     const aptMatch = cleanPath.match(/^\/apartments\/([^/]+)$/i);
     const areaMatch = cleanPath.match(/^\/areas\/([a-z0-9-]+)$/i);
+    const bldgMatch = cleanPath.match(/^\/buildings\/([a-z0-9-]+)$/i);
     const propMatch = cleanPath.match(/^\/property\/([a-z0-9-]+)$/i);
     const guideMatch = cleanPath.match(/^\/guides\/([a-z0-9-]+)$/i);
     const activeAreaSeo = areaMatch ? findSeoAreaBySlug(areaMatch[1]) : null;
+    const activeBldgSeo = bldgMatch ? (DANANG_SEO_BUILDINGS as any[]).find((b) => b.slug === bldgMatch[1].toLowerCase()) : null;
     const activePropSeo = propMatch ? SEO_PROPERTY_TYPES.find((p) => p.slug === propMatch[1].toLowerCase()) : null;
     const activeGuideSeo = guideMatch ? SEO_PILLAR_GUIDES.find((g) => g.slug === guideMatch[1].toLowerCase()) : null;
     const activeApt = aptMatch
@@ -1097,6 +1121,10 @@ export const App: React.FC = () => {
           ? `${leadVi} tại ${activeApt.areaName || "Đà Nẵng"} (${activeApt.bedrooms ?? 1}PN · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 88)} ✓ KIN Estates →`
           : `For rent in ${activeApt.areaName || "Da Nang"} (${activeApt.bedrooms ?? 1}BR · ${activeApt.sizeM2 ?? "-"}m² · ${priceStr}) ✓ ${noteTxt.slice(0, 88)} ✓ KIN Estates →`;
       pageKeywords = `${rawTitle}, ${activeApt.building || ""}, ${leadVi.toLowerCase()} ${activeApt.areaName || "Đà Nẵng"} Đà Nẵng, thuê căn hộ Đà Nẵng, ${activeApt.code}, KIN Estates, kinestatesdanang`;
+    } else if (activeBldgSeo) {
+      pageTitle = `${lang === "vi" ? activeBldgSeo.h1Vi : activeBldgSeo.h1En} | KIN Estates`;
+      pageDesc = lang === "vi" ? activeBldgSeo.descVi : activeBldgSeo.descEn;
+      pageKeywords = `${activeBldgSeo.keywordsVi}, ${activeBldgSeo.name}, KIN Estates, kinestatesdanang`;
     } else if (activePropSeo) {
       pageTitle = lang === "vi" ? `${activePropSeo.vi} Đà Nẵng 2026 | KIN Estates` : `${activePropSeo.en} in Da Nang 2026 | KIN Estates`;
       pageDesc = lang === "vi" ? activePropSeo.descVi : activePropSeo.descEn;
@@ -2044,6 +2072,10 @@ export const App: React.FC = () => {
     const m = route.match(/^\/areas\/([a-z0-9-]+)\/?$/i);
     return m ? findSeoAreaBySlug(m[1]) : null;
   }, [route]);
+  const activeBuildingLanding = React.useMemo(() => {
+    const m = route.match(/^\/buildings\/([a-z0-9-]+)\/?$/i);
+    return m ? ((DANANG_SEO_BUILDINGS as any[]).find((b) => b.slug === m[1].toLowerCase()) || null) : null;
+  }, [route]);
   const activePropertyLanding = React.useMemo(() => {
     const m = route.match(/^\/property\/([a-z0-9-]+)\/?$/i);
     return m ? SEO_PROPERTY_TYPES.find((p) => p.slug === m[1].toLowerCase()) || null : null;
@@ -2052,7 +2084,7 @@ export const App: React.FC = () => {
     const m = route.match(/^\/guides\/([a-z0-9-]+)\/?$/i);
     return m ? SEO_PILLAR_GUIDES.find((g) => g.slug === m[1].toLowerCase()) || null : null;
   }, [route]);
-  const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding) || Boolean(activePropertyLanding);
+  const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding) || Boolean(activePropertyLanding) || Boolean(activeBuildingLanding);
 
   const matchesApartmentArea = React.useCallback((a: Apartment, rawTarget: string): boolean => {
     if (!rawTarget || rawTarget === "all") return true;
@@ -3919,40 +3951,54 @@ export const App: React.FC = () => {
           <div className="page-container">
             <div style={{ marginBottom: "1.75rem" }}>
               <span className="eyebrow-badge">
-                {activePropertyLanding
-                  ? tx(`${activePropertyLanding.vi.toUpperCase()} · ĐÀ NẴNG`, `${activePropertyLanding.en.toUpperCase()} · DA NANG`)
-                  : activeAreaLanding
-                    ? tx(
-                        `KHU VỰC ${activeAreaLanding.vi.toUpperCase()} · ĐÀ NẴNG`,
-                        `${activeAreaLanding.en.toUpperCase()} DISTRICT · DA NANG`,
-                        `岘港 · ${trArea(activeAreaLanding.value)}`,
-                        `ДАНАНГ · ${trArea(activeAreaLanding.value)}`,
-                        `다낭 · ${trArea(activeAreaLanding.value)}`,
-                        `ダナン・${trArea(activeAreaLanding.value)}`
-                      )
-                    : tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
+                {activeBuildingLanding
+                  ? `${activeBuildingLanding.name.toUpperCase()} · ${lang === "vi" ? activeBuildingLanding.areaVi : activeBuildingLanding.areaEn}`
+                  : activePropertyLanding
+                    ? tx(`${activePropertyLanding.vi.toUpperCase()} · ĐÀ NẴNG`, `${activePropertyLanding.en.toUpperCase()} · DA NANG`)
+                    : activeAreaLanding
+                      ? tx(
+                          `KHU VỰC ${activeAreaLanding.vi.toUpperCase()} · ĐÀ NẴNG`,
+                          `${activeAreaLanding.en.toUpperCase()} DISTRICT · DA NANG`,
+                          `岘港 · ${trArea(activeAreaLanding.value)}`,
+                          `ДАНАНГ · ${trArea(activeAreaLanding.value)}`,
+                          `다낭 · ${trArea(activeAreaLanding.value)}`,
+                          `ダナン・${trArea(activeAreaLanding.value)}`
+                        )
+                      : tx("DANH MỤC CĂN HỘ DÀI HẠN ĐÀ NẴNG", "DA NANG LONG-TERM RESIDENCES", "岘港长期公寓与别墅目录", "КАТАЛОГ КВАРТИР В ДАНАНГЕ", "다낭 장기 임대 아파트 카탈로그", "ダナン長期賃貸物件一覧")}
               </span>
               <h1 className="section-heading-serif">
-                {activePropertyLanding
-                  ? tx(activePropertyLanding.h1Vi, activePropertyLanding.h1En)
-                  : activeAreaLanding
-                    ? tx(
-                        `Cho thuê căn hộ, nhà & biệt thự ${activeAreaLanding.vi}, Đà Nẵng.`,
-                        `Apartments, Houses & Villas for Rent in ${activeAreaLanding.en}, Da Nang.`,
-                        `岘港${trArea(activeAreaLanding.value)}长租公寓与别墅精选。`,
-                        `Долгосрочная аренда квартир — ${trArea(activeAreaLanding.value)}, Дананг.`,
-                        `다낭 ${trArea(activeAreaLanding.value)} 장기 임대 아파트 & 풀빌라.`,
-                        `ダナン・${trArea(activeAreaLanding.value)}の長期賃貸アパート＆ヴィラ。`
-                      )
-                    : tx(
-                        "Cho thuê căn hộ chung cư, nhà & biệt thự Đà Nẵng — Tổ ấm theo nhịp sống riêng.",
-                        "Long-Term Apartments, Houses & Villas in Da Nang — Curated for Your Rhythm.",
-                        "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
-                        "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
-                        "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
-                        "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
-                      )}
+                {activeBuildingLanding
+                  ? tx(activeBuildingLanding.h1Vi, activeBuildingLanding.h1En)
+                  : activePropertyLanding
+                    ? tx(activePropertyLanding.h1Vi, activePropertyLanding.h1En)
+                    : activeAreaLanding
+                      ? tx(
+                          `Cho thuê căn hộ, nhà & biệt thự ${activeAreaLanding.vi}, Đà Nẵng.`,
+                          `Apartments, Houses & Villas for Rent in ${activeAreaLanding.en}, Da Nang.`,
+                          `岘港${trArea(activeAreaLanding.value)}长租公寓与别墅精选。`,
+                          `Долгосрочная аренда квартир — ${trArea(activeAreaLanding.value)}, Дананг.`,
+                          `다낭 ${trArea(activeAreaLanding.value)} 장기 임대 아파트 & 풀빌라.`,
+                          `ダナン・${trArea(activeAreaLanding.value)}の長期賃貸アパート＆ヴィラ。`
+                        )
+                      : tx(
+                          "Cho thuê căn hộ chung cư, nhà & biệt thự Đà Nẵng — Tổ ấm theo nhịp sống riêng.",
+                          "Long-Term Apartments, Houses & Villas in Da Nang — Curated for Your Rhythm.",
+                          "岘港长期公寓与别墅租赁 — 契合您生活节奏的理想居所。",
+                          "Долгосрочная аренда квартир и вилл в Дананге — дом в вашем ритме.",
+                          "다낭 장기 임대 아파트 & 풀빌라 — 당신의 라이프스타일에 맞춘 공간.",
+                          "ダナン長期賃貸アパート＆ヴィラ — あなたの暮らしに寄り添う住まい。"
+                        )}
               </h1>
+              {activeBuildingLanding && (
+                <div style={{ marginTop: "0.95rem", background: "#FFFFFF", border: "1px solid var(--border-light)", borderRadius: "16px", padding: "1.1rem 1.35rem", boxShadow: "var(--shadow-soft)" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--accent-bronze-dark)", marginBottom: "0.25rem" }}>
+                    {tx(`Tầm giá thuê phổ biến: ${activeBuildingLanding.priceRangeVi}`, `Typical rent range: ${activeBuildingLanding.priceRangeEn}`)}
+                  </div>
+                  <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                    {lang === "vi" ? activeBuildingLanding.highlightsVi : activeBuildingLanding.descEn}
+                  </p>
+                </div>
+              )}
               {activePropertyLanding?.isBuy && (
                 <div style={{ marginTop: "0.95rem", background: "#14191F", color: "#FFFFFF", borderRadius: "16px", padding: "1.15rem 1.35rem", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "0.85rem" }}>
                   <div style={{ maxWidth: "660px", fontSize: "0.88rem", color: "rgba(255,255,255,0.86)", lineHeight: 1.55 }}>
@@ -6809,6 +6855,28 @@ export const App: React.FC = () => {
                 }}
               >
                 {lang === "vi" ? pt.vi : pt.en}
+              </a>
+            ))}
+          </div>
+
+          <div style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(245,217,184,0.7)", marginBottom: "0.45rem" }}>
+            {tx("16 TOÀ CHUNG CƯ & KHU BIỆT THỰ BIỂU TƯỢNG ĐÀ NẴNG", "16 ICONIC DA NANG TOWERS & VILLA COMPOUNDS", "岘港16大地标公寓与别墅区", "16 ТОПОВЫХ ЖК И ВИЛЛ ДАНАНГА", "다낭 16대 랜드마크 아파트 & 풀빌라 단지", "ダナン16大ランドマークマンション＆ヴィラ")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.75rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.74)", lineHeight: 1.6, marginBottom: "0.95rem" }}>
+            {(DANANG_SEO_BUILDINGS as any[]).map((bldg) => (
+              <a
+                key={bldg.slug}
+                href={buildLocalizedHref(`/buildings/${bldg.slug}`, lang)}
+                style={{ color: "inherit", textDecoration: "none" }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    setQuery(bldg.keywordMatch || "");
+                    navigate(`/buildings/${bldg.slug}`);
+                  }
+                }}
+              >
+                {bldg.name}
               </a>
             ))}
           </div>
