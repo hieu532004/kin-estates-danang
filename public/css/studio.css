@@ -99,7 +99,7 @@ svg {
   color: var(--bronze-light);
   display: grid;
   place-items: center;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Plus Jakarta Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 21px;
   font-weight: 700;
   border: 1px solid rgba(235, 213, 176, 0.35);

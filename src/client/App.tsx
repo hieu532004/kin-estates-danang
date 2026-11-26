@@ -847,9 +847,10 @@ const trackGaEvent = (eventName: string, params: Record<string, any> = {}) => {
 
 export const App: React.FC = () => {
   const initialParsedUrl = parseClientLocalizedPath(window.location.pathname || "/", window.location.search);
+  const initialLang: Lang = initialParsedUrl.langFromUrl || "vi";
   const [route, setRoute] = useState<string>(initialParsedUrl.route);
-  const [lang, setLang] = useState<Lang>(initialParsedUrl.langFromUrl || "vi");
-  const [currency, setCurrency] = useState<Currency>("USD");
+  const [lang, setLang] = useState<Lang>(initialLang);
+  const [currency, setCurrency] = useState<Currency>(initialLang === "vi" ? "VND" : "USD");
   const [langMenuOpen, setLangMenuOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -915,7 +916,8 @@ export const App: React.FC = () => {
   const photoTouchStartX = useRef<number | null>(null);
 
   // Lead Form State
-  const [leadBudget, setLeadBudget] = useState<string>("900");
+  const [leadBudget, setLeadBudget] = useState<string>("$900");
+  const [leadBudgetVnd, setLeadBudgetVnd] = useState<string>("20 triệu");
   const [leadBedrooms, setLeadBedrooms] = useState<string>("2 phòng ngủ");
   const [leadMoveIn, setLeadMoveIn] = useState<string>("Tháng tới (Thuê 6–12 tháng)");
   const [leadMessenger, setLeadMessenger] = useState<string>("Zalo");
@@ -948,9 +950,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     const onPop = () => {
       const parsed = parseClientLocalizedPath(window.location.pathname || "/", window.location.search);
+      const nextLang: Lang = parsed.langFromUrl || "vi";
       setRoute(parsed.route);
-      if (parsed.langFromUrl) setLang(parsed.langFromUrl);
-      else setLang("vi");
+      setLang(nextLang);
+      setCurrency(nextLang === "vi" ? "VND" : "USD");
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -1315,6 +1318,10 @@ export const App: React.FC = () => {
   const photoUnavailable = tx("Chưa có ảnh", "Photo unavailable", "暂无照片", "Фото недоступно", "사진 없음", "写真なし");
 
   useEffect(() => {
+    setMaxPrice("0");
+  }, [currency]);
+
+  useEffect(() => {
     setLeadMoveIn(
       tx(
         "Tháng tới (6–12 tháng)",
@@ -1343,7 +1350,8 @@ export const App: React.FC = () => {
   };
 
   const trField = (val: string | null | undefined): string => {
-    if (!val || lang === "vi") return val || "";
+    if (!val) return "";
+    if (lang === "vi") return fmtCurrencyStr(val);
     const dict: Record<string, string> = {
       // Neighborhood Names & Subtitles
       "An Thượng": tx("An Thượng", "An Thuong", "安上街区 (An Thượng)", "Ан Тхыонг", "안트엉 (An Thượng)", "アントゥオン地区"),
@@ -1850,23 +1858,35 @@ export const App: React.FC = () => {
     return field.en || field.vi || "";
   };
 
-  // Universal USD <-> VND Currency Converter for Numbers, Pins & Text Ranges
+  // Universal USD <-> VND Currency Converter for Numbers, Pins & Text Ranges (Prioritizes exact Admin priceVnd)
+  const formatVndCompact = (vndVal?: number | null, usdFallback?: number | null, hasPlus = false): string => {
+    const rawVnd = Number(vndVal || 0) > 0 ? Number(vndVal) : Number(usdFallback || 0) * 25480;
+    const m = rawVnd / 1_000_000;
+    const rounded = Math.round(m * 10) / 10;
+    const numStr = Number.isInteger(rounded)
+      ? String(rounded)
+      : rounded.toFixed(1).replace(".", lang === "vi" ? "," : ".");
+    const unit = lang === "vi" ? "tr" : "M";
+    return `${numStr}${unit}${hasPlus ? "+" : ""} ₫`;
+  };
+
   const fmtCurrencyStr = (str: string): string => {
     if (!str || currency === "USD") return str;
     const unit = lang === "vi" ? "tr" : "M";
     return str.replace(/\$([0-9,]+)(\+?)/g, (match, numStr, plus) => {
       const usd = Number(String(numStr).replace(/,/g, ""));
       if (!usd || usd <= 0) return match;
-      const m = ((usd * 25480) / 1000000).toFixed(1).replace(/\.0$/, "");
+      const rounded = Math.round(((usd * 25480) / 1_000_000) * 10) / 10;
+      const m = Number.isInteger(rounded)
+        ? String(rounded)
+        : rounded.toFixed(1).replace(".", lang === "vi" ? "," : ".");
       return `${m}${unit}${plus || ""} ₫`;
     });
   };
 
-  const formatPinPrice = (usdVal: number, hasPlus = false): string => {
+  const formatPinPrice = (usdVal: number, hasPlus = false, exactVnd?: number | null): string => {
     if (currency === "VND") {
-      const m = ((usdVal * 25480) / 1000000).toFixed(1).replace(/\.0$/, "");
-      const unit = lang === "vi" ? "tr" : "M";
-      return `${m}${unit}${hasPlus ? "+" : ""} ₫`;
+      return formatVndCompact(exactVnd, usdVal, hasPlus);
     }
     return `$${Number(usdVal).toLocaleString()}${hasPlus ? "+" : ""}`;
   };
@@ -1874,9 +1894,7 @@ export const App: React.FC = () => {
   const formatPrice = (apt: Apartment): string => {
     const perMo = tx("tháng", "mo", "月", "мес", "월", "月");
     if (currency === "VND") {
-      const m = ((apt.priceVnd || apt.priceUsd * 25480) / 1000000).toFixed(1);
-      const unit = lang === "vi" ? "tr" : "M";
-      return `${m}${unit} ₫ / ${perMo}`;
+      return `${formatVndCompact(apt.priceVnd, apt.priceUsd)} / ${perMo}`;
     }
     return `$${Number(apt.priceUsd).toLocaleString()} / ${perMo}`;
   };
@@ -1994,33 +2012,88 @@ export const App: React.FC = () => {
   }, [route]);
   const isCatalogueRoute = route === "/apartments" || Boolean(activeAreaLanding) || Boolean(activePropertyLanding);
 
+  const matchesApartmentArea = React.useCallback((a: Apartment, rawTarget: string): boolean => {
+    if (!rawTarget || rawTarget === "all") return true;
+    const foldVn = (v: string) =>
+      String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().trim();
+    const target = foldVn(rawTarget);
+    const titleRaw = typeof a.title === "string" ? a.title : `${a.title?.vi || ""} ${a.title?.en || ""}`;
+    const hay = foldVn(`${a.areaName || ""} ${a.district || ""} ${a.address || ""} ${a.building || ""} ${titleRaw}`);
+
+    if (target === "han riverfront" || target === "ven song han") {
+      return hay.includes("han river") || hay.includes("song han") || hay.includes("bach dang") || hay.includes("tran hung dao") || hay.includes("filmore") || hay.includes("panoma");
+    }
+    if (target === "my khe beachfront" || target === "bien my khe") {
+      return hay.includes("my khe") || hay.includes("vo nguyen giap") || hay.includes("an thuong");
+    }
+    if (target === "ngu hanh son") {
+      return hay.includes("ngu hanh son") || hay.includes("an thuong") || hay.includes("my an") || hay.includes("khue my") || hay.includes("nam viet a") || hay.includes("hoa hai") || hay.includes("fpt") || hay.includes("panoma");
+    }
+    if (target === "son tra") {
+      return hay.includes("son tra") || hay.includes("phuoc my") || hay.includes("tho quang") || hay.includes("an hai") || hay.includes("hiyori") || hay.includes("monarchy");
+    }
+    if (target === "hai chau") {
+      return hay.includes("hai chau") || hay.includes("thuan phuoc") || hay.includes("bach dang") || hay.includes("le duan") || hay.includes("bac dau") || hay.includes("filmore");
+    }
+    if (target === "cam le") {
+      return hay.includes("cam le") || hay.includes("hoa xuan");
+    }
+    if (target === "lien chieu") {
+      return hay.includes("lien chieu") || hay.includes("hoa khanh");
+    }
+    return hay.includes(target);
+  }, []);
+
+  const countUnitsForArea = React.useCallback(
+    (areaKey: string): number => apartments.filter((a) => matchesApartmentArea(a, areaKey)).length,
+    [apartments, matchesApartmentArea]
+  );
+
+  const countUnitsForBuilding = React.useCallback(
+    (bldgName: string): number => {
+      const clean = String(bldgName || "").toLowerCase();
+      const keyword = clean.includes("panoma")
+        ? "panoma"
+        : clean.includes("filmore")
+        ? "filmore"
+        : clean.includes("hiyori")
+        ? "hiyori"
+        : clean.includes("monarchy")
+        ? "monarchy"
+        : clean.includes("an thuong") || clean.includes("an thượng")
+        ? "an th"
+        : clean.split(" ")[0];
+      return apartments.filter((a) =>
+        `${a.building || ""} ${a.areaName || ""}`.toLowerCase().includes(keyword)
+      ).length;
+    },
+    [apartments]
+  );
+
   const filteredApartments = React.useMemo(() => {
     let list = [...apartments];
     if (propCategory !== "all") {
       list = list.filter((a) => (a.propertyType || "condo") === propCategory);
     }
     if (area !== "all") {
-      const foldVn = (v: string) =>
-        String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
-      const target = foldVn(area);
-      list = list.filter((a) => {
-        const titleRaw = typeof a.title === "string" ? a.title : `${a.title?.vi || ""} ${a.title?.en || ""}`;
-        const hay = foldVn(`${a.areaName || ""} ${a.district || ""} ${a.address || ""} ${titleRaw}`);
-        if (target === "han riverfront" || target === "ven song han") {
-          return hay.includes("han river") || hay.includes("song han");
-        }
-        if (target === "my khe beachfront" || target === "bien my khe") {
-          return hay.includes("my khe");
-        }
-        return hay.includes(target);
-      });
+      list = list.filter((a) => matchesApartmentArea(a, area));
     }
     if (bedrooms !== "all") {
       const br = Number(bedrooms);
       list = list.filter((a) => a.bedrooms != null && (br >= 3 ? a.bedrooms >= 3 : a.bedrooms === br));
     }
-    if (maxPrice !== "0" && Number(maxPrice) > 0) {
-      list = list.filter((a) => Number(a.priceUsd) <= Number(maxPrice));
+    if (maxPrice !== "0") {
+      if (maxPrice.startsWith("vnd:")) {
+        const limitVnd = Number(maxPrice.slice(4)) * 1_000_000;
+        if (limitVnd > 0) {
+          list = list.filter((a) => {
+            const effVnd = Number(a.priceVnd || 0) > 0 ? Number(a.priceVnd) : Number(a.priceUsd || 0) * 25480;
+            return effVnd <= limitVnd;
+          });
+        }
+      } else if (Number(maxPrice) > 0) {
+        list = list.filter((a) => Number(a.priceUsd) <= Number(maxPrice));
+      }
     }
     if (tag !== "all") {
       list = list.filter((a) =>
@@ -2121,14 +2194,14 @@ export const App: React.FC = () => {
     }).addTo(map);
 
     heroMapLocations.forEach(({ point, units }) => {
-      const minPrice = Math.min(...units.map((u) => u.priceUsd));
+      const cheapestUnit = units.reduce((best, u) => (u.priceUsd < best.priceUsd ? u : best), units[0]);
       const first = units[0];
       const isSelectedBldg = units.includes(activeShowcaseApt);
 
       const icon = L.divIcon({
         className: "homii-pin-wrap",
         html: `<div class="homii-map-pin ${isSelectedBldg ? "active" : ""}">
-          <span>${formatPinPrice(minPrice, units.length > 1)}</span>
+          <span>${formatPinPrice(cheapestUnit.priceUsd, units.length > 1, cheapestUnit.priceVnd)}</span>
           <span class="pin-count">${units.length}</span>
         </div>`,
         iconSize: [96, 34],
@@ -2178,7 +2251,7 @@ export const App: React.FC = () => {
 
         const icon = L.divIcon({
           className: "homii-pin-wrap",
-          html: `<div class="homii-map-pin ${isCurrent ? "active" : ""}">${formatPinPrice(apt.priceUsd)}</div>`,
+          html: `<div class="homii-map-pin ${isCurrent ? "active" : ""}">${formatPinPrice(apt.priceUsd, false, apt.priceVnd)}</div>`,
           iconSize: [84, 30],
           iconAnchor: [42, 15]
         });
@@ -2241,7 +2314,7 @@ export const App: React.FC = () => {
         bounds.push(point);
         const icon = L.divIcon({
           className: "homii-pin-wrap",
-          html: `<div class="homii-map-pin">${formatPinPrice(apt.priceUsd)}</div>`,
+          html: `<div class="homii-map-pin">${formatPinPrice(apt.priceUsd, false, apt.priceVnd)}</div>`,
           iconSize: [84, 30],
           iconAnchor: [42, 15]
         });
@@ -2394,7 +2467,9 @@ export const App: React.FC = () => {
       clientName: nameVal || contactVal || "Khách tìm căn hộ",
       messenger: fd.get("messenger") || (customApt ? "Zalo / WhatsApp / Telegram" : leadMessenger),
       contactHandle: contactVal,
-      budgetUsd: customApt ? `$${customApt.priceUsd}/tháng` : fd.get("budgetUsd") || `$${leadBudget}/tháng`,
+      budgetUsd: customApt
+        ? (customApt.priceVnd ? `${formatVndCompact(customApt.priceVnd, customApt.priceUsd)}/tháng ($${customApt.priceUsd})` : `$${customApt.priceUsd}/tháng`)
+        : String(fd.get("budgetUsd") || "").trim() || (currency === "VND" ? leadBudgetVnd : leadBudget),
       bedrooms: customApt?.bedrooms != null ? `${customApt.bedrooms} PN` : fd.get("bedrooms") || leadBedrooms,
       moveInDate: customApt ? (isReservation ? whenVal : "") : whenVal || leadMoveIn,
       ...(customApt && !isReservation && whenVal ? { requestedViewingTime: whenVal } : {}),
@@ -2728,6 +2803,7 @@ export const App: React.FC = () => {
                       className={`header-dropdown-item ${lang === item.code ? "selected" : ""}`}
                       onClick={() => {
                         setLang(item.code);
+                        setCurrency(item.code === "vi" ? "VND" : "USD");
                         setLangMenuOpen(false);
                         const nextUrl = buildLocalizedHref(route, item.code);
                         window.history.pushState({ path: route, lang: item.code }, "", nextUrl);
@@ -3298,27 +3374,32 @@ export const App: React.FC = () => {
             {activeDistrict && (
               <div className="district-explorer-grid">
                 <div className="district-tab-list">
-                  {neighborhoods.map((n, idx) => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      className={`district-tab-btn ${idx === activeDistrictIdx ? "active" : ""}`}
-                      onClick={() => setActiveDistrictIdx(idx)}
-                    >
-                      <div>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, opacity: 0.75 }}>
-                          0{idx + 1} · {trField(n.rentRangeUsd)}
+                  {neighborhoods.map((n, idx) => {
+                    const liveCnt = countUnitsForArea(n.name);
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        className={`district-tab-btn ${idx === activeDistrictIdx ? "active" : ""}`}
+                        onClick={() => setActiveDistrictIdx(idx)}
+                      >
+                        <div>
+                          <div className="district-tab-eyebrow">
+                            0{idx + 1} · {trField(n.rentRangeUsd)}
+                          </div>
+                          <div className="district-tab-title">
+                            {trArea(n.name)}
+                          </div>
+                          <div className="district-tab-sub">{trField(n.subtitle)}</div>
                         </div>
-                        <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", fontWeight: 700 }}>
-                          {trArea(n.name)}
-                        </div>
-                        <div style={{ fontSize: "0.82rem", opacity: 0.85 }}>{trField(n.subtitle)}</div>
-                      </div>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "999px", whiteSpace: "nowrap", flexShrink: 0, background: idx === activeDistrictIdx ? "rgba(255,255,255,0.18)" : "var(--bg-ivory)" }}>
-                        {n.unitCount || 12} {tx("căn", "units", "套", "объектов", "호실", "件")}
-                      </span>
-                    </button>
-                  ))}
+                        <span className="district-tab-count">
+                          {liveCnt > 0
+                            ? `${liveCnt} ${tx("BĐS", "units", "套", "объектов", "호실", "件")}`
+                            : tx("Đặt tìm", "Curated", "定制", "Подбор", "맞춤추천", "ご紹介")}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="district-detail-card">
@@ -3492,14 +3573,11 @@ export const App: React.FC = () => {
                       type="text"
                       name="budgetUsd"
                       className="modern-search-input"
-                      value={
-                        currency === "VND"
-                          ? fmtCurrencyStr(`$${leadBudget}`)
-                          : `$${leadBudget}`
-                      }
+                      placeholder={currency === "VND" ? "VD: 15 – 25 triệu" : "e.g. $900 – $1,200"}
+                      value={currency === "VND" ? leadBudgetVnd : leadBudget}
                       onChange={(e) => {
-                        const digits = e.target.value.replace(/[^0-9]/g, "");
-                        if (digits) setLeadBudget(digits);
+                        if (currency === "VND") setLeadBudgetVnd(e.target.value);
+                        else setLeadBudget(e.target.value);
                       }}
                     />
                   </div>
@@ -3969,13 +4047,23 @@ export const App: React.FC = () => {
                   </label>
                   <CustomSelect
                     value={maxPrice}
-                    options={[
-                      { value: "0", label: tx("Mọi mức giá", "Any Price", "不限价格", "Любая цена", "모든 가격대", "すべての価格") },
-                      { value: "750", label: fmtCurrencyStr(tx("Dưới $750 / tháng", "Under $750 / mo", "$750 / 月以下", "До $750 / мес", "$750 / 월 이하", "$750 / 月以下")) },
-                      { value: "1000", label: fmtCurrencyStr(tx("Dưới $1,000 / tháng", "Under $1,000 / mo", "$1,000 / 月以下", "До $1,000 / мес", "$1,000 / 월 이하", "$1,000 / 月以下")) },
-                      { value: "1500", label: fmtCurrencyStr(tx("Dưới $1,500 / tháng", "Under $1,500 / mo", "$1,500 / 月以下", "До $1,500 / мес", "$1,500 / 월 이하", "$1,500 / 月以下")) },
-                      { value: "2500", label: fmtCurrencyStr(tx("Dưới $2,500 / tháng", "Under $2,500 / mo", "$2,500 / 月以下", "До $2,500 / мес", "$2,500 / 월 이하", "$2,500 / 月以下")) }
-                    ]}
+                    options={
+                      currency === "VND"
+                        ? [
+                            { value: "0", label: tx("Mọi mức giá", "Any Price", "不限价格", "Любая цена", "모든 가격대", "すべての価格") },
+                            { value: "vnd:15", label: tx("Dưới 15tr ₫ / tháng", "Under 15M ₫ / mo", "15M ₫ / 月以下", "До 15M ₫ / мес", "15M ₫ / 월 이하", "15M ₫ / 月以下") },
+                            { value: "vnd:20", label: tx("Dưới 20tr ₫ / tháng", "Under 20M ₫ / mo", "20M ₫ / 月以下", "До 20M ₫ / мес", "20M ₫ / 월 이하", "20M ₫ / 月以下") },
+                            { value: "vnd:30", label: tx("Dưới 30tr ₫ / tháng", "Under 30M ₫ / mo", "30M ₫ / 月以下", "До 30M ₫ / мес", "30M ₫ / 월 이하", "30M ₫ / 月以下") },
+                            { value: "vnd:50", label: tx("Dưới 50tr ₫ / tháng", "Under 50M ₫ / mo", "50M ₫ / 月以下", "До 50M ₫ / мес", "50M ₫ / 월 이하", "50M ₫ / 月以下") }
+                          ]
+                        : [
+                            { value: "0", label: tx("Mọi mức giá", "Any Price", "不限价格", "Любая цена", "모든 가격대", "すべての価格") },
+                            { value: "750", label: tx("Dưới $750 / tháng", "Under $750 / mo", "$750 / 月以下", "До $750 / мес", "$750 / 월 이하", "$750 / 月以下") },
+                            { value: "1000", label: tx("Dưới $1,000 / tháng", "Under $1,000 / mo", "$1,000 / 月以下", "До $1,000 / мес", "$1,000 / 월 이하", "$1,000 / 月以下") },
+                            { value: "1500", label: tx("Dưới $1,500 / tháng", "Under $1,500 / mo", "$1,500 / 月以下", "До $1,500 / мес", "$1,500 / 월 이하", "$1,500 / 月以下") },
+                            { value: "2500", label: tx("Dưới $2,500 / tháng", "Under $2,500 / mo", "$2,500 / 月以下", "До $2,500 / мес", "$2,500 / 월 이하", "$2,500 / 月以下") }
+                          ]
+                    }
                     onChange={setMaxPrice}
                   />
                 </div>
@@ -4275,7 +4363,7 @@ export const App: React.FC = () => {
                 <div className="apt-next-step-price-row">
                   <span className="apt-next-step-price-val">
                     {currency === "VND"
-                      ? `${((currentDetailApt.priceVnd || currentDetailApt.priceUsd * 25480) / 1000000).toFixed(1)}tr ₫`
+                      ? formatVndCompact(currentDetailApt.priceVnd, currentDetailApt.priceUsd)
                       : `$${Number(currentDetailApt.priceUsd).toLocaleString()}`}
                   </span>
                   <span className="apt-next-step-price-unit">
@@ -4673,25 +4761,32 @@ export const App: React.FC = () => {
             {activeDistrict && (
               <div className="district-explorer-grid" style={{ marginBottom: "3rem" }}>
                 <div className="district-tab-list">
-                  {neighborhoods.map((n, idx) => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      className={`district-tab-btn ${idx === activeDistrictIdx ? "active" : ""}`}
-                      onClick={() => setActiveDistrictIdx(idx)}
-                    >
-                      <div>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, opacity: 0.75 }}>
-                          0{idx + 1} · {trField(n.rentRangeUsd)}
+                  {neighborhoods.map((n, idx) => {
+                    const liveCnt = countUnitsForArea(n.name);
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        className={`district-tab-btn ${idx === activeDistrictIdx ? "active" : ""}`}
+                        onClick={() => setActiveDistrictIdx(idx)}
+                      >
+                        <div>
+                          <div className="district-tab-eyebrow">
+                            0{idx + 1} · {trField(n.rentRangeUsd)}
+                          </div>
+                          <div className="district-tab-title">
+                            {trArea(n.name)}
+                          </div>
+                          <div className="district-tab-sub">{trField(n.subtitle)}</div>
                         </div>
-                        <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", fontWeight: 700 }}>
-                          {trArea(n.name)}
-                        </div>
-                        <div style={{ fontSize: "0.82rem", opacity: 0.85 }}>{trField(n.subtitle)}</div>
-                      </div>
-                      <span style={{ fontSize: "0.76rem", fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}>{n.unitCount} {tx("căn", "units", "套", "объектов", "호실", "件")}</span>
-                    </button>
-                  ))}
+                        <span className="district-tab-count">
+                          {liveCnt > 0
+                            ? `${liveCnt} ${tx("BĐS", "units", "套", "объектов", "호실", "件")}`
+                            : tx("Đặt tìm", "Curated", "定制", "Подбор", "맞춤추천", "ご紹介")}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div style={{ background: "#FFFFFF", borderRadius: "22px", padding: "2rem", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)" }}>
@@ -4834,6 +4929,51 @@ export const App: React.FC = () => {
                   </table>
                 </div>
               )}
+            </div>
+
+            {/* ALL 19 DA NANG AREAS DIRECTORY WITH LIVE COUNTS */}
+            <div style={{ background: "#FFFFFF", borderRadius: "24px", padding: "2rem", border: "1px solid var(--border-light)", boxShadow: "var(--shadow-soft)", marginBottom: "2.5rem" }}>
+              <span className="eyebrow-badge">
+                {tx("DANH BẠ 19 KHU VỰC ĐÀ NẴNG", "ALL 19 DA NANG NEIGHBORHOODS", "岘港全部 19 个区域", "ВСЕ 19 РАЙОНОВ ДАНАНГА", "다낭 19개 전체 지역 디렉토리", "ダナン全19エリア一覧")}
+              </span>
+              <h2 className="section-heading-serif" style={{ marginBottom: "0.45rem" }}>
+                {tx("Tìm nhanh bất động sản theo từng khu vực", "Browse Residences Across All 19 Da Nang Areas", "按区域快速浏览房源", "Поиск недвижимости по районам", "지역별 매물 바로가기", "エリア別物件一覧")}
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1.35rem" }}>
+                {tx(
+                  "Số lượng hiển thị bên dưới được đồng bộ trực tiếp theo thời gian thực từ kho bất động sản đang mở cho thuê.",
+                  "Live unit counts synced directly with our verified real-time Da Nang inventory.",
+                  "下方数量与当前实时在租房源库自动同步。",
+                  "Количество объектов синхронизируется с актуальной базой в реальном времени.",
+                  "아래 매물 수는 실시간 공실 데이터베이스와 자동 동기화됩니다.",
+                  "表示件数は現在の募集物件データベースとリアルタイム連動しています。"
+                )}
+              </p>
+              <div className="kin-area-directory-grid">
+                {SEO_AREA_SLUGS.map((aItem) => {
+                  const cnt = countUnitsForArea(aItem.value);
+                  const href = buildLocalizedHref(`/areas/${aItem.slug}`, lang);
+                  return (
+                    <a
+                      key={aItem.slug}
+                      href={href}
+                      className={`kin-area-dir-pill ${cnt > 0 ? "has-units" : ""}`}
+                      onClick={(e) => {
+                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                          e.preventDefault();
+                          setArea(aItem.value);
+                          navigate(`/areas/${aItem.slug}`);
+                        }
+                      }}
+                    >
+                      <span className="kin-area-dir-name">{trArea(aItem.value)}</span>
+                      <span className={`kin-area-dir-badge ${cnt > 0 ? "live" : ""}`}>
+                        {cnt > 0 ? `${cnt} ${tx("BĐS", "units", "套", "об.", "건", "件")}` : "→"}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </main>
@@ -5174,7 +5314,14 @@ export const App: React.FC = () => {
                             <span className="bldg-loc-glass-pill">{trField(b.area)}</span>
                             <span className="bldg-units-glass-pill">
                               <span className="live-dot" style={{ width: "6px", height: "6px" }} />
-                              <span>{b.unitCount || 10} {tx("căn", "units", "套", "объектов", "호실", "件")}</span>
+                              <span>
+                                {(() => {
+                                  const liveBldgCnt = countUnitsForBuilding(b.name);
+                                  return liveBldgCnt > 0
+                                    ? `${liveBldgCnt} ${tx("BĐS trống", "available", "套在租", "свободно", "공실", "空室")}`
+                                    : tx("Tòa tháp tiêu biểu", "Premier Tower", "核心地标", "Топ ЖК", "주요 타워", "人気タワー");
+                                })()}
+                              </span>
                             </span>
                           </div>
                           <div className="bldg-media-bottom-title">

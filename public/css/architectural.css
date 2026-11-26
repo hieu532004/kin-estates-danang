@@ -24,9 +24,9 @@
   --shadow-soft: 0 12px 32px -8px rgba(22, 25, 30, 0.07);
   --shadow-elevated: 0 24px 56px -12px rgba(22, 25, 30, 0.14);
 
-  /* Modern High-Legibility Typography */
-  --font-serif: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Modern High-Legibility Vietnamese & International Geometric Typography */
+  --font-serif: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --radius-sm: 12px;
@@ -1934,15 +1934,61 @@ select:focus {
 .district-tab-btn {
   width: 100%;
   text-align: left;
+  font-family: var(--font-sans);
   background: #FFFFFF;
-  border: 1px solid var(--border-light);
-  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border-medium);
+  padding: 1rem 1.2rem;
   border-radius: 18px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.district-tab-btn:hover {
+  border-color: rgba(168, 124, 81, 0.45);
+  transform: translateY(-1px);
+}
+
+.district-tab-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent-bronze-dark);
+  margin-bottom: 0.18rem;
+}
+
+.district-tab-title {
+  font-family: var(--font-sans);
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.district-tab-sub {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.district-tab-count {
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: var(--bg-ivory);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
 }
 
 .district-tab-btn.active {
@@ -1950,6 +1996,78 @@ select:focus {
   color: #FFFFFF;
   border-color: var(--bg-navy);
   box-shadow: var(--shadow-soft);
+}
+
+.district-tab-btn.active .district-tab-eyebrow {
+  color: #F5D9B8;
+}
+
+.district-tab-btn.active .district-tab-title {
+  color: #FFFFFF;
+}
+
+.district-tab-btn.active .district-tab-sub {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.district-tab-btn.active .district-tab-count {
+  background: rgba(255, 255, 255, 0.14);
+  color: #F5D9B8;
+  border-color: rgba(245, 217, 184, 0.25);
+}
+
+.kin-area-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 0.65rem;
+}
+
+.kin-area-dir-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.72rem 0.95rem;
+  border-radius: 14px;
+  background: var(--bg-ivory);
+  border: 1px solid var(--border-light);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: all 0.2s ease;
+}
+
+.kin-area-dir-pill:hover {
+  background: #FFFFFF;
+  border-color: var(--accent-bronze);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.kin-area-dir-pill.has-units {
+  background: #FFFFFF;
+  border-color: var(--border-medium);
+}
+
+.kin-area-dir-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.kin-area-dir-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  background: rgba(22, 25, 30, 0.05);
+  white-space: nowrap;
+}
+
+.kin-area-dir-badge.live {
+  background: rgba(168, 124, 81, 0.14);
+  color: var(--accent-bronze-dark);
 }
 
 .district-detail-card {
