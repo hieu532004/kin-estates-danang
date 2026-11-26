@@ -7,3 +7,4 @@ public/videos/hero-danang.webm
 src/data/telegram-media/aliases/
 src/data/telegram-media/**/*.tmp
 src/data/.mongodb_store.json.*.tmp
+anh-google-maps/
