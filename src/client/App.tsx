@@ -165,24 +165,57 @@ async function readPublicList<T>(response: Response, field: string): Promise<T[]
   return list;
 }
 
-type ApartmentPhotoProps = Pick<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "className" | "loading" | "style" | "onClick"> & {
+function toSeoPhotoSrc(rawSrc?: string, apt?: Apartment | null, index = 0): string | undefined {
+  const s = rawSrc?.trim();
+  if (!s) return undefined;
+  const m = s.match(/^\/api\/telegram\/media\/([a-f0-9]{64})$/i);
+  if (!m) return s;
+  const rawTitle = apt
+    ? typeof apt.title === "string"
+      ? apt.title
+      : apt.title?.vi || apt.title?.en || apt.code
+    : "kin-estates-da-nang";
+  const slug = `${rawTitle} ${apt?.areaName || apt?.district || "da-nang"} da nang`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72)
+    .replace(/-+$/g, "") || "bat-dong-san-da-nang-kin-estates";
+  return `/photos/${slug}-${index + 1}--${m[1].toLowerCase()}.jpg`;
+}
+
+type ApartmentPhotoProps = Pick<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "className" | "loading" | "style" | "onClick" | "fetchPriority"> & {
   alt: string;
   unavailableText: string;
   fallbackStyle?: React.CSSProperties;
 };
 
 function ApartmentPhoto({ src, alt, unavailableText, fallbackStyle, ...imageProps }: ApartmentPhotoProps) {
+  const [useFallbackRaw, setUseFallbackRaw] = useState(false);
   const [failedSource, setFailedSource] = useState<string>();
-  const source = src?.trim();
-  if (source && source !== failedSource) {
+  const rawTrimmed = src?.trim();
+  const mediaIdMatch = rawTrimmed?.match(/(?:^|--)([a-f0-9]{64})\.(?:jpe?g|png|webp)$/i);
+  const rawFallbackUrl = mediaIdMatch ? `/api/telegram/media/${mediaIdMatch[1].toLowerCase()}` : undefined;
+  const activeSource = useFallbackRaw && rawFallbackUrl ? rawFallbackUrl : rawTrimmed;
+
+  if (activeSource && activeSource !== failedSource) {
     return (
       <img
         {...imageProps}
-        key={source}
-        src={source}
+        key={activeSource}
+        src={activeSource}
         alt={alt}
-        decoding={imageProps.loading === "lazy" ? "async" : undefined}
-        onError={() => setFailedSource(source)}
+        decoding={imageProps.loading === "lazy" ? "async" : "auto"}
+        onError={() => {
+          if (!useFallbackRaw && rawFallbackUrl && activeSource !== rawFallbackUrl) {
+            setUseFallbackRaw(true);
+          } else {
+            setFailedSource(activeSource);
+          }
+        }}
       />
     );
   }
@@ -2564,7 +2597,9 @@ export const App: React.FC = () => {
         <div>
           <div className="apt-modern-card__media" onClick={() => openApartmentDetailModal(apt)}>
             <ApartmentPhoto
-              src={apt.images?.[0]} alt={title} loading="lazy"
+              src={toSeoPhotoSrc(apt.images?.[0], apt, 0)}
+              alt={`${title} — ${trArea(apt.areaName)}, Đà Nẵng (${formatPrice(apt)}) | KIN Estates`}
+              loading="lazy"
               unavailableText={photoUnavailable} fallbackStyle={fillPhotoSlot}
             />
             <div className="apt-modern-card__top-badges">
@@ -3044,8 +3079,10 @@ export const App: React.FC = () => {
                     {/* Left / Top Half: Photo Carousel + Explore CTA */}
                     <div className="showcase-photo-side">
                       <ApartmentPhoto
-                        src={activeShowcaseApt.images?.[0]}
-                        alt={getLocalized(activeShowcaseApt.title)}
+                        src={toSeoPhotoSrc(activeShowcaseApt.images?.[0], activeShowcaseApt, 0)}
+                        alt={`${getLocalized(activeShowcaseApt.title)} — ${trArea(activeShowcaseApt.areaName)}, Đà Nẵng (${formatPrice(activeShowcaseApt)}) | KIN Estates`}
+                        fetchPriority="high"
+                        loading="eager"
                         unavailableText={photoUnavailable}
                         fallbackStyle={{ position: "absolute", inset: 0 }}
                       />
@@ -4303,8 +4340,9 @@ export const App: React.FC = () => {
                 }}
               >
                 <ApartmentPhoto
-                  src={activePhotoSource}
-                  alt={getLocalized(currentDetailApt.title)}
+                  src={toSeoPhotoSrc(activePhotoSource, currentDetailApt, activePhotoIdx)}
+                  alt={`${getLocalized(currentDetailApt.title)} — ${trArea(currentDetailApt.areaName)}, Đà Nẵng (#${activePhotoIdx + 1}) | KIN Estates`}
+                  fetchPriority="high"
                   unavailableText={photoUnavailable}
                   fallbackStyle={fillPhotoSlot}
                   onClick={() => setFullscreenPhotoOpen(true)}
@@ -4365,7 +4403,9 @@ export const App: React.FC = () => {
                       onClick={() => selectPhoto(i)}
                     >
                       <ApartmentPhoto
-                        src={img} alt="" loading="lazy"
+                        src={toSeoPhotoSrc(img, currentDetailApt, i)}
+                        alt={`${getLocalized(currentDetailApt.title)} — #${i + 1}`}
+                        loading="lazy"
                         unavailableText={photoUnavailable} fallbackStyle={fillPhotoSlot}
                       />
                     </button>

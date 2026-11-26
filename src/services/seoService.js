@@ -75,12 +75,58 @@ function locVal(obj, lang = "vi") {
   return obj[lang] || obj.vi || obj.en || "";
 }
 
-function toAbsoluteUrl(origin, maybeRelative) {
+function slugifySeoSegment(raw) {
+  const s = String(raw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return s.slice(0, 72).replace(/-+$/g, "") || "bat-dong-san-da-nang-kin-estates";
+}
+
+function buildSeoPhotoUrl(origin, maybeRelative, apt = null, index = 0) {
   const s = String(maybeRelative || "").trim();
   if (!s) return DEFAULT_OG_IMAGE;
+  const mediaMatch = s.match(/^(?:https?:\/\/[^/]+)?\/api\/telegram\/media\/([a-f0-9]{64})$/i);
+  if (mediaMatch) {
+    const mediaId = mediaMatch[1].toLowerCase();
+    const titleRaw = apt ? locVal(apt.title, "vi") || locVal(apt.title, "en") || apt.code : "kin-estates-da-nang";
+    const areaRaw = apt?.areaName || apt?.district || "da-nang";
+    const slug = slugifySeoSegment(`${titleRaw} ${areaRaw} da nang`);
+    return `${origin}/photos/${slug}-${index + 1}--${mediaId}.jpg`;
+  }
   if (/^https?:\/\//i.test(s)) return s;
   if (s.startsWith("/")) return `${origin}${s}`;
   return DEFAULT_OG_IMAGE;
+}
+
+function pickFeaturedSiteOgImage(origin, apartments = [], about = null) {
+  const publicList = (apartments || []).filter((a) => a && a.isVisible !== false && a.status !== "Hidden");
+  const sorted = [...publicList].sort((a, b) => {
+    const aReal = String(a.images?.[0] || "").includes("/api/telegram/media/") ? 1 : 0;
+    const bReal = String(b.images?.[0] || "").includes("/api/telegram/media/") ? 1 : 0;
+    if (aReal !== bReal) return bReal - aReal;
+    const aPin = Boolean(a.isPinned) && a.status === "Available" ? 1 : 0;
+    const bPin = Boolean(b.isPinned) && b.status === "Available" ? 1 : 0;
+    if (aPin !== bPin) return bPin - aPin;
+    const aTime = Date.parse(a.boostedAt || a.updatedAt || a.createdAt || 0) || 0;
+    const bTime = Date.parse(b.boostedAt || b.updatedAt || b.createdAt || 0) || 0;
+    return bTime - aTime;
+  });
+  const bestApt = sorted.find((a) => a.images?.[0]);
+  if (bestApt?.images?.[0]) {
+    return buildSeoPhotoUrl(origin, bestApt.images[0], bestApt, 0);
+  }
+  if (about?.heroImage) {
+    return buildSeoPhotoUrl(origin, about.heroImage, null, 0);
+  }
+  return DEFAULT_OG_IMAGE;
+}
+
+function toAbsoluteUrl(origin, maybeRelative, apt = null, index = 0) {
+  return buildSeoPhotoUrl(origin, maybeRelative, apt, index);
 }
 
 const ROUTE_META = {
@@ -550,9 +596,24 @@ function buildFaqSchema(lang = "vi") {
 function buildApartmentSchema(origin, apt, lang = "vi") {
   const title = locVal(apt.title, lang) || apt.code;
   const desc = locVal(apt.architecturalNotes, lang) || `${title} — ${apt.building || "Đà Nẵng"}`;
-  const imgs = (apt.images || []).map((img) => toAbsoluteUrl(origin, img));
   const url = localizedUrl(origin, `/apartments/${encodeURIComponent(apt.code)}`, lang);
   const matchedArea = findAreaByName(`${apt.areaName || ""} ${apt.district || ""} ${locVal(apt.title, "vi")}`);
+  const areaLabel = lang === "vi" ? matchedArea?.vi || apt.areaName || "Đà Nẵng" : matchedArea?.en || apt.areaName || "Da Nang";
+  const imageObjects = (apt.images || []).map((img, idx) => {
+    const imgUrl = buildSeoPhotoUrl(origin, img, apt, idx);
+    return {
+      "@type": "ImageObject",
+      url: imgUrl,
+      contentUrl: imgUrl,
+      name: `${title} — ${areaLabel}, Đà Nẵng (${idx + 1}) | KIN Estates`,
+      caption: `${title} (${areaLabel}, Đà Nẵng) — Ảnh thực tế #${idx + 1} bởi KIN Estates Đà Nẵng (kinestatesdanang.com)`,
+      creditText: "KIN Estates Đà Nẵng (kinestatesdanang.com)",
+      copyrightNotice: "© KIN Estates Đà Nẵng",
+      acquireLicensePage: url,
+      creator: { "@id": `${origin}/#organization` },
+      ...(idx === 0 ? { representativeOfPage: true } : {})
+    };
+  });
 
   const amenities = [];
   if (apt.wifiIncluded) amenities.push({ "@type": "LocationFeatureSpecification", name: "High-Speed Fiber Wi-Fi", value: true });
@@ -592,7 +653,8 @@ function buildApartmentSchema(origin, apt, lang = "vi") {
       description: desc,
       url,
       datePosted: apt.createdAt || new Date().toISOString(),
-      image: imgs.length ? imgs : [DEFAULT_OG_IMAGE],
+      dateModified: apt.boostedAt || apt.updatedAt || apt.createdAt || new Date().toISOString(),
+      image: imageObjects.length ? imageObjects : [DEFAULT_OG_IMAGE],
       offers: {
         "@type": "Offer",
         priceCurrency: apt.priceVnd ? "VND" : "USD",
@@ -631,16 +693,21 @@ function buildApartmentSchema(origin, apt, lang = "vi") {
 }
 
 function buildItemListSchema(origin, apartments, lang = "vi", listTitle = "") {
-  const items = (apartments || []).slice(0, 20).map((apt, idx) => ({
-    "@type": "ListItem",
-    position: idx + 1,
-    url: localizedUrl(origin, `/apartments/${encodeURIComponent(apt.code)}`, lang),
-    name: locVal(apt.title, lang) || apt.code
-  }));
+  const items = (apartments || []).slice(0, 24).map((apt, idx) => {
+    const itemUrl = localizedUrl(origin, `/apartments/${encodeURIComponent(apt.code)}`, lang);
+    const coverUrl = apt.images?.[0] ? buildSeoPhotoUrl(origin, apt.images[0], apt, 0) : undefined;
+    return {
+      "@type": "ListItem",
+      position: idx + 1,
+      url: itemUrl,
+      name: locVal(apt.title, lang) || apt.code,
+      ...(coverUrl ? { image: coverUrl } : {})
+    };
+  });
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: listTitle || (lang === "vi" ? "Căn hộ, Nhà & Biệt thự cho thuê tại Đà Nẵng" : "Da Nang Apartments, Houses & Villas for Rent"),
+    name: listTitle || (lang === "vi" ? "Căn hộ, Nhà nguyên căn & Biệt thự cho thuê tại Đà Nẵng — KIN Estates" : "Da Nang Apartments, Houses & Villas for Rent — KIN Estates"),
     numberOfItems: items.length,
     itemListElement: items
   };
@@ -714,8 +781,8 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
   let title;
   let description;
   let keywords;
-  let ogImage = toAbsoluteUrl(origin, about?.heroImage || DEFAULT_OG_IMAGE);
-  let ogImageAlt = "KIN Estates Đà Nẵng — Cho thuê & mua bán căn hộ, nhà, biệt thự Đà Nẵng";
+  let ogImage = pickFeaturedSiteOgImage(origin, apartments, about);
+  let ogImageAlt = "KIN Estates Đà Nẵng (kinestatesdanang.com) — Cho thuê & mua bán căn hộ, nhà nguyên căn, biệt thự Đà Nẵng";
   let ogType = "website";
   const schemas = [buildLocalBusinessSchema(origin, about?.testimonials || []), buildWebsiteSchema(origin)];
 
@@ -770,8 +837,10 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
       .filter(Boolean)
       .join(", ");
 
-    ogImage = toAbsoluteUrl(origin, apartment.images?.[0] || DEFAULT_OG_IMAGE);
-    ogImageAlt = `${rawTitle} — KIN Estates Đà Nẵng`;
+    ogImage = apartment.images?.[0]
+      ? buildSeoPhotoUrl(origin, apartment.images[0], apartment, 0)
+      : pickFeaturedSiteOgImage(origin, apartments, about);
+    ogImageAlt = `${rawTitle} (${priceShort}) — KIN Estates Đà Nẵng`;
     ogType = "article";
     schemas.push(...buildApartmentSchema(origin, apartment, effectiveLang));
   } else if (propObj) {
@@ -955,19 +1024,56 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     const t = locVal(apartment.title, effectiveLang) || apartment.code;
     const desc = locVal(apartment.architecturalNotes, effectiveLang) || "";
     const matchedArea = findAreaByName(`${apartment.areaName || ""} ${apartment.district || ""} ${t}`);
+    const areaDisplay = effectiveLang === "vi" ? matchedArea?.vi || apartment.areaName || "Đà Nẵng" : matchedArea?.en || apartment.areaName || "Da Nang";
+    const typePhrase = propTypeSeoPhrase(apartment.propertyType, effectiveLang);
     const priceVnd = apartment.priceVnd
       ? `${(Number(apartment.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")} triệu VNĐ/tháng`
       : "";
+    const galleryHtml = (apartment.images || [])
+      .map((img, idx) => {
+        const seoSrc = buildSeoPhotoUrl(origin, img, apartment, idx);
+        const altTxt = `${t} — ${typePhrase} ${areaDisplay}, Đà Nẵng (${priceVnd || `$${apartment.priceUsd}/mo`}) — Ảnh thực tế #${idx + 1} | KIN Estates Đà Nẵng`;
+        return `<figure style="margin:12px 0"><img src="${escapeHtml(seoSrc)}" alt="${escapeHtml(altTxt)}" width="1200" height="800" loading="${idx === 0 ? "eager" : "lazy"}" style="max-width:100%;height:auto;border-radius:12px" /><figcaption>${escapeHtml(altTxt)}</figcaption></figure>`;
+      })
+      .join("");
+    const relatedUnits = (apartments || [])
+      .filter((a) => a.code !== apartment.code && a.status === "Available" && a.isVisible !== false)
+      .sort((a, b) => {
+        const aSameArea = a.areaName === apartment.areaName ? 1 : 0;
+        const bSameArea = b.areaName === apartment.areaName ? 1 : 0;
+        if (aSameArea !== bSameArea) return bSameArea - aSameArea;
+        const aSameType = a.propertyType === apartment.propertyType ? 1 : 0;
+        const bSameType = b.propertyType === apartment.propertyType ? 1 : 0;
+        return bSameType - aSameType;
+      })
+      .slice(0, 6);
+    const relatedHtml = relatedUnits.length
+      ? `<section><h2>${effectiveLang === "vi" ? "Bất động sản tương tự đang mở thuê tại Đà Nẵng" : "Related Available Residences in Da Nang"}</h2><ul>` +
+        relatedUnits
+          .map((r) => {
+            const rt = locVal(r.title, effectiveLang) || r.code;
+            const rUrl = localizedUrl(origin, `/apartments/${encodeURIComponent(r.code)}`, effectiveLang);
+            const rImg = r.images?.[0] ? buildSeoPhotoUrl(origin, r.images[0], r, 0) : "";
+            const rVnd = r.priceVnd ? `${(Number(r.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/tháng` : `$${r.priceUsd}/mo`;
+            return `<li><a href="${escapeHtml(rUrl)}">${rImg ? `<img src="${escapeHtml(rImg)}" alt="${escapeHtml(rt)}" width="320" height="214" loading="lazy" /> ` : ""}${escapeHtml(rt)} (${escapeHtml(rVnd)})</a></li>`;
+          })
+          .join("") +
+        `</ul></section>`
+      : "";
     return (
       `<main style="max-width:960px;margin:24px auto;padding:0 16px;font-family:sans-serif;color:#14191f">` +
-      `<nav><a href="${escapeHtml(localizedUrl(origin, "/", effectiveLang))}">KIN Estates Đà Nẵng</a> / <a href="${escapeHtml(localizedUrl(origin, "/apartments", effectiveLang))}">${effectiveLang === "vi" ? "Cho thuê căn hộ Đà Nẵng" : "Da Nang Apartments"}</a>` +
-      (matchedArea ? ` / <a href="${escapeHtml(localizedUrl(origin, `/areas/${matchedArea.slug}`, effectiveLang))}">${escapeHtml(effectiveLang === "vi" ? `Căn hộ ${matchedArea.vi}` : matchedArea.en)}</a>` : "") +
+      `<nav aria-label="Breadcrumb"><a href="${escapeHtml(localizedUrl(origin, "/", effectiveLang))}">KIN Estates Đà Nẵng (kinestatesdanang)</a> / <a href="${escapeHtml(localizedUrl(origin, "/apartments", effectiveLang))}">${effectiveLang === "vi" ? "Cho thuê BĐS Đà Nẵng" : "Da Nang Residences"}</a>` +
+      (matchedArea ? ` / <a href="${escapeHtml(localizedUrl(origin, `/areas/${matchedArea.slug}`, effectiveLang))}">${escapeHtml(effectiveLang === "vi" ? `Thuê nhà ${matchedArea.vi}` : matchedArea.en)}</a>` : "") +
       `</nav>` +
-      `<h1>${escapeHtml(t)} — ${escapeHtml(effectiveLang === "vi" ? `Cho Thuê Căn Hộ ${matchedArea?.vi || apartment.areaName || "Đà Nẵng"}` : `Da Nang Apartment for Rent (${matchedArea?.en || apartment.areaName || "Da Nang"})`)}</h1>` +
-      `<p><strong>${escapeHtml(priceVnd)} ($${escapeHtml(apartment.priceUsd)}/month)</strong> · ${escapeHtml(apartment.bedrooms ?? 1)} ${effectiveLang === "vi" ? "phòng ngủ" : "BR"} · ${escapeHtml(apartment.sizeM2 ?? "-")} m² · ${escapeHtml(apartment.areaName || "Đà Nẵng")}</p>` +
+      `<article>` +
+      `<h1>${escapeHtml(t)} — ${escapeHtml(effectiveLang === "vi" ? `${typePhrase} ${areaDisplay}, Đà Nẵng` : `${typePhrase} in ${areaDisplay}, Da Nang`)}</h1>` +
+      `<p><strong>${escapeHtml(priceVnd ? `${priceVnd} ($${apartment.priceUsd}/month)` : `$${apartment.priceUsd}/month`)}</strong> · ${escapeHtml(apartment.bedrooms ?? 1)} ${effectiveLang === "vi" ? "phòng ngủ" : "BR"} · ${escapeHtml(apartment.sizeM2 ?? "-")} m² · ${escapeHtml(areaDisplay)}</p>` +
       `<p>${escapeHtml(apartment.address || apartment.building || "Đà Nẵng, Việt Nam")}</p>` +
       `<p>${escapeHtml(desc)}</p>` +
-      `<p>KIN Estates Đà Nẵng (kinestatesdanang.com): Zalo / WhatsApp +84 389 711 601 · Telegram @KIN_Estates.</p>` +
+      (galleryHtml ? `<section><h2>${effectiveLang === "vi" ? "Hình ảnh thực tế bất động sản" : "Verified Property Photos"}</h2>${galleryHtml}</section>` : "") +
+      `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com)</strong>: Zalo / WhatsApp +84 389 711 601 · Telegram @KIN_Estates.</p>` +
+      `</article>` +
+      relatedHtml +
       `<footer><p>${propNavLinks}</p><p>${areaNavLinks}</p></footer>` +
       `</main>`
     );
@@ -979,14 +1085,26 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     : propObj
       ? filterApartmentsForPropLanding(avail, propObj)
       : avail;
-  const unitsToRender = (displayUnits.length ? displayUnits : avail).slice(0, 20);
+  const unitsToRender = (displayUnits.length ? displayUnits : avail).slice(0, 24);
 
   const aptLinks = unitsToRender
-    .map((a) => {
+    .map((a, idx) => {
       const t = locVal(a.title, effectiveLang) || a.code;
       const vndTr = a.priceVnd ? `${(Number(a.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/tháng` : "";
       const pLabel = effectiveLang === "vi" && vndTr ? vndTr : `$${escapeHtml(a.priceUsd)}/mo`;
-      return `<li><a href="${escapeHtml(localizedUrl(origin, `/apartments/${encodeURIComponent(a.code)}`, effectiveLang))}">${escapeHtml(t)} — ${escapeHtml(pLabel)} (${escapeHtml(a.bedrooms ?? 1)}${effectiveLang === "vi" ? "PN" : "BR"} · ${escapeHtml(a.areaName || "Đà Nẵng")})</a></li>`;
+      const aptUrl = localizedUrl(origin, `/apartments/${encodeURIComponent(a.code)}`, effectiveLang);
+      const coverUrl = a.images?.[0] ? buildSeoPhotoUrl(origin, a.images[0], a, 0) : "";
+      const imgAlt = `${t} — ${a.areaName || "Đà Nẵng"} (${pLabel}) | KIN Estates Đà Nẵng`;
+      return (
+        `<li style="margin-bottom:14px">` +
+        `<article>` +
+        (coverUrl
+          ? `<a href="${escapeHtml(aptUrl)}"><img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(imgAlt)}" width="800" height="533" loading="${idx < 2 ? "eager" : "lazy"}" style="max-width:320px;height:auto;border-radius:10px;display:block;margin-bottom:6px" /></a>`
+          : "") +
+        `<a href="${escapeHtml(aptUrl)}"><strong>${escapeHtml(t)}</strong></a> — ${escapeHtml(pLabel)} (${escapeHtml(a.bedrooms ?? 1)}${effectiveLang === "vi" ? "PN" : "BR"} · ${escapeHtml(a.sizeM2 ?? "-")}m² · ${escapeHtml(a.areaName || "Đà Nẵng")})` +
+        `</article>` +
+        `</li>`
+      );
     })
     .join("");
 
@@ -1046,12 +1164,19 @@ function generateRobotsTxt(origin) {
   return [
     "User-agent: *",
     "Allow: /",
+    "Allow: /photos/",
+    "Allow: /api/telegram/media/",
     "Disallow: /kin-studio",
     "Disallow: /kin-studio/",
     "Disallow: /api/studio/",
     "Disallow: /api/inquiries",
     "Disallow: /api/leases",
     "Disallow: /api/telegram/webhook",
+    "",
+    "User-agent: Googlebot-Image",
+    "Allow: /",
+    "Allow: /photos/",
+    "Allow: /api/telegram/media/",
     "",
     "# AI Search & Answer Engines (GEO)",
     "User-agent: GPTBot",
@@ -1070,7 +1195,65 @@ function generateRobotsTxt(origin) {
     "Allow: /",
     "",
     `Sitemap: ${origin}/sitemap.xml`,
+    `Sitemap: ${origin}/image-sitemap.xml`,
     `Sitemap: ${origin}/rss.xml`,
+    ""
+  ].join("\n");
+}
+
+function buildSitemapImageTag(origin, rawImg, apt, idx = 0) {
+  const absImg = buildSeoPhotoUrl(origin, rawImg, apt, idx);
+  const titleVi = locVal(apt?.title, "vi") || apt?.code || "Bất động sản Đà Nẵng — KIN Estates";
+  const areaVi = apt?.areaName || apt?.district || "Đà Nẵng";
+  const vndTr = apt?.priceVnd ? `${(Number(apt.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/tháng` : "";
+  const caption = `${titleVi} tại ${areaVi}, Đà Nẵng${vndTr ? ` (${vndTr})` : ""} — Ảnh thực tế #${idx + 1} | KIN Estates Đà Nẵng (kinestatesdanang.com)`;
+  return `\n    <image:image>\n      <image:loc>${escapeXml(absImg)}</image:loc>\n      <image:title>${escapeXml(`${titleVi} — KIN Estates Đà Nẵng (${idx + 1})`)}</image:title>\n      <image:caption>${escapeXml(caption)}</image:caption>\n      <image:geo_location>${escapeXml(`${areaVi}, Đà Nẵng, Việt Nam`)}</image:geo_location>\n    </image:image>`;
+}
+
+function generateImageSitemapXml(origin, apartments = [], about = null) {
+  const urlBlocks = [];
+  const visibleApts = (apartments || []).filter((a) => a?.code && a.isVisible !== false && a.status !== "Hidden" && Array.isArray(a.images) && a.images.length > 0);
+
+  // 1. Homepage featured showcase images (prioritizing real uploaded photos)
+  const realCoverApts = visibleApts
+    .filter((a) => String(a.images?.[0] || "").includes("/api/telegram/media/"))
+    .slice(0, 20);
+  if (realCoverApts.length > 0) {
+    const homeImgs = realCoverApts.map((a) => buildSitemapImageTag(origin, a.images[0], a, 0)).join("");
+    urlBlocks.push(`  <url>\n    <loc>${escapeXml(`${origin}/`)}</loc>${homeImgs}\n  </url>`);
+    urlBlocks.push(`  <url>\n    <loc>${escapeXml(`${origin}/apartments`)}</loc>${homeImgs}\n  </url>`);
+  }
+
+  // 2. Every public apartment, house & villa with ALL gallery photos (up to 30 photos per listing)
+  for (const apt of visibleApts) {
+    const loc = `${origin}/apartments/${encodeURIComponent(apt.code)}`;
+    const allImgs = (apt.images || [])
+      .slice(0, 30)
+      .map((img, idx) => buildSitemapImageTag(origin, img, apt, idx))
+      .join("");
+    urlBlocks.push(`  <url>\n    <loc>${escapeXml(loc)}</loc>${allImgs}\n  </url>`);
+  }
+
+  // 3. About page real client tour photos
+  const tourPhotos = Array.isArray(about?.clientTourPhotos) ? about.clientTourPhotos.filter((p) => p?.image) : [];
+  if (tourPhotos.length > 0) {
+    const tourXml = tourPhotos
+      .slice(0, 20)
+      .map((p, idx) => {
+        const abs = buildSeoPhotoUrl(origin, p.image, { title: locVal(p.caption, "vi") || "kin-estates-tour", areaName: "da-nang" }, idx);
+        const cap = locVal(p.caption, "vi") || "Dẫn khách xem căn hộ & nhà thực tế tại Đà Nẵng — KIN Estates";
+        return `\n    <image:image>\n      <image:loc>${escapeXml(abs)}</image:loc>\n      <image:title>${escapeXml(`${cap} | KIN Estates Đà Nẵng`)}</image:title>\n      <image:caption>${escapeXml(cap)}</image:caption>\n      <image:geo_location>Đà Nẵng, Việt Nam</image:geo_location>\n    </image:image>`;
+      })
+      .join("");
+    urlBlocks.push(`  <url>\n    <loc>${escapeXml(`${origin}/about`)}</loc>${tourXml}\n  </url>`);
+  }
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    ...urlBlocks,
+    "</urlset>",
     ""
   ].join("\n");
 }
@@ -1096,18 +1279,29 @@ function generateSitemapXml(origin, apartments = []) {
     );
   };
 
-  // 1. Core Pages (Vietnamese Default)
+  const featuredHomeImgs = (apartments || [])
+    .filter((a) => a?.code && a.isVisible !== false && a.status !== "Hidden" && a.images?.[0])
+    .sort((a, b) => {
+      const aReal = String(a.images?.[0] || "").includes("/api/telegram/media/") ? 1 : 0;
+      const bReal = String(b.images?.[0] || "").includes("/api/telegram/media/") ? 1 : 0;
+      return bReal - aReal;
+    })
+    .slice(0, 12)
+    .map((a) => buildSitemapImageTag(origin, a.images[0], a, 0))
+    .join("");
+
+  // 1. Core Pages (Vietnamese Default — with Featured Real Property Images attached to / and /apartments)
   const staticPages = [
-    { path: "/", priority: "1.0", changefreq: "daily" },
-    { path: "/apartments", priority: "0.95", changefreq: "daily" },
-    { path: "/areas", priority: "0.90", changefreq: "weekly" },
-    { path: "/guides", priority: "0.90", changefreq: "weekly" },
-    { path: "/how-to-rent", priority: "0.85", changefreq: "monthly" },
-    { path: "/about", priority: "0.82", changefreq: "weekly" },
-    { path: "/privacy-policy", priority: "0.40", changefreq: "yearly" }
+    { path: "/", priority: "1.0", changefreq: "daily", extra: featuredHomeImgs },
+    { path: "/apartments", priority: "0.95", changefreq: "daily", extra: featuredHomeImgs },
+    { path: "/areas", priority: "0.90", changefreq: "weekly", extra: "" },
+    { path: "/guides", priority: "0.90", changefreq: "weekly", extra: "" },
+    { path: "/how-to-rent", priority: "0.85", changefreq: "monthly", extra: "" },
+    { path: "/about", priority: "0.82", changefreq: "weekly", extra: "" },
+    { path: "/privacy-policy", priority: "0.40", changefreq: "yearly", extra: "" }
   ];
   for (const page of staticPages) {
-    pushUrl(localizedUrl(origin, page.path, "vi"), page.path, page.priority, page.changefreq);
+    pushUrl(localizedUrl(origin, page.path, "vi"), page.path, page.priority, page.changefreq, today, page.extra);
   }
 
   // 2. International Localized Hub Pages (/en, /ko, /zh, /ru, /ja + core hubs)
@@ -1143,18 +1337,15 @@ function generateSitemapXml(origin, apartments = []) {
     pushUrl(localizedUrl(origin, p, "en"), p, "0.86", "weekly", g.dateModified || today);
   }
 
-  // 6. All Live Public Residences (/apartments/:code) with Image Sitemap tags & Pinned Priority
+  // 6. All Live Public Residences (/apartments/:code) with Full Untruncated Image Sitemap Tags (up to 30 photos)
   for (const apt of apartments || []) {
     if (!apt?.code || apt.isVisible === false || apt.status === "Hidden") continue;
     const aptPath = `/apartments/${encodeURIComponent(apt.code)}`;
     const lastmod = String(apt.boostedAt || apt.updatedAt || apt.createdAt || today).slice(0, 10);
     const prio = apt.isPinned && apt.status === "Available" ? "0.98" : apt.status === "Available" ? "0.94" : "0.78";
     const imgTags = (apt.images || [])
-      .slice(0, 6)
-      .map((img) => {
-        const absImg = toAbsoluteUrl(origin, img);
-        return `\n    <image:image>\n      <image:loc>${escapeXml(absImg)}</image:loc>\n      <image:title>${escapeXml(locVal(apt.title, "vi") || apt.code)}</image:title>\n    </image:image>`;
-      })
+      .slice(0, 30)
+      .map((img, idx) => buildSitemapImageTag(origin, img, apt, idx))
       .join("");
     pushUrl(localizedUrl(origin, aptPath, "vi"), aptPath, prio, "daily", lastmod, imgTags);
     pushUrl(localizedUrl(origin, aptPath, "en"), aptPath, "0.88", "daily", lastmod);
@@ -1176,7 +1367,7 @@ function generateRssFeedXml(origin, apartments = []) {
     .filter((a) => a?.code && a.isVisible !== false && a.status !== "Hidden")
     .sort((a, b) => {
       const aPin = Boolean(a.isPinned) && a.status === "Available" ? 1 : 0;
-      const bPin = Boolean(b.isPinned) && b.status === "Available" ? 1 : 0;
+      const bPin = Boolean(b.isPinned) && a.status === "Available" ? 1 : 0;
       if (aPin !== bPin) return bPin - aPin;
       const aTime = Date.parse(a.boostedAt || a.updatedAt || a.createdAt || 0) || 0;
       const bTime = Date.parse(b.boostedAt || b.updatedAt || b.createdAt || 0) || 0;
@@ -1197,7 +1388,8 @@ function generateRssFeedXml(origin, apartments = []) {
     const pubTime = Date.parse(apt.boostedAt || apt.updatedAt || apt.createdAt || Date.now());
     const pubDate = Number.isFinite(pubTime) ? new Date(pubTime).toUTCString() : nowRfc;
     const notesVi = locVal(apt.architecturalNotes, "vi");
-    const cover = apt.images?.[0] ? toAbsoluteUrl(origin, apt.images[0]) : "";
+    const seoImages = (apt.images || []).slice(0, 12).map((img, idx) => buildSeoPhotoUrl(origin, img, apt, idx));
+    const cover = seoImages[0] || "";
     const specText = [
       priceLabel ? `Giá: ${priceLabel}` : "",
       apt.bedrooms != null ? `${apt.bedrooms}PN` : "",
@@ -1210,6 +1402,12 @@ function generateRssFeedXml(origin, apartments = []) {
       .filter(Boolean)
       .join(" · ");
     const desc = `${leadPhrase} tại ${areaLabel}, Đà Nẵng (${titleVi}). ${specText}. ${notesVi || "Giá trực tiếp chủ nhà, hỗ trợ xem nhà thực tế & tạm trú NA17."}`.slice(0, 600);
+    const mediaTags = seoImages
+      .map(
+        (mUrl, idx) =>
+          `      <media:content url="${escapeXml(mUrl)}" medium="image" type="image/jpeg">\n        <media:title>${escapeXml(`${titleVi} — ${areaLabel}, Đà Nẵng (${idx + 1}) | KIN Estates`)}</media:title>\n      </media:content>`
+      )
+      .join("\n");
 
     items.push(
       [
@@ -1221,6 +1419,7 @@ function generateRssFeedXml(origin, apartments = []) {
         `      <category>${escapeXml(leadPhrase)}</category>`,
         `      <description>${escapeXml(desc)}</description>`,
         cover ? `      <enclosure url="${escapeXml(cover)}" type="image/jpeg" length="0" />` : "",
+        mediaTags,
         "    </item>"
       ]
         .filter(Boolean)
@@ -1247,7 +1446,7 @@ function generateRssFeedXml(origin, apartments = []) {
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">',
     "  <channel>",
     "    <title>KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà Nguyên Căn &amp; Biệt Thự Đà Nẵng</title>",
     `    <link>${escapeXml(origin)}/</link>`,
@@ -1365,9 +1564,11 @@ module.exports = {
   resolveLang,
   buildPageSeoHead,
   buildSsrRootMarkup,
+  buildSeoPhotoUrl,
   injectSeoIntoHtml,
   generateRobotsTxt,
   generateSitemapXml,
+  generateImageSitemapXml,
   generateRssFeedXml,
   generateLlmsTxt
 };

@@ -25,6 +25,14 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/image-sitemap.xml",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/photos/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
       "source": "/rss.xml",
       "destination": "/api/index.js"
     },

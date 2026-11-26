@@ -28,6 +28,7 @@ function buildCoreSeoUrlList(apartments = [], origin = getEffectiveOrigin()) {
     `${origin}/how-to-rent`,
     `${origin}/about`,
     `${origin}/sitemap.xml`,
+    `${origin}/image-sitemap.xml`,
     `${origin}/rss.xml`,
     `${origin}/llms.txt`
   ]);
@@ -115,12 +116,13 @@ async function notifyApartmentIndexed(apt) {
     `${origin}/apartments/${encodeURIComponent(apt.code)}`,
     `${origin}/en/apartments/${encodeURIComponent(apt.code)}`,
     `${origin}/sitemap.xml`,
+    `${origin}/image-sitemap.xml`,
     `${origin}/rss.xml`,
     `${origin}/llms.txt`
   ];
   return Promise.race([
     submitUrlsToIndexNow(urls, origin),
-    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 1800))
+    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 2200))
   ]).catch(() => ({ ok: false }));
 }
 
@@ -131,12 +133,13 @@ async function notifyCatalogRefreshed() {
     `${origin}/`,
     `${origin}/apartments`,
     `${origin}/sitemap.xml`,
+    `${origin}/image-sitemap.xml`,
     `${origin}/rss.xml`,
     `${origin}/llms.txt`
   ];
   return Promise.race([
     submitUrlsToIndexNow(urls, origin),
-    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 1800))
+    new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), 2200))
   ]).catch(() => ({ ok: false }));
 }
 

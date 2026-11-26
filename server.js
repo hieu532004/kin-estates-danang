@@ -299,8 +299,21 @@ const handleGetApartments = async (req, res) => {
       );
     }
     res.vary("Authorization");
-    if (admin) res.set("Cache-Control", "no-store");
-    else res.set("Cache-Control", "public, s-maxage=1, stale-while-revalidate=5");
+    if (admin) {
+      res.set("Cache-Control", "no-store");
+    } else {
+      const stampSource = apartments
+        .map((a) => `${a.code}:${a.status}:${a.isPinned ? 1 : 0}:${a.priceVnd || a.priceUsd}:${a.updatedAt || ""}:${a.boostedAt || ""}:${(a.images || []).length}`)
+        .join("|");
+      const etag = `W/"kin-${createHmac("sha256", "kin-cat-etag").update(`${targetLang}|${stampSource}`).digest("hex").slice(0, 24)}"`;
+      res.set({
+        "Cache-Control": "public, s-maxage=2, stale-while-revalidate=15",
+        "ETag": etag
+      });
+      if (req.headers["if-none-match"] === etag) {
+        return res.status(304).end();
+      }
+    }
     res.json({
       ok: true,
       count: apartments.length,
@@ -399,10 +412,12 @@ app.delete("/api/apartments/:id", requireAdmin, async (req, res) => {
 
 // 3. Buildings Market Index & Neighborhood Guides
 app.get("/api/buildings", (req, res) => {
+  res.set("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
   res.json({ ok: true, buildings: db.getBuildings() });
 });
 
 app.get("/api/neighborhoods", (req, res) => {
+  res.set("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
   res.json({ ok: true, neighborhoods: db.getNeighborhoods() });
 });
 
@@ -653,6 +668,42 @@ app.get("/api/telegram/media/:mediaId", async (req, res) => {
     if (!allowed) return photoUnavailable(res);
     const photo = await getStoredTelegramPhoto(mediaId);
     return photo ? sendTelegramPhoto(res, photo) : photoUnavailable(res);
+  } catch {
+    return photoUnavailable(res, 503);
+  }
+});
+
+// Public SEO-Optimized Image Route (/photos/<seo-slug>--<mediaId>.jpg) for Google Images & Fast Edge CDN Delivery
+app.get("/photos/:seoFilename", async (req, res) => {
+  const rawName = String(req.params.seoFilename || "").trim();
+  const m = rawName.match(/(?:^|--)([a-f0-9]{64})(?:\.(?:jpe?g|png|webp))?$/i);
+  const mediaId = m ? m[1].toLowerCase() : "";
+  if (!MEDIA_ID.test(mediaId)) return photoUnavailable(res);
+  try {
+    await ensureInitialized();
+    if (process.env.MONGODB_URI) {
+      await db.ensureMongoConnection();
+    }
+    const mediaUrl = `/api/telegram/media/${mediaId}`;
+    const allowed = (await db.hasPublicApartmentPhoto([mediaUrl])) || (await db.hasPublicSiteMedia([mediaUrl]));
+    if (!allowed) return photoUnavailable(res);
+    const etag = `"kin-img-${mediaId.slice(0, 24)}"`;
+    if (req.headers["if-none-match"] === etag) {
+      return res.status(304).end();
+    }
+    const photo = await getStoredTelegramPhoto(mediaId);
+    if (!photo) return photoUnavailable(res);
+    const ext = photo.contentType === "image/png" ? "png" : photo.contentType === "image/webp" ? "webp" : "jpg";
+    const safeDownloadName = rawName.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/\.(?:jpe?g|png|webp)$/i, "") + `.${ext}`;
+    res.set({
+      "Content-Type": photo.contentType,
+      "Content-Disposition": `inline; filename="${safeDownloadName}"`,
+      "X-Content-Type-Options": "nosniff",
+      "X-Robots-Tag": "index, max-image-preview:large",
+      "ETag": etag,
+      "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+    });
+    return res.send(photo.bytes);
   } catch {
     return photoUnavailable(res, 503);
   }
@@ -1659,16 +1710,35 @@ app.get("/robots.txt", (req, res) => {
 app.get("/sitemap.xml", async (req, res) => {
   try {
     await ensureInitialized();
-    await db.ensureMongoConnection();
+    if (process.env.MONGODB_URI) await db.ensureMongoConnection();
     const origin = seoService.getSiteOrigin(req);
     const apartments = await db.getApartments({ includeHidden: false });
     res.set({
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+      "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600"
     });
     res.send(seoService.generateSitemapXml(origin, apartments));
   } catch {
     res.status(500).type("text/plain").send("Unable to generate sitemap");
+  }
+});
+
+app.get("/image-sitemap.xml", async (req, res) => {
+  try {
+    await ensureInitialized();
+    if (process.env.MONGODB_URI) await db.ensureMongoConnection();
+    const origin = seoService.getSiteOrigin(req);
+    const [apartments, about] = await Promise.all([
+      db.getApartments({ includeHidden: false }),
+      db.getAboutContent().catch(() => null)
+    ]);
+    res.set({
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600"
+    });
+    res.send(seoService.generateImageSitemapXml(origin, apartments, about));
+  } catch {
+    res.status(500).type("text/plain").send("Unable to generate image sitemap");
   }
 });
 
@@ -1747,11 +1817,15 @@ app.get("*", async (req, res) => {
 
     if (aptMatch) {
       const code = decodeURIComponent(aptMatch[1]);
-      const found = await db.getApartmentByCodeOrId(code);
+      const [found, allPublic] = await Promise.all([
+        db.getApartmentByCodeOrId(code),
+        db.getApartments({ includeHidden: false })
+      ]);
+      apartments = allPublic;
       if (found && db.isPublicApartment(found)) {
         apartment = found;
       }
-    } else if (cleanPath === "/" || /^\/(apartments|areas|property)(\/|$)/i.test(cleanPath)) {
+    } else if (cleanPath === "/" || /^\/(apartments|areas|property|guides|how-to-rent|about)(\/|$)/i.test(cleanPath)) {
       apartments = await db.getApartments({ includeHidden: false });
     }
     about = await db.getAboutContent().catch(() => null);
