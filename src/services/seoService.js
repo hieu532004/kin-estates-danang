@@ -86,34 +86,34 @@ function toAbsoluteUrl(origin, maybeRelative) {
 const ROUTE_META = {
   "/": {
     vi: {
-      title: "Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự Đà Nẵng | KIN Estates",
-      description: "Thuê căn hộ chung cư, căn hộ dịch vụ, studio, nhà nguyên căn, penthouse, biệt thự hồ bơi & mua bán nhà đất tại 19 khu vực Đà Nẵng ✓ Giá trực tiếp chủ nhà ✓ Điện EVN →",
-      keywords: "thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng, căn hộ cho thuê Đà Nẵng, thuê nhà Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, cho thuê nhà phố Đà Nẵng, thuê biệt thự Đà Nẵng, thuê villa hồ bơi Đà Nẵng, thuê chung cư Đà Nẵng, thuê căn hộ thường Đà Nẵng, thuê căn hộ mini Đà Nẵng, thuê studio Đà Nẵng, mua bán căn hộ Đà Nẵng, mua nhà Đà Nẵng, ký gửi nhà đất Đà Nẵng, căn hộ Mỹ Khê, An Thượng, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Thanh Khê, Liên Chiểu, FPT City, The Filmore, The Panoma Sun Cosmo, Sun Ponte, Hiyori, The Monarchy, Azura, Blooming Tower, FPT Plaza, Ori Garden, Euro Village, KIN Estates, kinestatesdanang, kinestatesdanang.com"
+      title: "KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự",
+      description: "KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com) chuyên cho thuê căn hộ chung cư, studio, nhà nguyên căn, biệt thự hồ bơi & mua bán nhà đất 19 khu vực Đà Nẵng ✓ Giá chủ nhà →",
+      keywords: "KIN Estates Đà Nẵng, kinestatesdanang, kinestatesdanang.com, KIN Estates, thuê căn hộ Đà Nẵng, cho thuê căn hộ Đà Nẵng, căn hộ cho thuê Đà Nẵng, thuê nhà Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, cho thuê nhà phố Đà Nẵng, thuê biệt thự Đà Nẵng, thuê villa hồ bơi Đà Nẵng, thuê chung cư Đà Nẵng, thuê căn hộ thường Đà Nẵng, thuê căn hộ mini Đà Nẵng, thuê studio Đà Nẵng, mua bán căn hộ Đà Nẵng, mua nhà Đà Nẵng, ký gửi nhà đất Đà Nẵng, căn hộ Mỹ Khê, An Thượng, Sơn Trà, Hải Châu, Ngũ Hành Sơn, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Thanh Khê, Liên Chiểu, FPT City, The Filmore, The Panoma Sun Cosmo, Sun Ponte, Hiyori, The Monarchy, Azura"
     },
     en: {
-      title: "Da Nang Apartments, Houses & Villas for Rent | KIN Estates",
-      description: "Verified long-term apartments, studios, houses, pool villas & condos for rent or sale in Da Nang (3–12+ mo) ✓ Direct owner pricing ✓ EVN rates ✓ 19 districts →",
-      keywords: "Da Nang apartments for rent, house for rent Da Nang, villa for rent Da Nang, buy condo Da Nang, long-term rental Da Nang, My Khe Beach, An Thuong, Han Riverfront, Son Tra, Hoa Xuan, KIN Estates, kinestatesdanang"
+      title: "KIN Estates Da Nang — Apartments, Houses & Pool Villas for Rent",
+      description: "KIN Estates Da Nang (kinestatesdanang · kinestatesdanang.com) — verified long-term apartments, studios, whole houses, pool villas & condos across 19 Da Nang districts ✓ Direct owner pricing →",
+      keywords: "KIN Estates Da Nang, kinestatesdanang, kinestatesdanang.com, Da Nang apartments for rent, house for rent Da Nang, villa for rent Da Nang, buy condo Da Nang, long-term rental Da Nang, My Khe Beach, An Thuong, Han Riverfront, Son Tra, Hoa Xuan"
     },
     zh: {
-      title: "岘港长租公寓・海景别墅・整栋房屋出租与买房 | KIN Estates",
-      description: "越南岘港3–12个月+长租公寓、单间、独栋泳池别墅与房产买卖投资 ✓ 房东直租透明价 ✓ 国家EVN电价 ✓ 美溪海滩・安上区・汉江景・山茶全覆盖 →",
-      keywords: "岘港租房, 岘港长租公寓, 岘港别墅出租, 岘港买房投资, 美溪海滩公寓, 安上区租房, KIN Estates, kinestatesdanang"
+      title: "KIN Estates 岘港 — 长租公寓・海景别墅・整栋房屋出租与买房",
+      description: "KIN Estates 岘港 (kinestatesdanang · kinestatesdanang.com) 提供3–12个月+长租公寓、独栋泳池别墅与房产买卖投资 ✓ 房东直租透明价 ✓ 覆盖岘港19大区域 →",
+      keywords: "KIN Estates, kinestatesdanang, 岘港租房, 岘港长租公寓, 岘港别墅出租, 岘港买房投资, 美溪海滩公寓, 安上区租房"
     },
     ru: {
-      title: "Аренда Квартир, Домов и Вилл в Дананге | KIN Estates 2026",
-      description: "Проверенные квартиры, студии, дома, виллы с бассейном и покупка недвижимости в Дананге ✓ Цены от владельцев ✓ Гостариф EVN ✓ Ми Кхе, Ан Тхыонг, Сон Тра →",
-      keywords: "аренда квартир в Дананге, аренда вилл Дананг, снять дом в Дананге, купить квартиру в Дананге, Ми Кхе, Ан Тхыонг, KIN Estates, kinestatesdanang"
+      title: "KIN Estates Дананг — Аренда Квартир, Домов и Вилл 2026",
+      description: "KIN Estates Дананг (kinestatesdanang · kinestatesdanang.com): проверенные квартиры, студии, дома, виллы с бассейном и покупка жилья в 19 районах Дананга ✓ Цены от владельцев →",
+      keywords: "KIN Estates, kinestatesdanang, аренда квартир в Дананге, аренда вилл Дананг, снять дом в Дананге, купить квартиру в Дананге"
     },
     ko: {
-      title: "다낭 장기 임대 아파트·풀빌라·단독주택 월세 & 매매 | KIN Estates",
-      description: "베트남 다낭 3~12개월+ 아파트·스튜디오·풀빌라·단독주택 임대 및 부동산 매매 투자 ✓ 집주인 직거래 ✓ EVN 전기요금 ✓ 미케비치·안트엉·한강뷰 →",
-      keywords: "다낭 아파트 임대, 다낭 풀빌라 임대, 다낭 단독주택 월세, 다낭 아파트 매매, 다낭 한달살기 장기숙소, 미케비치, 안트엉, KIN Estates, kinestatesdanang"
+      title: "KIN Estates 다낭 — 장기 임대 아파트·풀빌라·단독주택 월세 & 매매",
+      description: "KIN Estates 다낭 (kinestatesdanang · kinestatesdanang.com) 3~12개월+ 아파트·스튜디오·풀빌라·단독주택 임대 및 부동산 매매 ✓ 집주인 직거래 · 전 19개 구역 →",
+      keywords: "KIN Estates, kinestatesdanang, 다낭 아파트 임대, 다낭 풀빌라 임대, 다낭 단독주택 월세, 다낭 아파트 매매, 다낭 한달살기 장기숙소"
     },
     ja: {
-      title: "ダナン賃貸アパート・ヴィラ・一軒家＆不動産購入 | KIN Estates",
-      description: "ベトナム・ダナンの長期賃貸アパート・高級マンション・プール付きヴィラ・一軒家＆不動産売買 ✓ オーナー直接価格 ✓ EVN電気料金 ✓ 全19エリア対応 →",
-      keywords: "ダナン 賃貸 アパート, ダナン ヴィラ 賃貸, ダナン 一軒家 賃貸, ダナン 不動産 購入, ミーケービーチ, アントゥオン, KIN Estates, kinestatesdanang"
+      title: "KIN Estates ダナン — 賃貸アパート・ヴィラ・一軒家＆不動産購入",
+      description: "KIN Estates ダナン（kinestatesdanang · kinestatesdanang.com）長期賃貸アパート・高級マンション・プール付きヴィラ・一軒家＆不動産売買 ✓ 全19エリア対応 →",
+      keywords: "KIN Estates, kinestatesdanang, ダナン 賃貸 アパート, ダナン ヴィラ 賃貸, ダナン 一軒家 賃貸, ダナン 不動産 購入"
     }
   },
   "/apartments": {
@@ -246,14 +246,14 @@ const ROUTE_META = {
   },
   "/about": {
     vi: {
-      title: "Về KIN Estates Đà Nẵng — Dẫn Xem Thực Tế & Đánh Giá 5 Sao",
-      description: "Đội ngũ tư vấn cho thuê & mua bán căn hộ, nhà nguyên căn, biệt thự tại Đà Nẵng (kinestatesdanang.com) ✓ Xem ảnh dẫn khách thực tế & đánh giá 5★ →",
-      keywords: "KIN Estates Đà Nẵng, kinestatesdanang, kinestatesdanang.com, môi giới bất động sản uy tín Đà Nẵng, ký gửi căn hộ Đà Nẵng"
+      title: "Về KIN Estates Đà Nẵng (kinestatesdanang) — Dẫn Xem & Đánh Giá 5★",
+      description: "Hồ sơ chính thức KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com): tư vấn cho thuê & mua bán căn hộ, nhà nguyên căn, biệt thự 19 khu vực Đà Nẵng ✓ Đánh giá 5★ →",
+      keywords: "KIN Estates Đà Nẵng, kinestatesdanang, kinestatesdanang.com, KIN Estates, môi giới bất động sản uy tín Đà Nẵng, ký gửi căn hộ Đà Nẵng"
     },
     en: {
-      title: "About KIN Estates Da Nang — Real Tours & 5★ Client Reviews",
-      description: "Meet KIN Estates Da Nang (kinestatesdanang.com): local residence & investment specialists ✓ Browse real client tour moments & verified 5★ reviews →",
-      keywords: "KIN Estates Da Nang, kinestatesdanang, trusted real estate agency Da Nang"
+      title: "About KIN Estates Da Nang (kinestatesdanang) — Real Tours & 5★ Reviews",
+      description: "Official profile of KIN Estates Da Nang (kinestatesdanang · kinestatesdanang.com): local apartment, house, pool villa & investment specialists ✓ Verified 5★ reviews →",
+      keywords: "KIN Estates Da Nang, kinestatesdanang, kinestatesdanang.com, trusted real estate agency Da Nang"
     },
     zh: {
       title: "关于 KIN Estates 岘港 — 真实带看记录与5星客户口碑",
@@ -352,26 +352,32 @@ function buildLocalBusinessSchema(origin, testimonials = []) {
 
   return {
     "@context": "https://schema.org",
-    "@type": "RealEstateAgent",
+    "@type": ["Organization", "RealEstateAgent"],
     "@id": `${origin}/#organization`,
-    name: "KIN Estates Đà Nẵng — Cho Thuê & Mua Bán Căn Hộ, Nhà, Biệt Thự Đà Nẵng",
+    name: "KIN Estates Đà Nẵng",
+    legalName: "KIN Estates Đà Nẵng — Da Nang Private Residences",
     alternateName: [
+      "kinestatesdanang",
       "KIN Estates",
       "KIN Estates Da Nang",
-      "KIN Estates Đà Nẵng",
-      "kinestatesdanang",
       "kinestatesdanang.com",
+      "KIN Estates Đà Nẵng",
       "KIN Estates — Da Nang Private Residences"
     ],
-    url: origin,
-    logo: { "@type": "ImageObject", url: `${origin}/img/kin-estates-logo.svg` },
-    image: DEFAULT_OG_IMAGE,
+    url: `${origin}/`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${origin}/img/kin-logo-512.png`,
+      width: 512,
+      height: 512
+    },
+    image: [DEFAULT_OG_IMAGE, `${origin}/img/kin-logo-512.png`],
     telephone: "+84-389-711-601",
-    priceRange: "$300 - $3,500 / month",
+    priceRange: "7.000.000₫ - 85.000.000₫ / tháng ($300 - $3,500 / month)",
     currenciesAccepted: "VND, USD",
     paymentAccepted: "Cash, Bank Transfer",
     description:
-      "Chuyên cho thuê và tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi dài hạn tại tất cả 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, kiểm định thực tế và hỗ trợ đăng ký tạm trú NA17.",
+      "KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com) chuyên cho thuê và tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi dài hạn tại tất cả 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, kiểm định thực tế và hỗ trợ đăng ký tạm trú NA17.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Đà Nẵng",
@@ -413,14 +419,18 @@ function buildLocalBusinessSchema(origin, testimonials = []) {
       availableLanguage: ["Vietnamese", "English", "Chinese", "Russian", "Korean", "Japanese"]
     },
     sameAs: ["https://t.me/KIN_Estates", "https://zalo.me/0389711601", "https://wa.me/84389711601"],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "5.0",
-      reviewCount: String(Math.max(6, testimonials.length)),
-      bestRating: "5",
-      worstRating: "1"
-    },
-    ...(reviews.length ? { review: reviews } : {})
+    ...(reviews.length
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: "5.0",
+            reviewCount: String(reviews.length),
+            bestRating: "5",
+            worstRating: "1"
+          },
+          review: reviews
+        }
+      : {})
   };
 }
 
@@ -430,8 +440,8 @@ function buildWebsiteSchema(origin) {
     "@type": "WebSite",
     "@id": `${origin}/#website`,
     name: "KIN Estates Đà Nẵng",
-    alternateName: ["KIN Estates", "kinestatesdanang", "kinestatesdanang.com", "KIN Estates Da Nang"],
-    url: origin,
+    alternateName: ["kinestatesdanang", "KIN Estates", "KIN Estates Da Nang", "kinestatesdanang.com"],
+    url: `${origin}/`,
     publisher: { "@id": `${origin}/#organization` },
     inLanguage: SUPPORTED_LANGS,
     potentialAction: {
@@ -439,6 +449,41 @@ function buildWebsiteSchema(origin) {
       target: `${origin}/apartments?q={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
+  };
+}
+
+function buildSiteNavigationSchema(origin, lang = "vi") {
+  const navItems =
+    lang === "vi"
+      ? [
+          { name: "Tất cả BĐS cho thuê Đà Nẵng", url: `${origin}/apartments` },
+          { name: "Thuê Căn hộ Chung cư Đà Nẵng", url: `${origin}/property/can-ho-chung-cu` },
+          { name: "Thuê Nhà Nguyên Căn Đà Nẵng", url: `${origin}/property/nha-nguyen-can` },
+          { name: "Thuê Biệt Thự & Villa Hồ Bơi", url: `${origin}/property/biet-thu-villa` },
+          { name: "19 Khu Vực Đà Nẵng", url: `${origin}/areas` },
+          { name: "Bảng Giá & Cẩm Nang 2026", url: `${origin}/guides` },
+          { name: "Về KIN Estates Đà Nẵng", url: `${origin}/about` }
+        ]
+      : [
+          { name: "All Da Nang Residences", url: localizedUrl(origin, "/apartments", lang) },
+          { name: "Da Nang Condominiums", url: localizedUrl(origin, "/property/can-ho-chung-cu", lang) },
+          { name: "Whole Houses for Rent", url: localizedUrl(origin, "/property/nha-nguyen-can", lang) },
+          { name: "Private Pool Villas", url: localizedUrl(origin, "/property/biet-thu-villa", lang) },
+          { name: "19 Da Nang Neighborhoods", url: localizedUrl(origin, "/areas", lang) },
+          { name: "2026 Price Index & Guides", url: localizedUrl(origin, "/guides", lang) },
+          { name: "About KIN Estates", url: localizedUrl(origin, "/about", lang) }
+        ];
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${origin}/#site-navigation`,
+    name: lang === "vi" ? "Danh mục chính KIN Estates Đà Nẵng" : "KIN Estates Da Nang Primary Navigation",
+    itemListElement: navItems.map((item, idx) => ({
+      "@type": "SiteNavigationElement",
+      position: idx + 1,
+      name: item.name,
+      url: item.url
+    }))
   };
 }
 
@@ -800,6 +845,9 @@ function buildPageSeoHead({ origin, pathname, lang = "vi", apartment = null, apa
     keywords = meta.keywords;
     ogImageAlt = title;
 
+    if (cleanPath === "/") {
+      schemas.push(buildSiteNavigationSchema(origin, effectiveLang));
+    }
     if (cleanPath !== "/") {
       schemas.push(
         buildBreadcrumbSchema([
@@ -936,7 +984,9 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
   const aptLinks = unitsToRender
     .map((a) => {
       const t = locVal(a.title, effectiveLang) || a.code;
-      return `<li><a href="${escapeHtml(localizedUrl(origin, `/apartments/${encodeURIComponent(a.code)}`, effectiveLang))}">${escapeHtml(t)} — $${escapeHtml(a.priceUsd)}/mo (${escapeHtml(a.bedrooms ?? 1)}BR · ${escapeHtml(a.areaName || "Da Nang")})</a></li>`;
+      const vndTr = a.priceVnd ? `${(Number(a.priceVnd) / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr/tháng` : "";
+      const pLabel = effectiveLang === "vi" && vndTr ? vndTr : `$${escapeHtml(a.priceUsd)}/mo`;
+      return `<li><a href="${escapeHtml(localizedUrl(origin, `/apartments/${encodeURIComponent(a.code)}`, effectiveLang))}">${escapeHtml(t)} — ${escapeHtml(pLabel)} (${escapeHtml(a.bedrooms ?? 1)}${effectiveLang === "vi" ? "PN" : "BR"} · ${escapeHtml(a.areaName || "Đà Nẵng")})</a></li>`;
     })
     .join("");
 
@@ -951,7 +1001,7 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
   return (
     `<main style="max-width:1040px;margin:24px auto;padding:0 16px;font-family:sans-serif;color:#14191f">` +
     `<header><nav>` +
-    `<a href="${escapeHtml(localizedUrl(origin, "/", effectiveLang))}">KIN Estates Đà Nẵng</a> · ` +
+    `<a href="${escapeHtml(localizedUrl(origin, "/", effectiveLang))}">KIN Estates Đà Nẵng (kinestatesdanang)</a> · ` +
     `<a href="${escapeHtml(localizedUrl(origin, "/apartments", effectiveLang))}">${effectiveLang === "vi" ? "Căn hộ & Biệt thự" : "Residences"}</a> · ` +
     `<a href="${escapeHtml(localizedUrl(origin, "/areas", effectiveLang))}">${effectiveLang === "vi" ? "19 Khu vực" : "19 Areas"}</a> · ` +
     `<a href="${escapeHtml(localizedUrl(origin, "/guides", effectiveLang))}">${effectiveLang === "vi" ? "Cẩm nang & Bảng giá" : "Guides"}</a> · ` +
@@ -959,8 +1009,8 @@ function buildSsrRootMarkup({ origin, pathname, lang = "vi", apartment = null, a
     `<a href="${escapeHtml(localizedUrl(origin, "/about", effectiveLang))}">${effectiveLang === "vi" ? "Về KIN Estates" : "About"}</a> | ${langNavLinks}` +
     `</nav></header>` +
     `<h1>${escapeHtml(heading)}</h1>` +
-    `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang.com)</strong> — ${escapeHtml(effectiveLang === "vi" ? "Chuyên cho thuê dài hạn & tư vấn mua bán căn hộ chung cư, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem thực tế & hỗ trợ đăng ký tạm trú NA17. Hotline Zalo/WhatsApp: 0389 711 601 · Telegram: @KIN_Estates." : "Premier long-term apartment, house, pool villa rental & real estate buying advisory across all 19 districts of Da Nang, Vietnam. Direct owner pricing, verified inspections & Form NA17 residence registration. WhatsApp/Zalo: +84 389 711 601 · Telegram: @KIN_Estates.")}</p>` +
-    (aptLinks ? `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Căn hộ & Biệt thự đang trống tại Đà Nẵng" : "Available Residences in Da Nang")}</h2><ul>${aptLinks}</ul></section>` : "") +
+    `<p><strong>KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com)</strong> — ${escapeHtml(effectiveLang === "vi" ? "Đơn vị chuyên cho thuê dài hạn (3–12+ tháng) & tư vấn mua bán căn hộ chung cư, căn hộ dịch vụ, studio, nhà nguyên căn, penthouse và biệt thự hồ bơi tại 19 khu vực Đà Nẵng. Giá trực tiếp chủ nhà, dẫn xem thực tế & hỗ trợ đăng ký tạm trú NA17. Hotline Zalo/WhatsApp: 0389 711 601 · Telegram: @KIN_Estates." : "Premier long-term apartment, house, pool villa rental & real estate buying advisory across all 19 districts of Da Nang, Vietnam (kinestatesdanang · kinestatesdanang.com). Direct owner pricing, verified inspections & Form NA17 residence registration. WhatsApp/Zalo: +84 389 711 601 · Telegram: @KIN_Estates.")}</p>` +
+    (aptLinks ? `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Căn hộ, Nhà nguyên căn & Biệt thự đang trống tại Đà Nẵng" : "Available Residences in Da Nang")}</h2><ul>${aptLinks}</ul></section>` : "") +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo loại hình (Thuê & Mua bán)" : "Browse by Property Type (Rent & Buy)")}</h2><p>${propNavLinks}</p></section>` +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Tìm theo 19 khu vực Đà Nẵng" : "Browse 19 Da Nang Neighborhoods")}</h2><p>${areaNavLinks}</p></section>` +
     `<section><h2>${escapeHtml(effectiveLang === "vi" ? "Cẩm nang bất động sản Đà Nẵng 2026" : "Da Nang Real Estate & Rental Guides 2026")}</h2><ul>${guideNavLinks}</ul></section>` +

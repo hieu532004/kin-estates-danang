@@ -1713,12 +1713,21 @@ app.get(["/llms.txt", "/llms-full.txt", "/ai.txt"], async (req, res) => {
 });
 
 let cachedIndexHtml = null;
+function resolveAppShellPath() {
+  const shellPath = path.join(__dirname, "public", "app-shell.html");
+  if (fs.existsSync(shellPath)) return shellPath;
+  return path.join(__dirname, "public", "index.html");
+}
 function loadBaseIndexHtml() {
   if (!cachedIndexHtml || !process.env.VERCEL) {
-    cachedIndexHtml = fs.readFileSync(path.join(__dirname, "public", "index.html"), "utf8");
+    cachedIndexHtml = fs.readFileSync(resolveAppShellPath(), "utf8");
   }
   return cachedIndexHtml;
 }
+
+app.get(["/kinestatesdanang", "/kin-estates-da-nang", "/kin-estates"], (req, res) => {
+  res.redirect(301, "/");
+});
 
 // SPA Fallback with Server-Side Dynamic SEO Meta, 6-Language Sub-Path (/en /ko /zh /ru /ja) Hreflang, OpenGraph & JSON-LD Injection
 app.get("*", async (req, res) => {
@@ -1752,11 +1761,11 @@ app.get("*", async (req, res) => {
     const html = seoService.injectSeoIntoHtml(baseHtml, seoHead, ssrBody);
     res.set({
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, s-maxage=5, stale-while-revalidate=30"
+      "Cache-Control": "public, s-maxage=15, stale-while-revalidate=120"
     });
     res.send(html);
   } catch {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(resolveAppShellPath());
   }
 });
 

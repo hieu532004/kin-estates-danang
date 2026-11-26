@@ -235,9 +235,9 @@ const UI_TEXT: Record<Lang, {
     nav_guides: "Cẩm nang",
     nav_about: "Về chúng tôi",
     btn_find: "Tìm nhà phù hợp",
-    hero_eyebrow: "KIẾN TRÚC KHÔNG GIAN SỐNG & CĂN HỘ DÀI HẠN ĐÀ NẴNG",
-    hero_title: "Yêu không gian <em>kiến trúc</em> trước. Rồi yêu cả khu phố.",
-    hero_sub: "Chúng tôi tuyển chọn căn hộ, penthouse và biệt thự theo ngân sách và nhịp sống của bạn—kiểm định thực tế ánh sáng, độ ồn, bàn làm việc và hỗ trợ trọn gói thủ tục nhận nhà.",
+    hero_eyebrow: "KIN ESTATES ĐÀ NẴNG · CĂN HỘ, NHÀ NGUYÊN CĂN & BIỆT THỰ DÀI HẠN",
+    hero_title: "Thuê căn hộ, nhà &amp; biệt thự <em>Đà Nẵng</em> — Yêu không gian sống trước.",
+    hero_sub: "KIN Estates Đà Nẵng (kinestatesdanang.com) tuyển chọn căn hộ chung cư, căn hộ dịch vụ, nhà nguyên căn, penthouse và biệt thự hồ bơi theo ngân sách của bạn — giá trực tiếp chủ nhà, kiểm định thực tế ánh sáng, độ ồn và hỗ trợ trọn gói tạm trú NA17.",
     search_placeholder: "Toà nhà, khu vực (VD: The Panoma, Filmore, Hiyori...)",
     search_btn: "Tìm"
   },
@@ -248,9 +248,9 @@ const UI_TEXT: Record<Lang, {
     nav_guides: "Guides",
     nav_about: "About us",
     btn_find: "Find my home",
-    hero_eyebrow: "DA NANG ARCHITECTURAL RESIDENCES & LONG-TERM RENTALS",
-    hero_title: "Fall in love with the <em>architecture</em>. Then the neighborhood.",
-    hero_sub: "We curate apartments, penthouses, and coastal villas around your lifestyle—physically auditing natural light, acoustic comfort, workspaces, and handling full move-in registration.",
+    hero_eyebrow: "KIN ESTATES DA NANG · ARCHITECTURAL APARTMENTS, HOUSES & VILLAS",
+    hero_title: "Da Nang Apartments, Houses &amp; <em>Villas</em> — Curated for Your Rhythm.",
+    hero_sub: "KIN Estates Da Nang (kinestatesdanang.com) curates long-term condos, serviced apartments, whole houses, penthouses, and pool villas—physically auditing natural light, acoustics, workspaces, and Form NA17 registration.",
     search_placeholder: "Search building or district (The Panoma, Filmore, Hiyori...)",
     search_btn: "Search"
   },
@@ -1019,6 +1019,8 @@ export const App: React.FC = () => {
     }
   }, [route]);
 
+  const initialRouteLangRef = useRef<string>(`${route}|${lang}`);
+
   // Dynamic Client-Side SEO Sync (Title, Description, Keywords, OpenGraph, Twitter, Canonical) + GA4 SPA Tracking
   useEffect(() => {
     const cleanPath = route === "/" ? "/" : route.replace(/\/+$/, "");
@@ -1033,11 +1035,11 @@ export const App: React.FC = () => {
       ? apartments.find((a) => a.code.toUpperCase() === decodeURIComponent(aptMatch[1]).toUpperCase())
       : null;
 
-    let pageTitle = "Cho Thuê Căn Hộ, Nhà & Biệt Thự Đà Nẵng | KIN Estates 2026";
+    let pageTitle = "KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà Nguyên Căn & Biệt Thự";
     let pageDesc =
-      "Thuê căn hộ chung cư, studio, nhà nguyên căn, penthouse, biệt thự hồ bơi & mua bán nhà đất Đà Nẵng ✓ Giá trực tiếp chủ nhà ✓ Điện EVN ✓ 19 khu vực Đà Nẵng →";
+      "KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com) chuyên cho thuê căn hộ chung cư, studio, nhà nguyên căn, biệt thự hồ bơi & mua bán nhà đất 19 khu vực Đà Nẵng ✓ Giá chủ nhà →";
     let pageKeywords =
-      "thuê căn hộ Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, thuê biệt thự Đà Nẵng, mua bán căn hộ Đà Nẵng, KIN Estates Đà Nẵng, kinestatesdanang";
+      "KIN Estates Đà Nẵng, kinestatesdanang, kinestatesdanang.com, KIN Estates, thuê căn hộ Đà Nẵng, thuê nhà nguyên căn Đà Nẵng, thuê biệt thự Đà Nẵng, mua bán căn hộ Đà Nẵng";
 
     if (activeApt) {
       const rawTitle =
@@ -1115,8 +1117,12 @@ export const App: React.FC = () => {
     } else if (cleanPath === "/about") {
       pageTitle =
         lang === "vi"
-          ? "Về KIN Estates Đà Nẵng — Dẫn Xem Thực Tế & Đánh Giá 5 Sao"
-          : "About KIN Estates Da Nang — Real Tours & 5★ Client Reviews";
+          ? "Về KIN Estates Đà Nẵng (kinestatesdanang) — Dẫn Xem & Đánh Giá 5★"
+          : "About KIN Estates Da Nang (kinestatesdanang) — Real Tours & 5★ Reviews";
+      pageDesc =
+        lang === "vi"
+          ? "Hồ sơ chính thức KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com): tư vấn cho thuê & mua bán căn hộ, nhà nguyên căn, biệt thự 19 khu vực Đà Nẵng ✓ Đánh giá 5★ →"
+          : "Official profile of KIN Estates Da Nang (kinestatesdanang · kinestatesdanang.com): local apartment, house, pool villa & investment specialists ✓ Verified 5★ reviews →";
     } else if (cleanPath === "/privacy-policy") {
       pageTitle =
         lang === "vi"
@@ -1125,41 +1131,44 @@ export const App: React.FC = () => {
     } else if (lang !== "vi") {
       pageTitle =
         lang === "ko"
-          ? "다낭 장기 임대 아파트·풀빌라·단독주택 월세 & 매매 | KIN Estates"
+          ? "KIN Estates 다낭 — 장기 임대 아파트·풀빌라·단독주택 월세 & 매매"
           : lang === "zh"
-            ? "岘港长租公寓・海景别墅・整栋房屋出租与买房 | KIN Estates"
+            ? "KIN Estates 岘港 — 长租公寓・海景别墅・整栋房屋出租与买房"
             : lang === "ru"
-              ? "Аренда Квартир, Домов и Вилл в Дананге | KIN Estates 2026"
+              ? "KIN Estates Дананг — Аренда Квартир, Домов и Вилл 2026"
               : lang === "ja"
-                ? "ダナン賃貸アパート・ヴィラ・一軒家＆不動産購入 | KIN Estates"
-                : "Da Nang Apartments, Houses & Villas for Rent | KIN Estates";
+                ? "KIN Estates ダナン — 賃貸アパート・ヴィラ・一軒家＆不動産購入"
+                : "KIN Estates Da Nang — Apartments, Houses & Pool Villas for Rent";
       pageDesc =
-        "Verified long-term apartments, studios, houses, pool villas & condos for rent or sale in Da Nang (3–12+ mo) ✓ Direct owner pricing ✓ 19 districts →";
+        "KIN Estates Da Nang (kinestatesdanang · kinestatesdanang.com) — verified long-term apartments, studios, whole houses, pool villas & condos across 19 Da Nang districts ✓ Direct owner pricing →";
     }
 
     const localizedPath = buildLocalizedHref(cleanPath, lang);
     const canonicalHref = `${window.location.origin}${localizedPath}`;
-    document.title = pageTitle;
     document.documentElement.lang = lang;
 
-    setMetaTagContent('meta[name="description"]', pageDesc);
-    setMetaTagContent('meta[name="keywords"]', pageKeywords);
-    setMetaTagContent('meta[property="og:title"]', pageTitle);
-    setMetaTagContent('meta[property="og:description"]', pageDesc);
-    setMetaTagContent('meta[property="og:url"]', canonicalHref);
-    setMetaTagContent('meta[name="twitter:title"]', pageTitle);
-    setMetaTagContent('meta[name="twitter:description"]', pageDesc);
-    if (activeApt?.images?.[0]) {
-      const absImg = activeApt.images[0].startsWith("/")
-        ? `${window.location.origin}${activeApt.images[0]}`
-        : activeApt.images[0];
-      setMetaTagContent('meta[property="og:image"]', absImg);
-      setMetaTagContent('meta[name="twitter:image"]', absImg);
-    }
-
-    const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (canonical) {
-      canonical.href = canonicalHref;
+    // Preserve exact server-side SSR <title>, <meta description>, OpenGraph & canonical on initial URL load (even after /api/apartments hydrates)
+    if (`${route}|${lang}` !== initialRouteLangRef.current) {
+      initialRouteLangRef.current = "";
+      document.title = pageTitle;
+      setMetaTagContent('meta[name="description"]', pageDesc);
+      setMetaTagContent('meta[name="keywords"]', pageKeywords);
+      setMetaTagContent('meta[property="og:title"]', pageTitle);
+      setMetaTagContent('meta[property="og:description"]', pageDesc);
+      setMetaTagContent('meta[property="og:url"]', canonicalHref);
+      setMetaTagContent('meta[name="twitter:title"]', pageTitle);
+      setMetaTagContent('meta[name="twitter:description"]', pageDesc);
+      if (activeApt?.images?.[0]) {
+        const absImg = activeApt.images[0].startsWith("/")
+          ? `${window.location.origin}${activeApt.images[0]}`
+          : activeApt.images[0];
+        setMetaTagContent('meta[property="og:image"]', absImg);
+        setMetaTagContent('meta[name="twitter:image"]', absImg);
+      }
+      const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (canonical) {
+        canonical.href = canonicalHref;
+      }
     }
 
     trackGaEvent("page_view", {
@@ -3849,6 +3858,16 @@ export const App: React.FC = () => {
                     "バイリンガル契約書、警察滞在登録（Form NA17）、写真付き入居チェック。"
                   )}
                 </div>
+              </div>
+              <div style={{ marginTop: "1.25rem", paddingTop: "1.1rem", borderTop: "1px solid var(--border-light)", fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+                <strong style={{ color: "var(--text-primary)" }}>
+                  KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com)
+                </strong>{" "}
+                —{" "}
+                {tx(
+                  "Hệ thống chuyên cho thuê dài hạn (3–12+ tháng) và tư vấn mua bán căn hộ chung cư cao cấp, căn hộ dịch vụ, studio, nhà nguyên căn, sky penthouse & biệt thự hồ bơi riêng tại 19 khu vực Đà Nẵng (Hải Châu, Sơn Trà, Ngũ Hành Sơn, An Thượng, Biển Mỹ Khê, Ven sông Hàn, Hòa Xuân, Cẩm Lệ, Nam Việt Á, Thanh Khê, Liên Chiểu, FPT City). Giá trực tiếp chủ nhà, miễn phí 100% dịch vụ dẫn xem cho khách thuê.",
+                  "Official Da Nang residential rental & investment platform (kinestatesdanang · kinestatesdanang.com) specializing in verified 3–12+ month condominiums, serviced apartments, studios, whole houses, penthouses, and private pool villas across all 19 Da Nang districts with direct owner pricing and 0% tenant commission."
+                )}
               </div>
             </div>
           </section>
@@ -6726,7 +6745,7 @@ export const App: React.FC = () => {
               <a href="https://t.me/KIN_Estates" target="_blank" rel="noreferrer" style={{ color: "#F5D9B8", textDecoration: "none", fontWeight: 700 }}>
                 Telegram: @KIN_Estates
               </a>
-              <span>kinestatesdanang.com · 19 khu vực Đà Nẵng</span>
+              <span>KIN Estates Đà Nẵng · kinestatesdanang · kinestatesdanang.com</span>
             </div>
           </div>
         </div>

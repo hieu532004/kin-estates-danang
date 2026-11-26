@@ -1,0 +1,29 @@
+{
+  "name": "KIN Estates Đà Nẵng — Cho Thuê Căn Hộ, Nhà & Biệt Thự",
+  "short_name": "KIN Estates",
+  "description": "KIN Estates Đà Nẵng (kinestatesdanang · kinestatesdanang.com) — Cho thuê dài hạn & mua bán căn hộ chung cư, nhà nguyên căn, penthouse, biệt thự hồ bơi tại 19 khu vực Đà Nẵng.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F6F1",
+  "theme_color": "#14191F",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/img/kin-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/kin-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/kin-estates-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

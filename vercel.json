@@ -4,10 +4,14 @@
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {
-      "includeFiles": "{src/data/**,public/index.html}"
+      "includeFiles": "{src/data/**,public/app-shell.html}"
     }
   },
   "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/index.js"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
@@ -21,7 +25,27 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/rss.xml",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/feed.xml",
+      "destination": "/api/index.js"
+    },
+    {
       "source": "/llms.txt",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/ai.txt",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/a8f4c291e7b04d6392c5f18e7a3b40d9.txt",
       "destination": "/api/index.js"
     },
     {
@@ -33,7 +57,7 @@
       "destination": "/studio-panel.html"
     },
     {
-      "source": "/((?!api/|css/|js/|img/|videos/|studio-panel\\.html|index\\.html).*)",
+      "source": "/((?!api/|css/|js/|img/|videos/|favicon\\.ico|site\\.webmanifest|studio-panel\\.html).*)",
       "destination": "/api/index.js"
     }
   ]
