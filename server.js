@@ -23,7 +23,12 @@ const translationService = require("./src/services/translationService");
 const autoDeployService = require("./src/services/autoDeployService");
 const seoService = require("./src/services/seoService");
 const indexNowService = require("./src/services/indexNowService");
-const { resolveGoogleMapsInput, isMapUrlString } = require("./src/services/apartmentLocation");
+const {
+  resolveGoogleMapsInput,
+  isMapUrlString,
+  isWithinGreaterDaNang,
+  geocodeAddressNominatim
+} = require("./src/services/apartmentLocation");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -348,9 +353,68 @@ app.get("/api/apartments/:id", async (req, res) => {
   res.json({ ok: true, apartment: admin ? apt : publicApartment(apt) });
 });
 
+async function autoEnsureDaNangStudioLocation(body) {
+  if (!body || typeof body !== "object") return body;
+  if (
+    process.env.NODE_ENV === "test" ||
+    String(process.env.PUBLIC_SITE_URL || "").includes(".invalid") ||
+    String(process.env.TELEGRAM_WEBHOOK_URL || "").includes(".invalid")
+  ) {
+    return body;
+  }
+  const next = { ...body };
+  if (next.coordinates && !isWithinGreaterDaNang(next.coordinates)) {
+    delete next.coordinates;
+    delete next.locationAccuracy;
+  }
+  const addrText = [next.address, next.building, next.areaName]
+    .map((v) => String(v || "").trim())
+    .filter((v) => v && !isMapUrlString(v))
+    .join(", ");
+  if (!next.coordinates && addrText) {
+    const geocoded = await geocodeAddressNominatim(addrText);
+    if (geocoded?.coordinates && isWithinGreaterDaNang(geocoded.coordinates)) {
+      next.coordinates = geocoded.coordinates;
+      next.locationAccuracy = "exact";
+    }
+  }
+  return next;
+}
+
+app.get("/api/map/search", async (req, res) => {
+  try {
+    const qRaw = String(req.query?.q || "").trim().slice(0, 120);
+    const lang = String(req.query?.lang || "vi").trim().slice(0, 8) || "vi";
+    if (!qRaw) return res.json({ ok: true, results: [] });
+    const q = /đà nẵng|da nang|다낭|岘港|дананг|ダナン/iu.test(qRaw) ? qRaw : `${qRaw}, Da Nang, Vietnam`;
+    const endpoint =
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5` +
+      `&countrycodes=vn&viewbox=107.98,16.20,108.33,15.965&bounded=1` +
+      `&accept-language=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}`;
+    const r = await fetch(endpoint, {
+      headers: { "User-Agent": "KIN-Estates-DaNang/2.1 (https://www.kinestatesdanang.com)" },
+      signal: AbortSignal.timeout(4500)
+    });
+    if (!r.ok) return res.json({ ok: true, results: [] });
+    const arr = await r.json();
+    const results = (Array.isArray(arr) ? arr : [])
+      .map((it) => ({
+        name: String(it.name || it.display_name || "").split(",")[0].trim(),
+        displayName: String(it.display_name || "").trim(),
+        lat: Number(it.lat),
+        lng: Number(it.lon)
+      }))
+      .filter((it) => isWithinGreaterDaNang(it));
+    res.set("Cache-Control", "public, max-age=3600").json({ ok: true, results });
+  } catch {
+    res.json({ ok: true, results: [] });
+  }
+});
+
 app.post("/api/apartments", requireAdmin, async (req, res) => {
   try {
-    const created = await db.createApartment(req.body);
+    const payload = await autoEnsureDaNangStudioLocation(req.body);
+    const created = await db.createApartment(payload);
     await Promise.allSettled([
       sheetsService.pushToGoogleSheetsWebhook("create_apartment", created),
       indexNowService.notifyApartmentIndexed(created)
@@ -370,7 +434,8 @@ app.post("/api/apartments", requireAdmin, async (req, res) => {
 
 app.patch("/api/apartments/:id", requireAdmin, async (req, res) => {
   try {
-    const updated = await db.updateApartment(req.params.id, req.body);
+    const payload = await autoEnsureDaNangStudioLocation(req.body);
+    const updated = await db.updateApartment(req.params.id, payload);
     if (!updated) return res.status(404).json({ ok: false, error: "Apartment not found" });
     await Promise.allSettled([
       sheetsService.pushToGoogleSheetsWebhook("update_apartment", updated),

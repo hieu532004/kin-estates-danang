@@ -1323,11 +1323,18 @@ function StudioApp() {
         mapObjRef.current.remove();
         mapObjRef.current = null;
       }
-      const startLat = Number.isFinite(form.lat) ? form.lat : 16.0545;
-      const startLng = Number.isFinite(form.lng) ? form.lng : 108.2345;
+      const validDaNang =
+        Number.isFinite(form.lat) &&
+        Number.isFinite(form.lng) &&
+        form.lat >= 15.96 &&
+        form.lat <= 16.22 &&
+        form.lng >= 107.95 &&
+        form.lng <= 108.35;
+      const startLat = validDaNang ? form.lat : 16.0545;
+      const startLng = validDaNang ? form.lng : 108.2345;
       const map = L.map(mapContainerRef.current, { zoomControl: true, attributionControl: false }).setView(
         [startLat, startLng],
-        form.hasPin ? 16 : 13
+        form.hasPin && validDaNang ? 16 : 13
       );
       L.tileLayer("https://mt1.google.com/vt/lyrs=m&hl=vi&x={x}&y={y}&z={z}", { maxZoom: 19 }).addTo(map);
       const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
@@ -4159,7 +4166,7 @@ function StudioApp() {
               <div className="st-field">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <label className="st-label">Địa chỉ hiển thị (hoặc dán link Google Maps vào đây)</label>
-                  {/^https?:\/\//i.test(form.address.trim()) && (
+                  {form.address.trim().length > 3 && (
                     <button
                       type="button"
                       className="st-btn-mini st-btn-mini--bronze"
@@ -4167,19 +4174,30 @@ function StudioApp() {
                       disabled={resolvingMap}
                       onClick={() => void resolveMapLinkIntoForm(form.address)}
                     >
-                      {resolvingMap ? "Đang lấy địa chỉ..." : "📍 Nhận địa chỉ từ Link"}
+                      {resolvingMap
+                        ? "Đang ghim..."
+                        : /^https?:\/\//i.test(form.address.trim())
+                        ? "📍 Nhận địa chỉ từ Link"
+                        : "📍 Tự ghim theo địa chỉ"}
                     </button>
                   )}
                 </div>
                 <input
                   className="st-input"
-                  placeholder="Nhập địa chỉ hoặc dán link https://maps.app.goo.gl/... tự nhận"
+                  placeholder="Nhập địa chỉ Đà Nẵng hoặc dán link https://maps.app.goo.gl/... tự nhận"
                   value={form.address}
                   onChange={(e) => {
                     const val = e.target.value;
                     setForm((p) => ({ ...p, address: val }));
                     if (/^https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl|(?:www\.|maps\.)?google\.)/i.test(val.trim())) {
                       void resolveMapLinkIntoForm(val);
+                    }
+                  }}
+                  onBlur={() => {
+                    const trimmed = form.address.trim();
+                    const outOfDaNang = form.lat < 15.75 || form.lat > 16.30 || form.lng < 107.80 || form.lng > 108.45;
+                    if (trimmed.length > 4 && (!form.hasPin || outOfDaNang) && !resolvingMap) {
+                      void resolveMapLinkIntoForm(trimmed);
                     }
                   }}
                 />

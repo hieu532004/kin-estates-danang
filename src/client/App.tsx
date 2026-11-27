@@ -118,15 +118,44 @@ const CATALOGUE_REQUEST_TIMEOUT_MS = 12_000;
 const CATALOGUE_REFRESH_MIN_GAP_MS = 1_000;
 const DANANG_MAP_CENTER: [number, number] = [16.0545, 108.2345];
 
+function isValidDaNangCoords(lat: unknown, lng: unknown): boolean {
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+  if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) return false;
+  return nLat >= 15.96 && nLat <= 16.22 && nLng >= 107.95 && nLng <= 108.35;
+}
+
 const DANANG_ADDRESS_LANDMARKS: Array<[RegExp, [number, number]]> = [
   [/panoma|sun\s*cosmo|trần\s*thị\s*lý|tran\s*thi\s*ly|nguyễn\s*văn\s*trỗi/i, [16.0508, 108.2355]],
   [/filmore|bạch\s*đằng|bach\s*dang|bình\s*thuận/i, [16.0614, 108.2238]],
-  [/hiyori|võ\s*văn\s*kiệt|vo\s*van\s*kiet/i, [16.0611, 108.2352]],
+  [/hiyori|võ\s*văn\s*kiệt|vo\s*van\s*kiet|an\s*trung\s*đông/i, [16.06126, 108.23562]],
   [/monarchy|sun\s*ponte|trần\s*hưng\s*đạo|tran\s*hung\s*dao/i, [16.0574, 108.2314]],
+  [/sun\s*symphony/i, [16.0828, 108.2275]],
   [/azura|indochina|cầu\s*sông\s*hàn/i, [16.0715, 108.2302]],
-  [/nam\s*việt\s*á|nam\s*viet\s*a|bùi\s*tá\s*hán|bui\s*ta\s*han|khuê\s*mỹ/i, [16.0348, 108.2415]],
-  [/võ\s*nguyên\s*giáp|vo\s*nguyen\s*giap|mỹ\s*khê|my\s*khe|trường\s*sa|phạm\s*văn\s*đồng/i, [16.0628, 108.2462]],
+  [/blooming\s*tower|thuận\s*phước|thuan\s*phuoc/i, [16.0912, 108.2195]],
+  [/euro\s*village|làng\s*châu\s*âu/i, [16.0588, 108.2298]],
+  [/đảo\s*xanh|dao\s*xanh/i, [16.0462, 108.2274]],
+  [/fpt\s*plaza|fpt\s*city|hòa\s*hải|hoa\s*hai/i, [15.9788, 108.2618]],
+  [/ori\s*garden|bàu\s*tràm/i, [16.1125, 108.1328]],
+  [/mỹ\s*đa\s*đông|my\s*da\s*dong/i, [16.04566, 108.24693]],
+  [/lê\s*văn\s*quý|le\s*van\s*quy/i, [16.07123, 108.2382]],
+  [/an\s*đồn|an\s*don/i, [16.07408, 108.22966]],
+  [/bắc\s*đẩu|bac\s*dau/i, [16.07714, 108.20872]],
+  [/nguyễn\s*lộ\s*trạch|nguyen\s*lo\s*trach/i, [16.03273, 108.22934]],
+  [/lê\s*duẩn|le\s*duan/i, [16.07147, 108.22114]],
+  [/điện\s*biên\s*phủ|dien\s*bien\s*phu/i, [16.06698, 108.19979]],
+  [/trần\s*nguyên\s*đán|tran\s*nguyen\s*dan/i, [16.07834, 108.15909]],
+  [/đỗ\s*nhuận|do\s*nhuan/i, [16.06085, 108.1697]],
+  [/nam\s*việt\s*á|nam\s*viet\s*a|bùi\s*tá\s*hán|bui\s*ta\s*han|khuê\s*mỹ|khue\s*my/i, [16.0348, 108.2415]],
+  [/võ\s*nguyên\s*giáp|vo\s*nguyen\s*giap|mỹ\s*khê|my\s*khe|trường\s*sa|phạm\s*văn\s*đồng|phước\s*mỹ|phuoc\s*my/i, [16.0628, 108.2462]],
   [/an\s*thượng|an\s*thuong|hoàng\s*kế\s*viêm|châu\s*thị\s*vĩnh\s*tế|nguyễn\s*văn\s*thoại|mỹ\s*an/i, [16.0498, 108.2459]],
+  [/thọ\s*quang|tho\s*quang/i, [16.0945, 108.2468]],
+  [/hòa\s*xuân|hoa\s*xuan/i, [16.0175, 108.2215]],
+  [/cẩm\s*lệ|cam\s*le/i, [16.0195, 108.2028]],
+  [/thanh\s*khê|thanh\s*khe/i, [16.0665, 108.1945]],
+  [/hòa\s*khánh|hoa\s*khanh|liên\s*chiểu|lien\s*chieu/i, [16.0695, 108.1555]],
+  [/hòa\s*vang|hoa\s*vang/i, [15.9985, 108.1325]],
+  [/ngũ\s*hành\s*sơn|ngu\s*hanh\s*son/i, [16.0395, 108.2455]],
   [/sơn\s*trà|son\s*tra|ngô\s*quyền/i, [16.0609, 108.2345]],
   [/hải\s*châu|hai\s*chau|sông\s*hàn|han\s*river/i, [16.0625, 108.2248]]
 ];
@@ -134,24 +163,42 @@ const DANANG_ADDRESS_LANDMARKS: Array<[RegExp, [number, number]]> = [
 function getExactLocation(apt?: Apartment): [number, number] | undefined {
   if (!apt) return;
   const coordinates = apt.coordinates;
-  if (coordinates) {
-    const { lat, lng } = coordinates;
-    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-      return [lat, lng];
-    }
+  if (coordinates && isValidDaNangCoords(coordinates.lat, coordinates.lng)) {
+    return [coordinates.lat, coordinates.lng];
   }
   const haystack = [apt.address, apt.building, apt.areaName, apt.district].filter(Boolean).join(" ");
   for (const [pattern, coords] of DANANG_ADDRESS_LANDMARKS) {
-    if (pattern.test(haystack)) return coords;
+    if (pattern.test(haystack)) {
+      const seed = String(apt.code || apt._id || "").split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const dLat = (((seed % 7) - 3) * 0.00018);
+      const dLng = ((((seed >> 2) % 7) - 3) * 0.00018);
+      return [Number((coords[0] + dLat).toFixed(6)), Number((coords[1] + dLng).toFixed(6))];
+    }
   }
 }
 
-function getAddressSearchUrl(apt: Apartment): string | undefined {
+function getAddressSearchUrl(apt: Apartment, hl = "vi"): string | undefined {
   const locality = apt.areaName?.trim() || apt.district?.trim();
   const address = apt.address?.trim();
   const building = apt.building?.trim();
-  const query = address || [building, locality].filter(Boolean).join(", ");
-  if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  const pt = apt.coordinates && isValidDaNangCoords(apt.coordinates.lat, apt.coordinates.lng) ? apt.coordinates : null;
+  const rawQuery = address || [building, locality].filter(Boolean).join(", ");
+  const scopedQuery =
+    rawQuery && !/đà nẵng|da nang/i.test(rawQuery) ? `${rawQuery}, Đà Nẵng, Việt Nam` : rawQuery;
+  const finalQuery = scopedQuery || (pt ? `${pt.lat},${pt.lng}` : "");
+  if (finalQuery) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalQuery)}&hl=${encodeURIComponent(hl)}`;
+  }
+}
+
+function getDirectionsUrl(apt: Apartment, hl = "vi"): string | undefined {
+  const pt = getExactLocation(apt);
+  const rawAddr = apt.address?.trim();
+  const scopedAddr = rawAddr && !/đà nẵng|da nang/i.test(rawAddr) ? `${rawAddr}, Đà Nẵng, Việt Nam` : rawAddr;
+  const dest = pt ? `${pt[0]},${pt[1]}` : scopedAddr;
+  if (dest) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&hl=${encodeURIComponent(hl)}`;
+  }
 }
 
 function canRequestApartment(apt?: Apartment): boolean {
@@ -1722,6 +1769,45 @@ export const App: React.FC = () => {
     return map[l] || "en";
   };
 
+  const getGoogleMapGl = (l: Lang): string => {
+    const map: Record<Lang, string> = {
+      vi: "VN",
+      en: "US",
+      zh: "CN",
+      ru: "RU",
+      ko: "KR",
+      ja: "JP"
+    };
+    return map[l] || "US";
+  };
+
+  const getGoogleMapTileUrl = (l: Lang): string =>
+    `https://mt1.google.com/vt/lyrs=m&hl=${getGoogleMapHl(l)}&gl=${getGoogleMapGl(l)}&x={x}&y={y}&z={z}`;
+
+  const localizeAddressForTourist = (rawAddr: string): string => {
+    if (!rawAddr || lang === "vi") return rawAddr;
+    let out = rawAddr
+      .replace(/\bThành phố Đà Nẵng\b|\bTP\.?\s*Đà Nẵng\b|\bĐà Nẵng\b|\bDa Nang\b/gi, tx("Đà Nẵng", "Da Nang", "岘港", "Дананг", "다낭", "ダナン"))
+      .replace(/\bQuận\s+/gi, tx("Quận ", "Dist. ", "", "р-н ", "", ""))
+      .replace(/\bPhường\s+/gi, tx("Phường ", "Ward ", "", "кв. ", "", ""))
+      .replace(/\bKhu phố\s+/gi, tx("Khu phố ", "Quarter ", "", "кв-л ", "", ""))
+      .replace(/^đường\s+|^Đường\s+/g, tx("Đường ", "", "", "ул. ", "", ""))
+      .replace(/\bSơn Trà\b|\bSon Tra\b/gi, tx("Sơn Trà", "Son Tra", "山茶郡", "Шонча", "선짜 (Sơn Trà)", "ソンチャ区"))
+      .replace(/\bNgũ Hành Sơn\b|\bNgu Hanh Son\b/gi, tx("Ngũ Hành Sơn", "Ngu Hanh Son", "五行山郡", "Нгуханьшон", "응우한선 (Ngũ Hành Sơn)", "グーハインソン区"))
+      .replace(/\bHải Châu\b|\bHai Chau\b/gi, tx("Hải Châu", "Hai Chau", "海洲郡", "Хайтяу", "하이쩌우 (Hải Châu)", "ハイチャウ区"))
+      .replace(/\bThanh Khê\b|\bThanh Khe\b/gi, tx("Thanh Khê", "Thanh Khe", "清溪郡", "Тхань Кхе", "탄케 (Thanh Khê)", "タンケー区"))
+      .replace(/\bLiên Chiểu\b|\bLien Chieu\b/gi, tx("Liên Chiểu", "Lien Chieu", "莲沼郡", "Лиен Тиеу", "리엔찌에우 (Liên Chiểu)", "リエンチエウ区"))
+      .replace(/\bHòa Khánh\b|\bHoa Khanh\b/gi, tx("Hòa Khánh", "Hoa Khanh", "和庆", "Хоа Кхань", "호아칸 (Hòa Khánh)", "ホアカン"))
+      .replace(/\bCẩm Lệ\b|\bCam Le\b/gi, tx("Cẩm Lệ", "Cam Le", "锦丽郡", "Кам Ле", "깜레 (Cẩm Lệ)", "カムレー区"))
+      .replace(/\bHòa Xuân\b|\bHoa Xuan\b/gi, tx("Hòa Xuân", "Hoa Xuan", "和春区", "Хоа Суан", "호아쑤언 (Hòa Xuân)", "ホアスアン"));
+    if (lang === "en" && /^đường\s+/i.test(rawAddr) && !/\bSt\.|\bStreet\b/i.test(out)) {
+      const parts = out.split(",");
+      parts[0] = `${parts[0].trim()} St.`;
+      out = parts.join(",");
+    }
+    return out;
+  };
+
   const trArea = (raw: string | undefined): string => {
     if (!raw) return "";
     const map: Record<string, string> = {
@@ -1757,7 +1843,11 @@ export const App: React.FC = () => {
     if (!apt) return "";
     const raw = apt[field] || "";
     if (!raw || lang === "vi") return raw;
-    return apt.translations?.[lang]?.[field] || trField(raw);
+    const trVal = apt.translations?.[lang]?.[field];
+    if (field === "address") {
+      return localizeAddressForTourist(trVal && trVal !== raw ? trVal : raw);
+    }
+    return trVal || trField(raw);
   };
 
   const getAptTags = (apt: Apartment | null | undefined): string[] => {
@@ -2207,11 +2297,85 @@ export const App: React.FC = () => {
     return tx("Chưa có thông tin vị trí", "Location unavailable", "暂无位置信息", "Местоположение неизвестно", "위치 정보 없음", "所在地情報なし");
   };
 
+  const activeCatPopupCodeRef = useRef<string | null>(null);
+  const lastCatFitKeyRef = useRef<string>("");
+  const detailInlineMapRef = useRef<any>(null);
+  const [mapLookupQuery, setMapLookupQuery] = useState<string>("");
+  const [mapLookupResults, setMapLookupResults] = useState<Array<{ name: string; displayName: string; lat: number; lng: number }>>([]);
+  const [mapLookupLoading, setMapLookupLoading] = useState<boolean>(false);
+  const [searchedLandmarkPin, setSearchedLandmarkPin] = useState<{ label: string; lat: number; lng: number } | null>(null);
+
+  const TOURIST_QUICK_LANDMARKS = React.useMemo(
+    () => [
+      {
+        id: "my-khe",
+        label: tx("🏖 Biển Mỹ Khê", "🏖 My Khe Beach", "🏖 美溪海滩", "🏖 Пляж Ми Кхе", "🏖 미케비치", "🏖 ミーケービーチ"),
+        lat: 16.0598,
+        lng: 108.2464
+      },
+      {
+        id: "dragon-bridge",
+        label: tx("🐉 Cầu Rồng", "🐉 Dragon Bridge", "🐉 龙桥", "🐉 Мост Дракона", "🐉 용다리", "🐉 ドラゴン橋"),
+        lat: 16.0611,
+        lng: 108.2275
+      },
+      {
+        id: "an-thuong",
+        label: tx("☕ Phố An Thượng", "☕ An Thuong Quarter", "☕ 安上街区", "☕ Ан Тхыонг", "☕ 안트엉 거리", "☕ アントゥオン"),
+        lat: 16.0493,
+        lng: 108.2466
+      },
+      {
+        id: "han-market",
+        label: tx("🛍 Chợ Hàn", "🛍 Han Market", "🛍 韩市场", "🛍 Рынок Хан", "🛍 한시장", "🛍 ハン市場"),
+        lat: 16.0681,
+        lng: 108.2244
+      },
+      {
+        id: "airport",
+        label: tx("✈️ Sân bay Đà Nẵng", "✈️ Da Nang Airport", "✈️ 岘港国际机场", "✈️ Аэропорт", "✈️ 다낭 국제공항", "✈️ ダナン国際空港"),
+        lat: 16.0538,
+        lng: 108.2039
+      }
+    ],
+    [lang]
+  );
+
+  const runTouristMapSearch = async (rawQ: string) => {
+    const q = rawQ.trim();
+    if (!q) {
+      setMapLookupResults([]);
+      return;
+    }
+    setMapLookupLoading(true);
+    try {
+      const r = await fetch(`/api/map/search?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(getGoogleMapHl(lang))}`);
+      const j = await r.json();
+      const list = Array.isArray(j?.results) ? j.results : [];
+      setMapLookupResults(list);
+      if (list[0]) {
+        focusMapLandmark({ label: list[0].name || q, lat: list[0].lat, lng: list[0].lng });
+      }
+    } catch {
+      setMapLookupResults([]);
+    } finally {
+      setMapLookupLoading(false);
+    }
+  };
+
+  const focusMapLandmark = (spot: { label: string; lat: number; lng: number }) => {
+    setSearchedLandmarkPin(spot);
+    setMapLookupResults([]);
+    catMapRef.current?.flyTo([spot.lat, spot.lng], 15, { duration: 0.65 });
+    expandMapRef.current?.flyTo([spot.lat, spot.lng], 15, { duration: 0.65 });
+  };
+
   const createMapPopup = (apt: Apartment) => {
+    const hl = getGoogleMapHl(lang);
     const content = document.createElement("div");
     content.style.display = "flex";
     content.style.flexDirection = "column";
-    content.style.gap = "4px";
+    content.style.gap = "5px";
     const title = document.createElement("strong");
     title.textContent = getLocalized(apt.title);
     const address = document.createElement("div");
@@ -2219,22 +2383,44 @@ export const App: React.FC = () => {
     address.style.color = "#475569";
     address.textContent = `📍 ${getAptField(apt, "address").trim() || apt.building?.trim() || trArea(apt.areaName)}`;
     content.append(title, address);
-    const gmapUrl = getAddressSearchUrl(apt);
+
+    const actionsRow = document.createElement("div");
+    actionsRow.style.display = "flex";
+    actionsRow.style.flexWrap = "wrap";
+    actionsRow.style.gap = "10px";
+    actionsRow.style.marginTop = "2px";
+
+    const gmapUrl = getAddressSearchUrl(apt, hl);
     if (gmapUrl) {
       const mapLink = document.createElement("a");
       mapLink.href = gmapUrl;
       mapLink.target = "_blank";
       mapLink.rel = "noreferrer";
       mapLink.style.fontSize = "0.75rem";
-      mapLink.style.fontWeight = "600";
+      mapLink.style.fontWeight = "700";
       mapLink.style.color = "#9a7b4f";
-      mapLink.textContent = tx("Mở địa chỉ trên Google Maps ↗", "Open address in Google Maps ↗", "在 Google 地图打开地址 ↗", "Открыть адрес в Google Maps ↗", "Google 지도에서 주소 열기 ↗", "Googleマップで住所を開く ↗");
-      content.append(mapLink);
+      mapLink.textContent = tx("Mở trên Google Maps ↗", "Open in Google Maps ↗", "在 Google 地图查看 ↗", "Открыть в Google Maps ↗", "Google 지도에서 보기 ↗", "Googleマップで見る ↗");
+      actionsRow.append(mapLink);
     }
+
+    const dirUrl = getDirectionsUrl(apt, hl);
+    if (dirUrl) {
+      const dirLink = document.createElement("a");
+      dirLink.href = dirUrl;
+      dirLink.target = "_blank";
+      dirLink.rel = "noreferrer";
+      dirLink.style.fontSize = "0.75rem";
+      dirLink.style.fontWeight = "700";
+      dirLink.style.color = "#1e293b";
+      dirLink.textContent = tx("🧭 Chỉ đường ↗", "🧭 Directions ↗", "🧭 路线导航 ↗", "🧭 Маршрут ↗", "🧭 길찾기 ↗", "🧭 ルート案内 ↗");
+      actionsRow.append(dirLink);
+    }
+
+    if (actionsRow.childNodes.length > 0) content.append(actionsRow);
     return content;
   };
 
-  // Hero Showcase Map (#hero-showcase-map) — Dynamically Switches Map Tile Language (hl=vi, en, zh-CN, ru, ko, ja)
+  // Hero Showcase Map (#hero-showcase-map) — Dynamically Switches Map Tile Language & Region (hl + gl)
   useEffect(() => {
     if (route !== "/" || showcaseMode === "photo" || typeof L === "undefined" || apartments.length === 0) {
       heroMapRef.current?.remove();
@@ -2256,13 +2442,14 @@ export const App: React.FC = () => {
     }
 
     const map = heroMapRef.current;
+    map.closePopup();
     map.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker || layer instanceof L.TileLayer) {
+      if (layer instanceof L.Marker || layer instanceof L.TileLayer || layer instanceof L.Popup) {
         map.removeLayer(layer);
       }
     });
 
-    L.tileLayer(`https://mt1.google.com/vt/lyrs=m&hl=${getGoogleMapHl(lang)}&x={x}&y={y}&z={z}`, {
+    L.tileLayer(getGoogleMapTileUrl(lang), {
       attribution: "",
       maxZoom: 19
     }).addTo(map);
@@ -2282,7 +2469,7 @@ export const App: React.FC = () => {
         iconAnchor: [48, 18]
       });
 
-      const marker = L.marker(point, { icon, title: first.address?.trim() || first.building }).addTo(map);
+      const marker = L.marker(point, { icon, title: getAptField(first, "address").trim() || first.building }).addTo(map);
       marker.on("click", (e: any) => {
         if (e && e.originalEvent) e.originalEvent.stopPropagation();
         setShowcaseBldgFilter(first.building || "all");
@@ -2311,7 +2498,7 @@ export const App: React.FC = () => {
       }).setView(targetPoint ?? DANANG_MAP_CENTER, targetPoint ? 16 : 13);
       expandMapRef.current = map;
 
-      L.tileLayer(`https://mt1.google.com/vt/lyrs=m&hl=${getGoogleMapHl(lang)}&x={x}&y={y}&z={z}`, {
+      L.tileLayer(getGoogleMapTileUrl(lang), {
         attribution: "",
         maxZoom: 19
       }).addTo(map);
@@ -2331,12 +2518,22 @@ export const App: React.FC = () => {
         });
 
         const marker = L.marker(point, {
-          icon, title: apt.address?.trim() || apt.building, zIndexOffset: isCurrent ? 1000 : 0
+          icon, title: getAptField(apt, "address").trim() || apt.building, zIndexOffset: isCurrent ? 1000 : 0
         }).addTo(map);
         marker.bindPopup(createMapPopup(apt));
         marker.on("click", () => setExpandMapAptCode(apt.code));
         if (isCurrent) marker.openPopup();
       });
+
+      if (searchedLandmarkPin) {
+        const spotIcon = L.divIcon({
+          className: "homii-pin-wrap",
+          html: `<div style="background:#b8894a;color:#fff;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,0.28);border:2px solid #fff;">${searchedLandmarkPin.label}</div>`,
+          iconSize: [140, 28],
+          iconAnchor: [70, 14]
+        });
+        L.marker([searchedLandmarkPin.lat, searchedLandmarkPin.lng], { icon: spotIcon, zIndexOffset: 1500 }).addTo(map);
+      }
 
       map.invalidateSize(true);
       if (!targetPoint && bounds.length > 0) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
@@ -2346,14 +2543,15 @@ export const App: React.FC = () => {
       expandMapRef.current?.remove();
       expandMapRef.current = null;
     };
-  }, [expandMapOpen, expandDialogApt, expandMapUnits, lang, currency]);
+  }, [expandMapOpen, expandDialogApt, expandMapUnits, lang, currency, searchedLandmarkPin]);
 
-  // Catalogue Page Map (/apartments & /areas/:slug) — Dynamically Switches Map Tile Language & Currency
+  // Catalogue Page Map (/apartments & /areas/:slug) — Dynamically Switches Map Tile Language, Popup & Tourist Landmarks
   useEffect(() => {
     if (!isCatalogueRoute || typeof L === "undefined") {
       if (!isCatalogueRoute && catMapRef.current) {
         catMapRef.current.remove();
         catMapRef.current = null;
+        lastCatFitKeyRef.current = "";
       }
       return;
     }
@@ -2367,53 +2565,87 @@ export const App: React.FC = () => {
           attributionControl: false,
           scrollWheelZoom: true
         }).setView(DANANG_MAP_CENTER, 13);
+        catMapRef.current.on("popupclose", () => {
+          activeCatPopupCodeRef.current = null;
+        });
       }
 
       const map = catMapRef.current;
+      const reopenedCode = activeCatPopupCodeRef.current;
+      map.closePopup();
       map.eachLayer((layer: any) => {
-        if (layer instanceof L.Marker || layer instanceof L.TileLayer) {
+        if (layer instanceof L.Marker || layer instanceof L.TileLayer || layer instanceof L.Popup) {
           map.removeLayer(layer);
         }
       });
 
-      L.tileLayer(`https://mt1.google.com/vt/lyrs=m&hl=${getGoogleMapHl(lang)}&x={x}&y={y}&z={z}`, {
+      L.tileLayer(getGoogleMapTileUrl(lang), {
         attribution: "",
         maxZoom: 19
       }).addTo(map);
 
+      const visibleUnits = filteredApartments.length ? filteredApartments : apartments;
       const bounds: [number, number][] = [];
-      (filteredApartments.length ? filteredApartments : apartments).forEach((apt) => {
+      let markerToReopen: any = null;
+
+      visibleUnits.forEach((apt) => {
         const point = getExactLocation(apt);
         if (!point) return;
         bounds.push(point);
         const icon = L.divIcon({
           className: "homii-pin-wrap",
-          html: `<div class="homii-map-pin">${formatPinPrice(apt.priceUsd, false, apt.priceVnd)}</div>`,
+          html: `<div class="homii-map-pin ${reopenedCode === apt.code ? "active" : ""}">${formatPinPrice(apt.priceUsd, false, apt.priceVnd)}</div>`,
           iconSize: [84, 30],
           iconAnchor: [42, 15]
         });
         const popup = createMapPopup(apt);
         const details = document.createElement("a");
         details.href = `/apartments/${encodeURIComponent(apt.code)}`;
-        details.textContent = tx("Chi tiết căn hộ", "Explore unit", "查看详情", "Подробнее", "상세 보기", "詳細を見る");
+        details.style.fontSize = "0.75rem";
+        details.style.fontWeight = "700";
+        details.textContent = tx("Chi tiết căn hộ →", "Explore unit →", "查看详情 →", "Подробнее →", "상세 보기 →", "詳細を見る →");
         details.addEventListener("click", (event) => {
           if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
           event.preventDefault();
           openApartmentDetailModal(apt);
         });
         popup.append(details);
-        L.marker(point, { icon, title: apt.address?.trim() || apt.building }).addTo(map).bindPopup(popup);
+        const marker = L.marker(point, { icon, title: getAptField(apt, "address").trim() || apt.building }).addTo(map);
+        marker.bindPopup(popup);
+        marker.on("popupopen", () => {
+          activeCatPopupCodeRef.current = apt.code;
+        });
+        if (reopenedCode && apt.code === reopenedCode) {
+          markerToReopen = marker;
+        }
       });
 
-      map.invalidateSize(true);
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-      } else {
-        map.setView(DANANG_MAP_CENTER, 13);
+      if (searchedLandmarkPin) {
+        const spotIcon = L.divIcon({
+          className: "homii-pin-wrap",
+          html: `<div style="background:#b8894a;color:#fff;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,0.28);border:2px solid #fff;">${searchedLandmarkPin.label}</div>`,
+          iconSize: [140, 28],
+          iconAnchor: [70, 14]
+        });
+        L.marker([searchedLandmarkPin.lat, searchedLandmarkPin.lng], { icon: spotIcon, zIndexOffset: 1500 }).addTo(map);
       }
-    }, 100);
+
+      map.invalidateSize(true);
+      const fitKey = `${route}::${visibleUnits.map((u) => u.code).join(",")}`;
+      if (fitKey !== lastCatFitKeyRef.current) {
+        lastCatFitKeyRef.current = fitKey;
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, { padding: [44, 44], maxZoom: 15 });
+        } else {
+          map.setView(DANANG_MAP_CENTER, 13);
+        }
+      }
+      if (markerToReopen) {
+        setTimeout(() => markerToReopen.openPopup(), 40);
+      }
+    }, 80);
     return () => window.clearTimeout(timer);
-  }, [route, filteredApartments, lang, currency]);
+  }, [route, filteredApartments, apartments, lang, currency, searchedLandmarkPin]);
 
   // Dedicated Single Apartment Detail Page (/apartments/:code)
   const [fullscreenPhotoOpen, setFullscreenPhotoOpen] = useState<boolean>(false);
@@ -2428,6 +2660,51 @@ export const App: React.FC = () => {
           a._id === detailRouteCode
       )
     : null;
+
+  useEffect(() => {
+    if (!currentDetailApt || typeof L === "undefined") {
+      detailInlineMapRef.current?.remove();
+      detailInlineMapRef.current = null;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById("apt-detail-inline-map");
+      if (!el) return;
+      detailInlineMapRef.current?.remove();
+      detailInlineMapRef.current = null;
+
+      const pt = getExactLocation(currentDetailApt) ?? DANANG_MAP_CENTER;
+      const map = L.map(el, {
+        zoomControl: true,
+        attributionControl: false,
+        scrollWheelZoom: false
+      }).setView(pt, 16);
+      detailInlineMapRef.current = map;
+
+      L.tileLayer(getGoogleMapTileUrl(lang), {
+        attribution: "",
+        maxZoom: 19
+      }).addTo(map);
+
+      const icon = L.divIcon({
+        className: "homii-pin-wrap",
+        html: `<div class="homii-map-pin active">${formatPinPrice(currentDetailApt.priceUsd, false, currentDetailApt.priceVnd)}</div>`,
+        iconSize: [88, 30],
+        iconAnchor: [44, 15]
+      });
+      const marker = L.marker(pt, {
+        icon,
+        title: getAptField(currentDetailApt, "address").trim() || currentDetailApt.building
+      }).addTo(map);
+      marker.bindPopup(createMapPopup(currentDetailApt));
+      map.invalidateSize(true);
+    }, 90);
+    return () => {
+      window.clearTimeout(timer);
+      detailInlineMapRef.current?.remove();
+      detailInlineMapRef.current = null;
+    };
+  }, [currentDetailApt, lang, currency]);
   const detailPhotos = currentDetailApt?.images?.filter((src) => src?.trim()) ?? [];
   const selectedPhoto = photoSelection?.code === currentDetailApt?.code ? photoSelection : undefined;
   const activePhotoIdx = selectedPhoto
@@ -2487,7 +2764,7 @@ export const App: React.FC = () => {
         </button>
       );
     }
-    const href = getAddressSearchUrl(apt);
+    const href = getAddressSearchUrl(apt, getGoogleMapHl(lang));
     return href ? (
       <a className={className} style={style} href={href} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
         <IconMapPin size={14} />
@@ -4315,6 +4592,175 @@ export const App: React.FC = () => {
                 )}
               </div>
               <div className="kin-cat-map-col-desktop" style={{ position: "sticky", top: "90px", height: "620px", borderRadius: "22px", overflow: "hidden", border: "1px solid var(--border-medium)", boxShadow: "var(--shadow-soft)" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    left: "52px",
+                    right: "10px",
+                    zIndex: 500,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    pointerEvents: "none"
+                  }}
+                >
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void runTouristMapSearch(mapLookupQuery);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(255,255,255,0.96)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(22,25,30,0.14)",
+                      borderRadius: "999px",
+                      padding: "4px 6px 4px 12px",
+                      boxShadow: "0 8px 22px rgba(22,25,30,0.12)",
+                      pointerEvents: "auto"
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={mapLookupQuery}
+                      onChange={(e) => setMapLookupQuery(e.target.value)}
+                      placeholder={tx(
+                        "Tra vị trí (Biển Mỹ Khê, Cầu Rồng, tên đường...)",
+                        "Search place or street (My Khe Beach, Dragon Bridge...)",
+                        "搜索地点或街道（美溪海滩、龙桥、机场...）",
+                        "Поиск места или улицы (Ми Кхе, Мост Дракона...)",
+                        "장소·거리 검색 (미케비치, 용다리, 공항...)",
+                        "場所・通りを検索（ミーケービーチ、ドラゴン橋...）"
+                      )}
+                      style={{
+                        flex: 1,
+                        border: "none",
+                        outline: "none",
+                        background: "transparent",
+                        fontSize: "0.78rem",
+                        color: "#16191E",
+                        minWidth: 0
+                      }}
+                    />
+                    {searchedLandmarkPin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchedLandmarkPin(null);
+                          setMapLookupQuery("");
+                          setMapLookupResults([]);
+                        }}
+                        title="Clear"
+                        style={{
+                          border: "none",
+                          background: "#f1f5f9",
+                          color: "#475569",
+                          borderRadius: "999px",
+                          width: "22px",
+                          height: "22px",
+                          fontSize: "11px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={mapLookupLoading}
+                      style={{
+                        border: "none",
+                        background: "#16191E",
+                        color: "#fff",
+                        borderRadius: "999px",
+                        padding: "5px 11px",
+                        fontSize: "0.74rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {mapLookupLoading ? "..." : tx("Tìm", "Find", "搜索", "Найти", "검색", "検索")}
+                    </button>
+                  </form>
+
+                  {mapLookupResults.length > 1 && (
+                    <div
+                      style={{
+                        background: "#fff",
+                        borderRadius: "12px",
+                        boxShadow: "0 10px 26px rgba(22,25,30,0.16)",
+                        border: "1px solid rgba(22,25,30,0.1)",
+                        overflow: "hidden",
+                        pointerEvents: "auto"
+                      }}
+                    >
+                      {mapLookupResults.map((hit, idx) => (
+                        <button
+                          key={`${hit.lat}-${hit.lng}-${idx}`}
+                          type="button"
+                          onClick={() => focusMapLandmark({ label: hit.name, lat: hit.lat, lng: hit.lng })}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "7px 12px",
+                            border: "none",
+                            borderBottom: idx < mapLookupResults.length - 1 ? "1px solid #f1f5f9" : "none",
+                            background: "#fff",
+                            fontSize: "0.76rem",
+                            color: "#1e293b",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <strong>📍 {hit.name}</strong>
+                          <div style={{ fontSize: "0.69rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {hit.displayName}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "5px",
+                      overflowX: "auto",
+                      paddingBottom: "2px",
+                      scrollbarWidth: "none",
+                      pointerEvents: "auto"
+                    }}
+                  >
+                    {TOURIST_QUICK_LANDMARKS.map((spot) => (
+                      <button
+                        key={spot.id}
+                        type="button"
+                        onClick={() => focusMapLandmark({ label: spot.label, lat: spot.lat, lng: spot.lng })}
+                        style={{
+                          border: "1px solid rgba(22,25,30,0.14)",
+                          background:
+                            searchedLandmarkPin?.lat === spot.lat
+                              ? "#16191E"
+                              : "rgba(255,255,255,0.93)",
+                          color: searchedLandmarkPin?.lat === spot.lat ? "#fff" : "#16191E",
+                          borderRadius: "999px",
+                          padding: "3px 9px",
+                          fontSize: "0.71rem",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                          cursor: "pointer",
+                          boxShadow: "0 3px 10px rgba(22,25,30,0.08)"
+                        }}
+                      >
+                        {spot.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div id="catalogue-page-map" style={{ width: "100%", height: "100%" }} />
               </div>
             </div>
@@ -4677,6 +5123,71 @@ export const App: React.FC = () => {
                       {tTag}
                     </span>
                   ))}
+                </div>
+
+                {/* Inline Multilingual Tourist Map + 1-Tap Google Maps Directions */}
+                <div
+                  style={{
+                    marginTop: "1.1rem",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    border: "1px solid var(--border-medium)",
+                    background: "#fff"
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      padding: "0.6rem 0.9rem",
+                      borderBottom: "1px solid var(--border-light)",
+                      background: "#FAF8F4"
+                    }}
+                  >
+                    <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#16191E" }}>
+                      📍 {getAptField(currentDetailApt, "address").trim() || trArea(currentDetailApt.areaName)}
+                    </span>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {getDirectionsUrl(currentDetailApt, getGoogleMapHl(lang)) && (
+                        <a
+                          href={getDirectionsUrl(currentDetailApt, getGoogleMapHl(lang))}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            fontSize: "0.76rem",
+                            fontWeight: 700,
+                            color: "#fff",
+                            background: "#16191E",
+                            padding: "4px 11px",
+                            borderRadius: "999px",
+                            textDecoration: "none"
+                          }}
+                        >
+                          {tx("🧭 Chỉ đường Google Maps ↗", "🧭 Google Maps Directions ↗", "🧭 Google 地图导航 ↗", "🧭 Маршрут в Google Maps ↗", "🧭 Google 지도 길찾기 ↗", "🧭 Googleマップでルート案内 ↗")}
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => openUnitOnMapDialog(e, currentDetailApt)}
+                        style={{
+                          fontSize: "0.76rem",
+                          fontWeight: 700,
+                          color: "#16191E",
+                          background: "#EFECE4",
+                          border: "none",
+                          padding: "4px 11px",
+                          borderRadius: "999px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {tx("⤢ Mở rộng bản đồ", "⤢ Expand Map", "⤢ 放大地图", "⤢ Развернуть карту", "⤢ 지도 크게 보기", "⤢ 地図を拡大")}
+                      </button>
+                    </div>
+                  </div>
+                  <div id="apt-detail-inline-map" style={{ width: "100%", height: "240px" }} />
                 </div>
               </div>
             </div>
@@ -6429,7 +6940,43 @@ export const App: React.FC = () => {
       {expandMapOpen && expandDialogApt && (
         <div className="homii-dialog-backdrop homii-dialog-backdrop--map" onClick={() => setExpandMapOpen(false)}>
           <div className="expand-map-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="expand-map-left">
+            <div className="expand-map-left" style={{ position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  left: "54px",
+                  right: "12px",
+                  zIndex: 500,
+                  display: "flex",
+                  gap: "6px",
+                  overflowX: "auto",
+                  scrollbarWidth: "none",
+                  pointerEvents: "auto"
+                }}
+              >
+                {TOURIST_QUICK_LANDMARKS.map((spot) => (
+                  <button
+                    key={`exp-${spot.id}`}
+                    type="button"
+                    onClick={() => focusMapLandmark({ label: spot.label, lat: spot.lat, lng: spot.lng })}
+                    style={{
+                      border: "1px solid rgba(22,25,30,0.16)",
+                      background: searchedLandmarkPin?.lat === spot.lat ? "#16191E" : "rgba(255,255,255,0.95)",
+                      color: searchedLandmarkPin?.lat === spot.lat ? "#fff" : "#16191E",
+                      borderRadius: "999px",
+                      padding: "4px 10px",
+                      fontSize: "0.73rem",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(22,25,30,0.12)"
+                    }}
+                  >
+                    {spot.label}
+                  </button>
+                ))}
+              </div>
               <div id="dialog-expand-map" style={{ width: "100%", height: "100%" }} />
               <div className="expand-map-hint">
                 {tx("Chạm vào mức giá trên bản đồ để đổi căn hộ", "Tap any price pin on the map to switch residence", "点击地图上的价格标签切换房源", "Нажмите на цену на карте для смены квартиры", "지도의 가격 핀을 눌러 매물을 변경하세요", "地図上の価格ピンをタップして物件切替")}
